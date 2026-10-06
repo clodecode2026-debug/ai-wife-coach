@@ -1,464 +1,367 @@
-// AI Wife Coach - Client Script
-let activeSessionId = localStorage.getItem('ai_wife_session_id') || null;
-let isVoiceOutputEnabled = true;
+// Основной логический файл фронтенда AI Wife Coach
 
-// Tab Switching
-function switchTab(tabName) {
+let currentSessionId = 'session_' + Math.random().toString(36).substring(2, 9);
+let isLiveVoiceActive = false;
+let recognition = null;
+let isMuted = false;
+
+// Переключение вкладок
+function switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-    const target = document.getElementById(`tab-${tabName}`);
-    if (target) target.classList.remove('hidden');
+    document.getElementById('tab-' + tabId).classList.remove('hidden');
 
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('text-pink-600', 'font-semibold');
-        btn.classList.add('text-slate-400', 'font-medium');
+    // Кнопки навигации
+    ['chat', 'german', 'library', 'tasks'].forEach(t => {
+        const btn = document.getElementById('tab-btn-' + t);
+        if (t === tabId) {
+            btn.className = "px-3 py-1.5 text-xs md:text-sm font-semibold rounded-lg bg-white text-rose-600 shadow-sm transition";
+        } else {
+            btn.className = "px-3 py-1.5 text-xs md:text-sm font-medium rounded-lg text-slate-600 hover:text-rose-600 transition";
+        }
     });
 
-    const activeBtn = document.querySelector(`[data-tab="${tabName}"]`);
-    if (activeBtn) {
-        activeBtn.classList.remove('text-slate-400', 'font-medium');
-        activeBtn.classList.add('text-pink-600', 'font-semibold');
-    }
-
-    if (tabName === 'library') loadBooks();
-    if (tabName === 'tasks') loadTasks();
-    if (tabName === 'coach') loadSessions();
+    if (tabId === 'german') loadGermanPhrases();
+    if (tabId === 'library') loadLibrary();
+    if (tabId === 'tasks') loadTasks();
 }
 
-// COACH CHAT
-async function sendChatMessage(presetText = null) {
-    const input = document.getElementById('chat-input');
-    const text = presetText || (input ? input.value.trim() : '');
+// Отправка текстового сообщения
+async function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
     if (!text) return;
 
-    if (!presetText && input) input.value = '';
+    appendMessage('user', text);
+    input.value = '';
 
-    const messagesContainer = document.getElementById('chat-messages');
-    if (!messagesContainer) return;
-
-    // Append user message bubble
-    const userDiv = document.createElement('div');
-    userDiv.className = 'flex items-end justify-end space-x-2';
-    userDiv.innerHTML = `
-        <div class="bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-2xl p-3.5 max-w-[85%] text-sm shadow-sm break-words">
-            ${escapeHtml(text)}
-        </div>
-        <div class="w-8 h-8 rounded-full bg-purple-200 flex items-center justify-center text-sm flex-shrink-0">👤</div>
-    `;
-    messagesContainer.appendChild(userDiv);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-
-    // Loading indicator
-    const loadingId = 'loading-' + Date.now();
-    const loadingDiv = document.createElement('div');
-    loadingDiv.id = loadingId;
-    loadingDiv.className = 'flex items-start space-x-2';
-    loadingDiv.innerHTML = `
-        <div class="w-8 h-8 rounded-full bg-pink-200 flex items-center justify-center text-sm flex-shrink-0 animate-pulse">💖</div>
-        <div class="bg-pink-50/80 rounded-2xl p-3.5 text-sm text-pink-500 border border-pink-100 italic">Слушаю тебя, дорогая...</div>
-    `;
-    messagesContainer.appendChild(loadingDiv);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    const loadingId = appendMessage('ai', 'Солнышко думает и подбирает самые теплые слова...', true);
 
     try {
-        const payload = { message: text };
-        if (activeSessionId) payload.session_id = activeSessionId;
-
         const response = await fetch('/api/chat', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ message: text, session_id: currentSessionId })
         });
-
         const data = await response.json();
-        const loadEl = document.getElementById(loadingId);
-        if (loadEl) loadEl.remove();
-
-        if (data.session_id) {
-            activeSessionId = data.session_id;
-            localStorage.setItem('ai_wife_session_id', activeSessionId);
-            loadSessions();
-        }
-
-        const replyText = data.reply || data.response || data.answer || 'Я рядом с тобой, милая.';
-        const gentleQ = data.gentle_question ? `<div class="mt-2 pt-2 border-t border-pink-100 text-xs text-purple-700 font-medium">✨ ${escapeHtml(data.gentle_question)}</div>` : '';
-
-        const replyDiv = document.createElement('div');
-        replyDiv.className = 'flex items-start space-x-2';
-        replyDiv.innerHTML = `
-            <div class="w-8 h-8 rounded-full bg-pink-200 flex items-center justify-center text-sm flex-shrink-0">💖</div>
-            <div class="bg-pink-50/80 rounded-2xl p-3.5 max-w-[85%] text-sm border border-pink-100 shadow-sm text-slate-700 break-words">
-                ${escapeHtml(replyText)}
-                ${gentleQ}
-            </div>
-        `;
-        messagesContainer.appendChild(replyDiv);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-
-        // Speak reply softly
-        if (isVoiceOutputEnabled) {
-            speakText(replyText);
+        
+        removeMessage(loadingId);
+        if (data.reply) {
+            appendMessage('ai', data.reply);
+            playTTS(data.reply);
+        } else {
+            appendMessage('ai', 'Я рядом, солнышко, но не смогла ответить. Попробуй еще раз.');
         }
     } catch (e) {
-        console.error('Chat error:', e);
-        const loadEl = document.getElementById(loadingId);
-        if (loadEl) loadEl.remove();
-
-        const errDiv = document.createElement('div');
-        errDiv.className = 'text-xs text-rose-500 text-center py-2';
-        errDiv.innerText = 'Сервер на связи. Пожалуйста, попробуй отправить ещё раз.';
-        messagesContainer.appendChild(errDiv);
+        removeMessage(loadingId);
+        appendMessage('ai', 'Произошла ошибка связи с сервером. Но я всё равно рядом с тобой!');
     }
 }
 
-function sendMood(mood) {
-    sendChatMessage(`Мне сейчас ${mood.toLowerCase()}, побудь со мной.`);
-}
-
-function clearChat() {
-    activeSessionId = null;
-    localStorage.removeItem('ai_wife_session_id');
-    const messagesContainer = document.getElementById('chat-messages');
-    if (messagesContainer) {
-        messagesContainer.innerHTML = `
-            <div class="flex items-start space-x-2">
-                <div class="w-8 h-8 rounded-full bg-pink-200 flex items-center justify-center text-sm flex-shrink-0">💖</div>
-                <div class="bg-pink-50/80 rounded-2xl p-3.5 max-w-[85%] text-sm border border-pink-100 shadow-sm">
-                    Новый разговор начат. О чём тебе хочется поговорить сейчас, милая?
-                </div>
-            </div>
-        `;
-    }
-    loadSessions();
-}
-
-function handleChatKey(e) {
-    if (e.key === 'Enter') sendChatMessage();
-}
-
-// VOICE INPUT
-function toggleVoice() {
-    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRec) {
-        alert('Голосовой ввод не поддерживается браузером. Попробуйте Chrome или Safari.');
-        return;
-    }
-
-    const recognition = new SpeechRec();
-    recognition.lang = 'ru-RU';
-    recognition.interimResults = false;
+function appendMessage(role, text, isLoading = false) {
+    const chat = document.getElementById('chatMessages');
+    const msgId = 'msg_' + Math.random().toString(36).substring(2, 9);
     
-    const btn = document.getElementById('voice-btn');
-    if (btn) btn.classList.add('bg-pink-500', 'text-white', 'animate-pulse');
+    const div = document.createElement('div');
+    div.id = msgId;
+    div.className = `flex items-start gap-3 ${role === 'user' ? 'flex-row-reverse' : ''}`;
+    
+    const avatar = document.createElement('div');
+    avatar.className = `w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow ${role === 'user' ? 'bg-amber-500 text-white' : 'bg-rose-500 text-white'}`;
+    avatar.innerText = role === 'user' ? 'Я' : 'AI';
 
-    recognition.onresult = function(event) {
-        if (event.results && event.results[0]) {
-            const transcript = event.results[0][0].transcript;
-            const input = document.getElementById('chat-input');
-            if (input) input.value = transcript;
-        }
-        if (btn) btn.classList.remove('bg-pink-500', 'text-white', 'animate-pulse');
-    };
+    const bubble = document.createElement('div');
+    bubble.className = `rounded-2xl p-4 max-w-xl text-slate-700 shadow-sm ${role === 'user' ? 'bg-amber-50 border border-amber-100 text-right' : 'bg-rose-50 border border-rose-100'}`;
+    if (isLoading) {
+        bubble.classList.add('animate-pulse', 'italic');
+    }
+    bubble.innerText = text;
 
-    recognition.onerror = function(err) {
-        console.warn('Speech error:', err);
-        if (btn) btn.classList.remove('bg-pink-500', 'text-white', 'animate-pulse');
-    };
+    div.appendChild(avatar);
+    div.appendChild(bubble);
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
 
-    recognition.onend = function() {
-        if (btn) btn.classList.remove('bg-pink-500', 'text-white', 'animate-pulse');
-    };
-
-    recognition.start();
+    return msgId;
 }
 
-// VOICE OUTPUT (TTS)
-function speakText(text) {
-    if (!('speechSynthesis' in window)) return;
-    try {
-        window.speechSynthesis.cancel();
-        const clean = text.replace(/[*_#✨💖🌸☕️💡👤]/g, '');
-        const utterance = new SpeechSynthesisUtterance(clean);
-        utterance.lang = 'ru-RU';
-        utterance.rate = 0.95;
-        utterance.pitch = 1.05;
-        
-        const voices = window.speechSynthesis.getVoices();
-        const ruVoice = voices.find(v => v.lang.startsWith('ru') && (v.name.includes('Milena') || v.name.includes('Yuri') || v.name.includes('Google') || v.name.includes('Tatyana')));
-        if (ruVoice) utterance.voice = ruVoice;
+function removeMessage(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+}
 
-        window.speechSynthesis.speak(utterance);
+// Озвучка (TTS)
+async function playTTS(text) {
+    try {
+        const res = await fetch('/api/voice/tts', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ text: text })
+        });
+        if (res.ok) {
+            const blob = await res.blob();
+            const audioUrl = URL.createObjectURL(blob);
+            const audio = new Audio(audioUrl);
+            audio.play();
+        }
     } catch (e) {
-        console.warn('TTS error:', e);
+        console.error("TTS playback error:", e);
     }
 }
 
-// MULTI-CHAT SESSIONS
-async function loadSessions() {
-    try {
-        const res = await fetch('/api/sessions');
-        const sessions = await res.json();
-        const container = document.getElementById('chat-sessions-list');
-        if (!container) return;
-        
-        if (!sessions || sessions.length === 0) {
-            container.innerHTML = '<div class="text-[11px] text-pink-400 p-2">История диалогов пока пуста</div>';
-            return;
-        }
+// ЖИВОЙ ГОЛОСОВОЙ ДИАЛОГ (Live Voice Mode)
+let liveRecognition = null;
+let liveActive = false;
 
-        container.innerHTML = sessions.map(s => `
-            <button onclick="switchSession('${s.id}')" class="text-left w-full text-xs p-2 rounded-xl transition truncate ${activeSessionId === s.id ? 'bg-pink-200 text-pink-900 font-semibold' : 'hover:bg-pink-100/60 text-slate-600'}">
-                💬 ${escapeHtml(s.title || 'Разговор')}
-            </button>
-        `).join('');
-    } catch (e) {
-        console.warn('Load sessions err:', e);
+function toggleLiveVoiceMode() {
+    const btn = document.getElementById('live-voice-mode-btn');
+    const btnText = document.getElementById('live-voice-btn-text');
+
+    if (!liveActive) {
+        // Включаем режим
+        liveActive = true;
+        btn.classList.add('animate-pulse', 'ring-4', 'ring-pink-300', 'from-purple-600', 'to-pink-600');
+        btnText.innerText = '🔴 Живой разговор активен (Слушаю...)';
+        
+        startLiveContinuousListening();
+        appendMessage('ai', '🎙 Режим живого разговора активирован. Говорите голосом — я слушаю и отвечу вам голосом!');
+    } else {
+        // Выключаем режим
+        liveActive = false;
+        if (liveRecognition) {
+            try { liveRecognition.stop(); } catch(e){}
+        }
+        btn.classList.remove('animate-pulse', 'ring-4', 'ring-pink-300', 'from-purple-600', 'to-pink-600');
+        btnText.innerText = 'Включить живой разговор (Google Live)';
+        appendMessage('ai', '🔇 Режим живого разговора завершен.');
     }
 }
 
-async function switchSession(sid) {
-    activeSessionId = sid;
-    localStorage.setItem('ai_wife_session_id', sid);
-    loadSessions();
+function startLiveContinuousListening() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        alert("Ваш браузер не поддерживает распознавание речи. Пожалуйста, используйте Chrome.");
+        toggleLiveVoiceMode();
+        return;
+    }
 
-    try {
-        const res = await fetch(`/api/sessions/${sid}/messages`);
-        const messages = await res.json();
-        const messagesContainer = document.getElementById('chat-messages');
-        if (!messagesContainer) return;
+    liveRecognition = new SpeechRecognition();
+    liveRecognition.lang = 'ru-RU';
+    liveRecognition.interimResults = false;
+    liveRecognition.continuous = false; // Слушаем фразу, ждем ответа и озвучки
 
-        messagesContainer.innerHTML = '';
-        if (messages && messages.length > 0) {
-            messages.forEach(m => {
-                if (m.role === 'user') {
-                    messagesContainer.innerHTML += `
-                        <div class="flex items-end justify-end space-x-2">
-                            <div class="bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-2xl p-3.5 max-w-[85%] text-sm shadow-sm break-words">
-                                ${escapeHtml(m.content)}
-                            </div>
-                            <div class="w-8 h-8 rounded-full bg-purple-200 flex items-center justify-center text-sm flex-shrink-0">👤</div>
-                        </div>
-                    `;
-                } else {
-                    const gentleQ = m.gentle_question ? `<div class="mt-2 pt-2 border-t border-pink-100 text-xs text-purple-700 font-medium">✨ ${escapeHtml(m.gentle_question)}</div>` : '';
-                    messagesContainer.innerHTML += `
-                        <div class="flex items-start space-x-2">
-                            <div class="w-8 h-8 rounded-full bg-pink-200 flex items-center justify-center text-sm flex-shrink-0">💖</div>
-                            <div class="bg-pink-50/80 rounded-2xl p-3.5 max-w-[85%] text-sm border border-pink-100 shadow-sm text-slate-700 break-words">
-                                ${escapeHtml(m.content)}
-                                ${gentleQ}
-                            </div>
-                        </div>
-                    `;
-                }
+    liveRecognition.onresult = async function(event) {
+        if (!liveActive) return;
+        const transcript = event.results[0][0].transcript.trim();
+        if (!transcript) return;
+
+        appendMessage('user', transcript);
+        const loadingId = appendMessage('ai', 'Коуч слушает и думает...', true);
+
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ message: transcript, session_id: currentSessionId })
             });
+            const data = await response.json();
+            
+            removeMessage(loadingId);
+            if (data.reply) {
+                appendMessage('ai', data.reply);
+                
+                // Озвучиваем через серверный голос и по окончании возобновляем прослушивание
+                await playServerVoiceAndContinue(data.reply);
+            } else {
+                appendMessage('ai', 'Я рядом, солнышко. Повтори, пожалуйста.');
+                if (liveActive) {
+                    setTimeout(() => { try { liveRecognition.start(); } catch(e){} }, 1000);
+                }
+            }
+        } catch (e) {
+            removeMessage(loadingId);
+            appendMessage('ai', 'Ошибка связи. Пробую слушать снова...');
+            if (liveActive) {
+                setTimeout(() => { try { liveRecognition.start(); } catch(e){} }, 1500);
+            }
         }
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    } catch (e) {
-        console.warn('Load session messages err:', e);
-    }
-}
+    };
 
-// GERMAN TRAINER
-let currentFlashcards = [];
-let currentCardIndex = 0;
-let isCardFlipped = false;
+    liveRecognition.onerror = function(event) {
+        console.error("Live voice error:", event.error);
+        if (liveActive && event.error !== 'aborted') {
+            setTimeout(() => { try { liveRecognition.start(); } catch(e){} }, 1500);
+        }
+    };
 
-async function loadGermanFlashcards(level = 'A1', btnEl = null) {
-    document.querySelectorAll('.german-level-btn').forEach(btn => {
-        btn.className = 'german-level-btn bg-purple-100 text-purple-700 px-4 py-1.5 rounded-full text-xs font-medium';
-    });
-    if (btnEl) {
-        btnEl.className = 'german-level-btn bg-purple-600 text-white px-4 py-1.5 rounded-full text-xs font-medium shadow';
-    }
+    liveRecognition.onend = function() {
+        // Если режим активен, но распознавание завершилось без result, перезапускаем
+        // (но не дублируем во время озвучки)
+    };
 
     try {
-        const res = await fetch(`/api/german/card?level=${level}`);
-        const data = await res.json();
-        currentFlashcards = Array.isArray(data) ? data : [data];
-        currentCardIndex = 0;
-        isCardFlipped = false;
-        renderFlashcard();
+        liveRecognition.start();
     } catch(e) {
-        console.warn('German card error:', e);
+        console.error("Could not start live recognition:", e);
     }
 }
 
-function renderFlashcard() {
-    if (!currentFlashcards.length) return;
-    const card = currentFlashcards[currentCardIndex % currentFlashcards.length];
-    const word = card.word || card.de || '';
-    const translation = card.translation || card.ru || '';
-    const example = card.example || card.hint || card.de || '';
-
-    const elLevel = document.getElementById('fc-level');
-    const elWord = document.getElementById('fc-word');
-    const elTrans = document.getElementById('fc-translation');
-    const elEx = document.getElementById('fc-example');
-
-    if (elLevel) elLevel.innerText = card.level || 'A1';
-    if (elWord) elWord.innerText = isCardFlipped ? translation : word;
-    if (elTrans) {
-        elTrans.innerText = translation;
-        elTrans.classList.toggle('hidden', !isCardFlipped);
-    }
-    if (elEx) {
-        elEx.innerText = `Пример: ${example}`;
-        elEx.classList.toggle('hidden', !isCardFlipped);
-    }
-}
-
-function flipCard() {
-    isCardFlipped = !isCardFlipped;
-    renderFlashcard();
-    if (!isCardFlipped) {
-        currentCardIndex++;
-        renderFlashcard();
-    }
-}
-
-async function checkGermanSentence() {
-    const input = document.getElementById('german-input');
-    const text = input ? input.value.trim() : '';
-    if (!text) return;
-
+async function playServerVoiceAndContinue(text) {
     try {
-        const res = await fetch('/api/german/check', {
+        const res = await fetch('/api/voice/tts', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sentence: text, german_text: text, user_translation: text })
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ text: text })
         });
-        const data = await res.json();
-        const fb = document.getElementById('german-feedback');
-        if (fb) {
-            fb.classList.remove('hidden');
-            const feedbackText = data.feedback || data.message || 'Отлично! Твоя практика зафиксирована.';
-            fb.innerHTML = `<strong>Результат:</strong> ${escapeHtml(feedbackText)}`;
+        if (res.ok) {
+            const blob = await res.blob();
+            const audioUrl = URL.createObjectURL(blob);
+            const audio = new Audio(audioUrl);
+            
+            audio.onended = function() {
+                if (liveActive) {
+                    setTimeout(() => {
+                        try { liveRecognition.start(); } catch(e){}
+                    }, 300);
+                }
+            };
+            audio.onerror = function() {
+                if (liveActive) {
+                    try { liveRecognition.start(); } catch(e){}
+                }
+            };
+            audio.play();
+        } else {
+            if (liveActive) {
+                try { liveRecognition.start(); } catch(e){}
+            }
         }
-    } catch(e) {
-        console.error(e);
+    } catch (e) {
+        if (liveActive) {
+            try { liveRecognition.start(); } catch(e){}
+        }
     }
 }
 
-// LIBRARY
-async function loadBooks() {
+// Загрузка немецких фраз
+async function loadGermanPhrases(level = 'ALL') {
+    const list = document.getElementById('germanList');
+    list.innerHTML = '<p class="text-slate-400 col-span-3 text-center py-8">Загрузка фраз...</p>';
+    
     try {
-        const res = await fetch('/api/books');
-        const books = await res.json();
-        renderBooks(books);
-    } catch(e) {
-        console.error(e);
-    }
-}
-
-function renderBooks(books) {
-    const container = document.getElementById('books-list');
-    if (!container) return;
-    if (!books || !books.length) {
-        container.innerHTML = '<div class="text-xs text-slate-400 p-4">Книг пока нет</div>';
-        return;
-    }
-    container.innerHTML = books.map(b => `
-        <div class="bg-amber-50/50 border border-amber-100 p-4 rounded-2xl shadow-sm flex flex-col justify-between">
-            <div>
-                <h3 class="font-bold text-slate-800 text-sm">${escapeHtml(b.title || '')}</h3>
-                <p class="text-xs text-amber-800 italic mt-1">«${escapeHtml(b.excerpt || b.quote || '')}»</p>
-            </div>
-            <div class="text-[10px] text-slate-400 mt-3 pt-2 border-t border-amber-100/60">${escapeHtml(b.author || 'Психология')}</div>
-        </div>
-    `).join('');
-}
-
-async function searchBooks() {
-    const input = document.getElementById('book-search');
-    const q = input ? input.value.trim() : '';
-    try {
-        const res = await fetch(`/api/books?q=${encodeURIComponent(q)}`);
-        const books = await res.json();
-        renderBooks(books);
-    } catch(e) {
-        console.error(e);
-    }
-}
-
-// TASKS
-async function loadTasks() {
-    try {
-        const res = await fetch('/api/tasks');
-        const tasks = await res.json();
-        renderTasks(tasks);
-    } catch(e) {
-        console.error(e);
-    }
-}
-
-function renderTasks(tasks) {
-    const container = document.getElementById('tasks-list');
-    if (!container) return;
-    if (!tasks || !tasks.length) {
-        container.innerHTML = '<div class="text-xs text-slate-400 p-3">Список забот пока пуст</div>';
-        return;
-    }
-    container.innerHTML = tasks.map(t => {
-        const taskId = String(t.id);
-        return `
-            <div class="flex items-center justify-between p-3 bg-pink-50/40 border border-pink-100 rounded-2xl shadow-sm">
-                <div class="flex items-center space-x-3">
-                    <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask('${escapeHtml(taskId)}')" class="w-4 h-4 text-pink-600 rounded border-pink-300 focus:ring-pink-400 cursor-pointer">
-                    <span class="text-sm ${t.completed ? 'line-through text-slate-400' : 'text-slate-700 font-medium'}">${escapeHtml(t.title || '')}</span>
+        const res = await fetch(`/api/german?level=${level}`);
+        const phrases = await res.json();
+        
+        list.innerHTML = '';
+        phrases.forEach(p => {
+            const card = document.createElement('div');
+            card.className = "bg-rose-50/50 border border-rose-100 p-4 rounded-xl shadow-sm flex flex-col justify-between";
+            card.innerHTML = `
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold px-2 py-0.5 bg-rose-200 text-rose-800 rounded">${p.level}</span>
+                        <span class="text-xs text-slate-500">${p.category}</span>
+                    </div>
+                    <p class="font-bold text-rose-900 text-base mb-1">🇩🇪 ${p.german}</p>
+                    <p class="text-sm text-slate-600 mb-2">🇷🇺 ${p.russian}</p>
+                    <p class="text-xs text-slate-500 italic bg-white p-2 rounded border border-rose-100">${p.grammar}</p>
                 </div>
-                <button onclick="deleteTask('${escapeHtml(taskId)}')" class="text-slate-400 hover:text-red-500 text-xs px-2 py-1 transition">✕</button>
-            </div>
-        `;
-    }).join('');
-}
-
-async function addNewTask() {
-    const input = document.getElementById('new-task-input');
-    const title = input ? input.value.trim() : '';
-    if (!title) return;
-
-    try {
-        await fetch('/api/tasks', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title })
+                <button onclick="playTTS('${p.german}')" class="mt-3 text-xs bg-white text-rose-600 border border-rose-200 hover:bg-rose-50 py-1.5 px-3 rounded-lg font-semibold transition self-start">🔊 Озвучить</button>
+            `;
+            list.appendChild(card);
         });
-        if (input) input.value = '';
-        loadTasks();
-    } catch(e) { console.error(e); }
-}
-
-async function toggleTask(id) {
-    try {
-        await fetch(`/api/tasks/${encodeURIComponent(id)}/toggle`, { method: 'POST' });
-        loadTasks();
-    } catch(e) { console.error(e); }
-}
-
-async function deleteTask(id) {
-    try {
-        await fetch(`/api/tasks/${encodeURIComponent(id)}`, { method: 'DELETE' });
-        loadTasks();
-    } catch(e) { console.error(e); }
-}
-
-function handleTaskKey(e) {
-    if (e.key === 'Enter') addNewTask();
-}
-
-function escapeHtml(text) {
-    if (text === null || text === undefined) return '';
-    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-    return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
-}
-
-// SAFE INITIALIZATION ON DOM READY
-document.addEventListener('DOMContentLoaded', () => {
-    try {
-        loadGermanFlashcards('A1');
-        loadTasks();
-        loadSessions();
-    } catch (e) {
-        console.error('Init error:', e);
+    } catch(e) {
+        list.innerHTML = '<p class="text-red-400 col-span-3 text-center">Не удалось загрузить фразы</p>';
     }
-});
+}
+
+function filterGerman(level) {
+    loadGermanPhrases(level);
+}
+
+// Загрузка библиотеки
+async function loadLibrary() {
+    const list = document.getElementById('libraryList');
+    list.innerHTML = '<p class="text-slate-400 col-span-2 text-center py-8">Загрузка библиотеки...</p>';
+    
+    try {
+        const res = await fetch('/api/library');
+        const items = await res.json();
+        
+        list.innerHTML = '';
+        items.forEach(item => {
+            const card = document.createElement('div');
+            card.className = "bg-rose-50/50 border border-rose-100 p-5 rounded-2xl shadow-sm flex flex-col justify-between";
+            card.innerHTML = `
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-semibold px-2.5 py-1 bg-pink-100 text-pink-800 rounded-full">${item.category}</span>
+                        <span class="text-xs font-bold text-slate-600">${item.author}</span>
+                    </div>
+                    <h3 class="font-bold text-slate-800 text-base mb-2">${item.title}</h3>
+                    <p class="text-sm text-slate-700 italic bg-white p-3 rounded-xl border border-rose-100 mb-3">${item.excerpt}</p>
+                </div>
+                <button onclick="playTTS('${item.excerpt}')" class="text-xs bg-white text-rose-600 border border-rose-200 hover:bg-rose-50 py-1.5 px-3 rounded-lg font-semibold transition self-start">🔊 Озвучить цитату</button>
+            `;
+            list.appendChild(card);
+        });
+    } catch(e) {
+        list.innerHTML = '<p class="text-red-400 col-span-2 text-center">Не удалось загрузить библиотеку</p>';
+    }
+}
+
+// Задачи
+let localTasks = [
+    { id: 1, title: "Выпить чашку ароматного чая в тишине", completed: true },
+    { id: 2, title: "Пройти 1 урок немецкого языка (уровень A2)", completed: false },
+    { id: 3, title: "Прочитать главу из книги Ирвима Ялома", completed: false },
+    { id: 4, title: "Уделить 15 минут дыхательным практикам", completed: false }
+];
+
+function loadTasks() {
+    const list = document.getElementById('tasksList');
+    list.innerHTML = '';
+    
+    localTasks.forEach(t => {
+        const div = document.createElement('div');
+        div.className = `flex items-center justify-between p-4 rounded-xl border ${t.completed ? 'bg-emerald-50/50 border-emerald-100' : 'bg-white border-rose-100'} shadow-sm`;
+        div.innerHTML = `
+            <div class="flex items-center gap-3">
+                <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask(${t.id})" class="w-5 h-5 accent-rose-500 rounded">
+                <span class="${t.completed ? 'line-through text-slate-400' : 'text-slate-700 font-medium'}">${t.title}</span>
+            </div>
+            <span class="text-xs ${t.completed ? 'text-emerald-600 font-semibold' : 'text-rose-500'}">${t.completed ? 'Выполнено ✨' : 'В процессе'}</span>
+        `;
+        list.appendChild(div);
+    });
+}
+
+function toggleTask(id) {
+    const task = localTasks.find(t => t.id === id);
+    if (task) {
+        task.completed = !task.completed;
+        loadTasks();
+    }
+}
+
+function addTaskModal() {
+    const title = prompt("Введите новую цель или задачу для заботы о себе:");
+    if (title && title.trim()) {
+        localTasks.push({ id: Date.now(), title: title.trim(), completed: false });
+        loadTasks();
+    }
+}
+
+// Голосовой ввод кнопкой мика
+function toggleRecordVoice() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        alert("Голосовой ввод не поддерживается вашим браузером");
+        return;
+    }
+    const rec = new SpeechRecognition();
+    rec.lang = 'ru-RU';
+    rec.onresult = function(e) {
+        document.getElementById('chatInput').value = e.results[0][0].transcript;
+    };
+    rec.start();
+}

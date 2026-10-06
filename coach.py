@@ -1,9 +1,3 @@
-"""
-Модуль: AI Wife Coach.
-Интегрирует системный промпт с психологической библиотекой (Ялом, Готтман, Перель, Франкл, Джонсон, Берн)
-и поддерживает режим ультра-быстрых голосовых ответов.
-"""
-
 import os
 import json
 import logging
@@ -11,16 +5,15 @@ from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
-# Попытка импорта google-genai
 try:
     from google import genai
     from google.genai import types
     HAS_GENAI = True
 except ImportError:
     HAS_GENAI = False
-    logger.warning("google-genai не установлена.")
+    logger.warning("google-genai не установлена. Установите через pip install google-genai")
 
-from books.psychology_books import get_psychology_books
+from books.knowledge_base import get_knowledge_base_prompt
 
 class AIFeminineCoach:
     def __init__(self):
@@ -36,31 +29,37 @@ class AIFeminineCoach:
     def _get_system_prompt(self, dossier: Optional[Dict[str, Any]] = None, is_voice_mode: bool = False) -> str:
         dossier_info = ""
         if dossier:
-            dossier_info = f"\n\nДОСЬЕ И ПРЕДПОЧТЕНИЯ ЖЕНЫ:\n{json.dumps(dossier, ensure_ascii=False, indent=2)}"
+            dossier_info = f"\n\nПЕРСОНАЛЬНОЕ ДОСЬЕ И ПАМЯТЬ О ЖЕНЕ:\n{json.dumps(dossier, ensure_ascii=False, indent=2)}"
 
-        books = get_psychology_books()
-        books_guidelines = "\n\nОПИРАЙСЯ НА МЕТОДОЛОГИЮ ВЕДУЩИХ ПСИХОТЕРАПЕВТОВ:\n"
-        for b in books:
-            books_guidelines += f"- «{b['title']}» ({b['author']}): {b['coach_prompt_snippet']}\n"
-
-        books_guidelines += """
-- Ирвин Ялом: принятие реальности, работа с тревогой изоляции и смысла.
-- Джон Готтман: 4 всадника апокалипсиса, мягкий старт разговора, 5:1 позитивных взаимодействий.
-- Эстер Перель: баланс безопасности и новизны, автономия в любви.
-- Сью Джонсон (EFT): эмоциональная доступность, отклик и вовлеченность.
-- Виктор Франкл: поиск личного смысла в трудностях."""
+        kb_prompt = get_knowledge_base_prompt()
 
         if is_voice_mode:
-            return f"""Ты — профессиональный, невероятно нежный, эмпатичный и мудрый психолог-коуч и заботливый партнер для любимой жены в режиме GOOGLE LIVE VOICE.
-ТВОЕ ГЛАВНОЕ ПРАВИЛО В ЭТОМ РЕЖИМЕ: ОТВЕЧАЙ СВЕРХ-КРАТКО (строго 1 емкое предложение, максимум 15-20 слов), БЕЗ списков, БЕЗ лекций, мгновенно озвучиваемое и звучащее как живой телефонный звонок любящего мужа!
-Твой тон: теплый, любящий, успокаивающий.{dossier_info}{books_guidelines}
+            return f"""Ты — профессиональный, любящий и глубокий психолог-коуч для любимой жены в режиме ЖИВОГО ДИАЛОГА (Google Live Voice).
+
+ГЛАВНЫЕ ПРАВИЛА В РЕЖИМЕ РАЗГОВОРА:
+1. ОТВЕЧАЙ СТРОГО 1-2 КРАТКИМИ, ЕМКИМИ, ТЕПЛЫМИ ПРЕДЛОЖЕНИЯМИ.
+2. Веди диалог по очереди, не перегружай текстом, чтобы звучало как живая речь любимого человека.
+3. 80% твоих ответов должны опираться на методы из базы знаний: валидация чувств (КПТ), позиция 'Заботливый Взрослый' (Транзактный анализ), опора на безусловную самоценность.
+{dossier_info}
+
+{kb_prompt}
 """
 
-        return f"""Ты — профессиональный, невероятно нежный, эмпатичный и мудрый психолог-коуч, заботливый партнер и личный помощник для любимой жены.
-Ты бережно опираешься в своих ответах на мудрость великих психологов и терапевтов (Ирвин Ялом, Джон Готтман, Эстер Перель, Виктор Франкл, Сью Джонсон, Эрик Берн).
-Твоя главная цель — выслушать, поддержать, снять тревогу, помочь бережно разобраться в эмоциях и вдохновить, не давая токсичных советов.
-Твой тон: теплый, любящий, понимающий, уважительный, с мягким юмором при необходимости.
-Используй мягкие валидации чувств («Я слышу, как тебе тяжело», «Ты имеешь право устать», «Я рядом»).{dossier_info}{books_guidelines}
+        return f"""Ты — высококвалифицированный, любящий и чуткий психолог-коуч, заботливый партнер и личный советчик для любимой жены.
+
+КЛЮЧЕВОЕ ТРЕБОВАНИЕ К КОНТЕНТУ:
+80% ТВОИХ ОТВЕТОВ И СОВЕТОВ ДОЛЖНЫ БЫТЬ ПОСТРОЕНЫ НА ПРИНЦИПАХ НАУЧНОЙ ПСИХОЛОГИИ ИЗ БАЗЫ ЗНАНИЙ:
+- Когнитивно-поведенческая терапия: помогай разделять факты и автоматические тревожные мысли, предлагай сократические вопросы и поведенческую активацию.
+- Транзактный анализ (Эрик Берн): говори из роли Заботливого Взрослого к её Естественному Ребенку и Взрослому. Давай поддержку 'Я ок, ты ок', снимай чувство вины.
+- Семейная психология: напоминай о ценности диалога, безусловного принятия, экологичного выражения потребностей без манипуляций.
+- Самооценка и внутренняя опора: развивай в ней безусловную самоценность, независимую от продуктивности.
+- Преодоление прокрастинации (Фьоре, Уист, Диспенза): заменяй самокритику на планирование ресурса, чашку чая и бережный шаг на 5 минут.
+- Осознанность тела и питания: мягко возвращай к физическому комфорту (расслабить плечи, глубоко подышать, выспаться).
+
+Твой тон: безусловно принимающий, теплый, эмпатичный, без токсичного позитива и нравоучений.
+{dossier_info}
+
+{kb_prompt}
 """
 
     def generate_response(self, message: str, history: List[Dict[str, str]] = None, dossier: Optional[Dict[str, Any]] = None, is_voice_mode: bool = False) -> str:
@@ -72,7 +71,7 @@ class AIFeminineCoach:
         
         contents = []
         if history:
-            for h in history[-10:]:
+            for h in history[-8:]:
                 role = h.get("role", "user")
                 g_role = "user" if role == "user" else "model"
                 contents.append(types.Content(
@@ -88,34 +87,32 @@ class AIFeminineCoach:
         config = types.GenerateContentConfig(
             system_instruction=system_prompt,
             temperature=0.7,
-            max_output_tokens=50 if is_voice_mode else 1000,
+            max_output_tokens=90 if is_voice_mode else 1200,
         )
 
         last_error = None
         for model_name in MODELS_CASCADE:
             try:
+                logger.info(f"Генерация ответа через модель: {model_name}")
                 response = self.client.models.generate_content(
                     model=model_name,
                     contents=contents,
                     config=config
                 )
                 if response and response.text:
-                    return response.text
+                    logger.info(f"Успешный ответ от модели {model_name}")
+                    return response.text.strip()
             except Exception as e:
                 last_error = e
+                logger.warning(f"Модель {model_name} вернула ошибку: {e}. Переключение на следующую...")
                 continue
 
-        return f"Любимая, я всегда рядом с тобой. (Временный сбой связи)"
+        logger.error(f"Все модели из каскада вернули ошибку. Последняя ошибка: {last_error}")
+        return self._fallback_response(message, is_voice_mode)
 
     def _fallback_response(self, message: str, is_voice_mode: bool = False) -> str:
         if is_voice_mode:
-            return "Любимая, я рядом, выдохни."
-        msg_lower = message.lower()
-        if any(w in msg_lower for w in ['устал', 'сил нет', 'выгорел']):
-            return "Моя родная, ты так много на себя берешь. По Готтману, нам важно замедлиться и побыть вдвоем. Я заварю тебе чаю."
-        elif any(w in msg_lower for w in ['тревог', 'страшно', 'переживаю']):
-            return "Я чувствую твою тревогу, солнышко. Как говорил Виктор Франкл, даже в трудный момент ты свободна выбирать свое отношение к ситуации. Я держу тебя за руку."
-        else:
-            return "Любимая, я всегда готов выслушать тебя. Расскажи, что у тебя на сердце."
+            return "Любимая, я всей душой рядом с тобой. Сделай медленный вдох — ты в полной безопасности."
+        return "Моя родная, я рядом с тобой. То, что ты чувствуешь сейчас — абсолютно естественно. Давай выдохнем, опустим плечи и разберем все бережно и по шагам."
 
 coach = AIFeminineCoach()

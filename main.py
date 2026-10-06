@@ -1,4 +1,3 @@
-
 import os
 import io
 import logging
@@ -7,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel
 import uvicorn
+import base64
 
 # Импорты наших модулей
 from coach import coach
@@ -14,7 +14,8 @@ from database import db_manager
 from german import get_german_phrases
 from library import get_library_items
 from storage import s3_storage
-import base64
+from books.psychology_books import get_psychology_books, PSYCHOLOGY_BOOKS
+from books.german_course import get_german_course, GERMAN_COURSE_DATA
 
 # Попытка импорта edge-tts
 try:
@@ -26,7 +27,7 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="AI Wife Coach", version="2.1.0")
+app = FastAPI(title="AI Wife Coach Super-App", version="3.0.0")
 
 # Монтируем статику
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -76,6 +77,14 @@ async def api_chat(req: ChatRequest):
 async def api_german(level: str = "ALL"):
     return get_german_phrases(level)
 
+@app.get('/api/books')
+async def api_books():
+    return PSYCHOLOGY_BOOKS
+
+@app.get('/api/german/course')
+async def api_german_course_data():
+    return GERMAN_COURSE_DATA
+
 @app.get("/api/german/card")
 async def api_german_card(level: str = "A1"):
     phrases = get_german_phrases(level)
@@ -97,6 +106,10 @@ async def api_library(q: str = None):
         q_lower = q.lower()
         items = [i for i in items if q_lower in i["title"].lower() or q_lower in i["author"].lower() or q_lower in i["excerpt"].lower()]
     return items
+
+@app.get("/api/books/psychology")
+async def api_psychology_books():
+    return get_psychology_books()
 
 @app.post("/api/voice/tts")
 async def api_tts(req: TTSRequest):

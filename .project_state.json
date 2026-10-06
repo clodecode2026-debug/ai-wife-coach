@@ -40,7 +40,9 @@
     "static/index.html & app.js": "UI с кнопкой живого голоса",
     "static/index.html": "добавлено модальное окно google-live-modal",
     "storage.py": "модуль boto3 для S3 Storj",
-    "static/index.html и static/app.js": "интерфейс чата и модальное окно Google Live"
+    "static/index.html и static/app.js": "интерфейс чата и модальное окно Google Live",
+    "psychology_books.py": "Файл .py",
+    "german_course.py": "Файл .py"
   },
   "key_decisions": [
     "AI коуч-психолог с мягкой поддержкой",
@@ -92,7 +94,7 @@
     "в coach.py для голосового режима max_output_tokens=120 ограничено до 2 предложений"
   ],
   "current_status": "Код проверен через validate_code, пройдены юнит-тесты pytest, готовим деплой и синхронизацию с GitHub",
-  "updated_at": "2026-10-06T21:37:12.647280+00:00",
+  "updated_at": "2026-10-06T22:13:04.134948+00:00",
   "project_name": "ai-wife-coach",
   "post_mortems": [
     "Проверена валидация кода и зависимости requirements.txt",

@@ -175,6 +175,9 @@ async function playTTS(btn, text, voice = "ru-RU-SvetlanaNeural") {
 }
 
 // GOOGLE LIVE VOICE РЕЖИМ
+let isAITalking = false;
+let currentLiveAudio = null;
+
 function toggleLiveVoiceState() {
     isLiveActive = !isLiveActive;
     const orb = document.getElementById('liveOrb');
@@ -184,17 +187,21 @@ function toggleLiveVoiceState() {
 
     if (isLiveActive) {
         orb.classList.add('animate-pulse', 'scale-105', 'shadow-[0_0_80px_rgba(236,72,153,0.8)]');
-        statusText.textContent = 'ИИ слушает в режиме Live Voice... Говорите!';
+        statusText.textContent = 'ИИ слушает... Говорите после завершения речи коуча!';
         btn.textContent = 'Остановить разговор';
-        transcript.textContent = 'Слушаю вас внимательно... Сформулируйте короткий вопрос.';
-        
-        // Запуск распознавания речи если поддерживается браузером
+        transcript.textContent = 'Я слушаю вас... Задайте короткий вопрос или поделитесь чувством.';
+        isAITalking = false;
         startBrowserSpeechRecognition();
     } else {
         orb.classList.remove('animate-pulse', 'scale-105', 'shadow-[0_0_80px_rgba(236,72,153,0.8)]');
-        statusText.textContent = 'Разговор завершен. Нажмите на шар, чтобы возобновить';
+        statusText.textContent = 'Диалог завершен. Нажмите на сферу, чтобы начать снова.';
         btn.textContent = 'Начать говорить';
         transcript.textContent = 'Диалог приостановлен.';
+        isAITalking = false;
+        if (currentLiveAudio) {
+            try { currentLiveAudio.pause(); } catch(e){}
+            currentLiveAudio = null;
+        }
         if (liveRecognition) {
             try { liveRecognition.stop(); } catch(e){}
         }
@@ -202,22 +209,38 @@ function toggleLiveVoiceState() {
 }
 
 function startBrowserSpeechRecognition() {
+    if (!isLiveActive || isAITalking) return;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
         document.getElementById('liveTranscript').textContent = 'Ваш браузер не поддерживает Web Speech API. Используйте текстовый ввод.';
         return;
     }
     try {
+        if (liveRecognition) {
+            try { liveRecognition.abort(); } catch(e){}
+        }
         liveRecognition = new SpeechRecognition();
         liveRecognition.lang = 'ru-RU';
         liveRecognition.interimResults = false;
         liveRecognition.maxAlternatives = 1;
 
+        liveRecognition.onstart = () => {
+            const statusText = document.getElementById('liveStatusText');
+            if (statusText && !isAITalking) statusText.textContent = '🎙 Слушаю вас... Говорите!';
+        };
+
         liveRecognition.onresult = async (event) => {
+            if (isAITalking) return; // Игнорируем если ИИ уже говорит
             const speechText = event.results[0][0].transcript;
             document.getElementById('liveTranscript').textContent = 'Вы: ' + speechText;
             
-            // Запрос в Live режиме (ультра-краткий ответ)
+            // Включаем статус обработки и выключаем слушание
+            isAITalking = true;
+            try { liveRecognition.stop(); } catch(e){}
+
+            const statusText = document.getElementById('liveStatusText');
+            if (statusText) statusText.textContent = '💖 Коуч думает и отвечает...';
+
             try {
                 const res = await fetch('/api/chat', {
                     method: 'POST',
@@ -225,19 +248,36 @@ function startBrowserSpeechRecognition() {
                     body: JSON.stringify({ message: speechText, session_id: sessionId, is_voice_mode: true })
                 });
                 const data = await res.json();
-                const reply = data.reply || 'Любимая, я рядом.';
-                document.getElementById('liveTranscript').textContent = 'ИИ: ' + reply;
+                const reply = data.reply || 'Любимая, я рядом с тобой.';
+                document.getElementById('liveTranscript').textContent = 'Коуч: ' + reply;
                 
-                // Мгновенная озвучка через edge-tts
-                playLiveTTS(reply);
+                // Озвучиваем ответ; микрофон включится ТОЛЬКО после окончания звука
+                await playLiveTTS(reply);
             } catch (e) {
-                document.getElementById('liveTranscript').textContent = 'Ошибка связи с коучем.';
+                document.getElementById('liveTranscript').textContent = 'Ошибка связи. Попробуйте снова.';
+                isAITalking = false;
+                if (isLiveActive) startBrowserSpeechRecognition();
             }
         };
 
         liveRecognition.onend = () => {
-            if (isLiveActive) {
-                try { liveRecognition.start(); } catch(e){}
+            // Перезапуск ТОЛЬКО если активен диалог и ИИ НЕ говорит в данный момент!
+            if (isLiveActive && !isAITalking) {
+                setTimeout(() => {
+                    if (isLiveActive && !isAITalking) {
+                        try { liveRecognition.start(); } catch(e){}
+                    }
+                }, 300);
+            }
+        };
+
+        liveRecognition.onerror = (e) => {
+            if (isLiveActive && !isAITalking) {
+                setTimeout(() => {
+                    if (isLiveActive && !isAITalking) {
+                        try { liveRecognition.start(); } catch(e){}
+                    }
+                }, 600);
             }
         };
 
@@ -248,17 +288,53 @@ function startBrowserSpeechRecognition() {
 }
 
 async function playLiveTTS(text) {
-    try {
-        const res = await fetch('/api/voice/tts', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: text, voice: "ru-RU-SvetlanaNeural" })
-        });
-        if (!res.ok) return;
-        const blob = await res.blob();
-        const audio = new Audio(URL.createObjectURL(blob));
-        audio.play();
-    } catch(e) {}
+    return new Promise(async (resolve) => {
+        try {
+            isAITalking = true;
+            const statusText = document.getElementById('liveStatusText');
+            if (statusText) statusText.textContent = '🔊 Коуч говорит... Пожалуйста, слушайте.';
+
+            const res = await fetch('/api/voice/tts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: text, voice: "ru-RU-SvetlanaNeural" })
+            });
+            if (!res.ok) {
+                isAITalking = false;
+                if (isLiveActive) startBrowserSpeechRecognition();
+                resolve();
+                return;
+            }
+            const blob = await res.blob();
+            currentLiveAudio = new Audio(URL.createObjectURL(blob));
+            
+            // Включаем микрофон ТОЛЬКО после завершения речи коуча!
+            currentLiveAudio.onended = () => {
+                isAITalking = false;
+                currentLiveAudio = null;
+                const statusText = document.getElementById('liveStatusText');
+                if (statusText) statusText.textContent = '🎙 Ваша очередь говорить... Я внимательно слушаю!';
+                if (isLiveActive) {
+                    setTimeout(() => startBrowserSpeechRecognition(), 400);
+                }
+                resolve();
+            };
+
+            currentLiveAudio.onerror = () => {
+                isAITalking = false;
+                currentLiveAudio = null;
+                if (isLiveActive) startBrowserSpeechRecognition();
+                resolve();
+            };
+
+            await currentLiveAudio.play();
+        } catch(e) {
+            isAITalking = false;
+            currentLiveAudio = null;
+            if (isLiveActive) startBrowserSpeechRecognition();
+            resolve();
+        }
+    });
 }
 
 // НЕМЕЦКИЙ КУРС

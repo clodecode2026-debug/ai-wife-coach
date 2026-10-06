@@ -1,5 +1,5 @@
 {
-  "goal": "Разработка персонального бережного коуч-психолога для супруги (ai-wife-coach) с немецким языком, библиотекой и трекером задач",
+  "goal": "Добавление натурального женского голоса edge-tts (ru-RU-SvetlanaNeural) в проект ai-wife-coach",
   "tech_stack": [
     "FastAPI",
     "Gemini/LLM",
@@ -7,10 +7,11 @@
     "Storj S3",
     "Tailwind CSS",
     "Python",
-    "pytest"
+    "pytest",
+    "edge-tts"
   ],
   "architecture": {
-    "main.py": "FastAPI роуты",
+    "main.py": "FastAPI приложение и роуты",
     "models.py": "схемы и базы данных",
     "static/": "веб-интерфейс",
     "coach.py": "коучинг",
@@ -21,9 +22,11 @@
     "index.html": "Файл .html",
     "style.css": "Файл .css",
     "app.js": "Файл .js",
-    "requirements.txt": "Файл .txt",
+    "requirements.txt": "добавлены edge-tts и supabase.",
     "render.yaml": "Файл .yaml",
-    "keep_alive.py": "Файл .py"
+    "keep_alive.py": "Файл .py",
+    "voice.py": "edge-tts модуль",
+    "static/app.js": "фронтенд интеграция TTS"
   },
   "key_decisions": [
     "AI коуч-психолог с мягкой поддержкой",
@@ -36,9 +39,14 @@
     "модуль немецкого A1-B2",
     "трекер заботы",
     "FastAPI",
-    "Tailwind CSS"
+    "Tailwind CSS",
+    "Интеграция edge-tts для озвучивания ответов коуча (ru-RU-SvetlanaNeural)",
+    "добавлены эндпоинты /api/voice/tts и фронтенд-кнопки озвучки в реальном времени."
   ],
-  "current_status": "Создание бэкенда и тестов проекта ai-wife-coach",
-  "updated_at": "2026-10-06T18:34:58.605108+00:00",
-  "project_name": "ai-wife-coach"
+  "current_status": "Готово к деплою на Render и синхронизации с GitHub",
+  "updated_at": "2026-10-06T20:23:56.235576+00:00",
+  "project_name": "ai-wife-coach",
+  "post_mortems": [
+    "Проверена валидация кода и зависимости requirements.txt"
+  ]
 }

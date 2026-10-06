@@ -162,3 +162,8 @@ async def api_get_dossier():
 async def api_save_dossier(req: DossierUpdateRequest):
     db_manager.save_dossier(req.name, req.notes)
     return {"status": "ok", "message": "Досье сохранено"}
+
+
+@app.get("/api/chat/history")
+async def api_chat_history(session_id: str = "default_wife"):
+    return db_manager.get_chat_history(session_id)

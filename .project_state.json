@@ -1,0 +1,43 @@
+{
+  "goal": "Разработка персонального бережного коуч-психолога для супруги (ai-wife-coach) с немецким языком, библиотекой и трекером задач",
+  "tech_stack": [
+    "FastAPI",
+    "Gemini/LLM",
+    "Supabase",
+    "Storj S3",
+    "Tailwind CSS",
+    "Python",
+    "pytest"
+  ],
+  "architecture": {
+    "main.py": "FastAPI роуты",
+    "models.py": "схемы и базы данных",
+    "static/": "веб-интерфейс",
+    "coach.py": "коучинг",
+    "german.py": "немецкий",
+    "library.py": "книги",
+    "tasks.py": "задачи",
+    "test_coach.py": "тесты",
+    "index.html": "Файл .html",
+    "style.css": "Файл .css",
+    "app.js": "Файл .js",
+    "requirements.txt": "Файл .txt",
+    "render.yaml": "Файл .yaml"
+  },
+  "key_decisions": [
+    "AI коуч-психолог с мягкой поддержкой",
+    "интеграция LLM",
+    "модуль изучения немецкого",
+    "библиотека книг",
+    "трекер задач",
+    "уютный адаптивный веб-интерфейс",
+    "Эмпатичный ИИ-коуч с мягкой валидацией",
+    "модуль немецкого A1-B2",
+    "трекер заботы",
+    "FastAPI",
+    "Tailwind CSS"
+  ],
+  "current_status": "Создание бэкенда и тестов проекта ai-wife-coach",
+  "updated_at": "2026-10-06T17:24:50.545229+00:00",
+  "project_name": "ai-wife-coach"
+}

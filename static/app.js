@@ -171,8 +171,36 @@ function toggleVoice() {
     recognition.start();
 }
 
-// VOICE OUTPUT (TTS)
-function speakText(text) {
+// VOICE OUTPUT (TTS via edge-tts)
+async function speakText(text) {
+    if (!text) return;
+    try {
+        const clean = text.replace(/[*_#✨💖🌸☕️💡👤🇩🇪📖]/g, '').trim();
+        if (!clean) return;
+
+        const response = await fetch('/api/voice/tts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: clean, voice: 'ru-RU-SvetlanaNeural' })
+        });
+
+        if (!response.ok) {
+            throw new Error('TTS network response failed');
+        }
+
+        const blob = await response.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(audioUrl);
+        
+        // Visual indicator on header or speaker icon if desired
+        audio.play().catch(e => console.warn('Audio play prevented:', e));
+    } catch (e) {
+        console.warn('Edge-TTS error, falling back to browser speech:', e);
+        fallbackSpeech(text);
+    }
+}
+
+function fallbackSpeech(text) {
     if (!('speechSynthesis' in window)) return;
     try {
         window.speechSynthesis.cancel();
@@ -181,14 +209,9 @@ function speakText(text) {
         utterance.lang = 'ru-RU';
         utterance.rate = 0.95;
         utterance.pitch = 1.05;
-        
-        const voices = window.speechSynthesis.getVoices();
-        const ruVoice = voices.find(v => v.lang.startsWith('ru') && (v.name.includes('Milena') || v.name.includes('Yuri') || v.name.includes('Google') || v.name.includes('Tatyana')));
-        if (ruVoice) utterance.voice = ruVoice;
-
         window.speechSynthesis.speak(utterance);
     } catch (e) {
-        console.warn('TTS error:', e);
+        console.warn('Fallback speech error:', e);
     }
 }
 

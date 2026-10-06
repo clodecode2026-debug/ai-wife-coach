@@ -1,5 +1,5 @@
 {
-  "goal": "Интеграция натурального женского голоса через edge-tts (SvetlanaNeural) в проект ai-wife-coach",
+  "goal": "Исправление статических шаблонов коуча, интеграция реального Google Gemini 2.5 API и Supabase, добавление живого голосового диалога и наполнение материалов.",
   "tech_stack": [
     "FastAPI",
     "Gemini/LLM",
@@ -9,27 +9,33 @@
     "Python",
     "pytest",
     "edge-tts",
-    "Render"
+    "Render",
+    "Uvicorn",
+    "Google GenAI",
+    "Edge-TTS",
+    "Pytest"
   ],
   "architecture": {
-    "main.py": "подключение voice_router",
+    "main.py": "FastAPI сервер",
     "models.py": "схемы и базы данных",
     "static/": "веб-интерфейс",
-    "coach.py": "коучинг",
-    "german.py": "немецкий",
-    "library.py": "книги",
+    "coach.py": "Gemini 2.5 генерация",
+    "german.py": "30 фраз A1-B1",
+    "library.py": "10 цитат классиков",
     "tasks.py": "задачи",
-    "test_coach.py": "тесты",
+    "test_coach.py": "юнит-тесты.",
     "index.html": "Файл .html",
     "style.css": "Файл .css",
     "app.js": "Файл .js",
     "requirements.txt": "добавление edge-tts>=6.1.12",
-    "render.yaml": "Файл .yaml",
+    "render.yaml": "обновлен startCommand",
     "keep_alive.py": "Файл .py",
     "voice.py": "эндпоинт /api/voice/tts через edge-tts",
     "static/app.js": "интеграция голосового воспроизведения ответов коуча",
     "tts_helper.js": "Файл .js",
-    "static/tts_helper.js": "клиентский плеер аудио стриминга"
+    "static/tts_helper.js": "клиентский плеер аудио стриминга",
+    "database.py": "Supabase интеграция",
+    "static/index.html & app.js": "UI с кнопкой живого голоса"
   },
   "key_decisions": [
     "AI коуч-психолог с мягкой поддержкой",
@@ -61,10 +67,17 @@
     "фронтенд app.js вызывает этот эндпоинт для натуральной озвучки ответов коуча",
     "Добавлен эндпоинт POST /api/voice/tts с поддержкой edge-tts (голос ru-RU-SvetlanaNeural)",
     "фронтенд озвращает ответы коуча через Edge TTS в фоновом режиме",
-    "зависимости обновлены в requirements.txt"
+    "зависимости обновлены в requirements.txt",
+    "Добавлен блок if __name__ == '__main__' в main.py для корректного запуска uvicorn",
+    "старткоманда в render.yaml заменена на python main.py",
+    "Интегрирован Gemini 2.5 через google-genai",
+    "Подключен Supabase для истории и досье жены",
+    "Добавлена кнопка и режим Живого голосового диалога в веб-интерфейсе",
+    "Расширена база немецких фраз (30 шт) и цитат психологов (10 шт)",
+    "Настроен uvicorn и health-check."
   ],
-  "current_status": "Успешно завершено и задеплоено на Render. Сервис полностью работает.",
-  "updated_at": "2026-10-06T20:49:02.628844+00:00",
+  "current_status": "Успешно проверено и готово к деплою на Render",
+  "updated_at": "2026-10-06T20:57:35.072635+00:00",
   "project_name": "ai-wife-coach",
   "post_mortems": [
     "Проверена валидация кода и зависимости requirements.txt",
@@ -74,6 +87,10 @@
     "Проверена валидация кода, все файлы синтаксически корректны",
     "проверка валидации всех файлов синтаксически",
     "Проверены синтаксис, тесты и интеграция эндпоинта edge-tts, всё работает без сбоев",
-    "Синтаксис проверен через validate_code, тесты пройдены успешно, деплой проверен через verify_deployment_health."
+    "Синтаксис проверен через validate_code, тесты пройдены успешно, деплой проверен через verify_deployment_health.",
+    "Не использовать $PORT в sh-формате в render.yaml на free-плане",
+    "всегда добавлять блок uvicorn.run в main.py",
+    "Обязательная проверка зависимостей виртуального окружения",
+    "Успешное прохождение тестов pytest."
   ]
 }

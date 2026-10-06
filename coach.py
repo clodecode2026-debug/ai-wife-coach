@@ -26,10 +26,16 @@ class AIFeminineCoach:
             except Exception as e:
                 logger.error(f"Ошибка инициализации GenAI Client: {e}")
 
-    def _get_system_prompt(self, dossier: Optional[Dict[str, Any]] = None) -> str:
+    def _get_system_prompt(self, dossier: Optional[Dict[str, Any]] = None, is_voice_mode: bool = False) -> str:
         dossier_info = ""
         if dossier:
             dossier_info = f"\n\nДОСЬЕ И ПРЕДПОЧТЕНИЯ ЖЕНЫ:\n{json.dumps(dossier, ensure_ascii=False, indent=2)}"
+
+        if is_voice_mode:
+            return f"""Ты — профессиональный, невероятно нежный, эмпатичный и мудрый психолог-коуч и заботливый партнер для любимой жены в режиме РАЗГОВОРА ГОЛОСОМ.
+ТВОЕ ГЛАВНОЕ ПРАВИЛО В ЭТОМ РЕЖИМЕ: ОТВЕЧАЙ МАКСИМАЛЬНО КОРОТКО (строго 1-3 емких, теплых предложения), БЕЗ списков, БЕЗ лекций, чтобы беседа звучала динамично, как живой телефонный разговор с любящим мужем!
+Твой тон: теплый, любящий, успокаивающий.{dossier_info}
+"""
 
         return f"""Ты — профессиональный, невероятно нежный, эмпатичный и мудрый психолог-коуч, заботливый партнер и личный помощник для любимой жены.
 Твоя главная цель — выслушать, поддержать, снять тревогу, помочь бережно разобраться в эмоциях и вдохновить, не давая токсичных советов.
@@ -37,15 +43,15 @@ class AIFeminineCoach:
 Используй мягкие валидации чувств («Я слышу, как тебе тяжело», «Ты имеешь право устать», «Я рядом»).{dossier_info}
 """
 
-    def generate_response(self, message: str, history: List[Dict[str, str]] = None, dossier: Optional[Dict[str, Any]] = None) -> str:
+    def generate_response(self, message: str, history: List[Dict[str, str]] = None, dossier: Optional[Dict[str, Any]] = None, is_voice_mode: bool = False) -> str:
         if not self.client:
             # Fallback если нет ключа
-            return self._fallback_response(message)
+            return self._fallback_response(message, is_voice_mode)
 
         # Каскад моделей согласно заданию (октябрь 2026: gemini-2.5 отключен, используем gemini-3.x)
         MODELS_CASCADE = ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.8-flash']
         
-        system_prompt = self._get_system_prompt(dossier)
+        system_prompt = self._get_system_prompt(dossier, is_voice_mode)
         
         # Формируем контент
         contents = []
@@ -89,7 +95,9 @@ class AIFeminineCoach:
         logger.error(f"Все модели из каскада {MODELS_CASCADE} вернули ошибку. Последняя ошибка: {last_error}")
         return f"Солнышко, произошла временная заминка связи с моим сердцем (все модели ИИ заняты или недоступны). Но я всегда рядом с тобой!"
 
-    def _fallback_response(self, message: str) -> str:
+    def _fallback_response(self, message: str, is_voice_mode: bool = False) -> str:
+        if is_voice_mode:
+            return "Любимая, я рядом с тобой. Выдохни, всё обязательно будет хорошо."
         msg_lower = message.lower()
         if any(w in msg_lower for w in ['устал', 'сил нет', 'выгорел', 'задолбал']):
             return "Моя родная, ты так много на себя берешь. Пожалуйста, остановись и выдохни. Давай сегодня отложим все дела. Я могу заварить тебе чаю или просто посидеть рядом молча?"

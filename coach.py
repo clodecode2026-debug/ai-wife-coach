@@ -72,7 +72,7 @@ class AIFeminineCoach:
         config = types.GenerateContentConfig(
             system_instruction=system_prompt,
             temperature=0.7,
-            max_output_tokens=1000,
+            max_output_tokens=120 if is_voice_mode else 1000,
         )
 
         last_error = None

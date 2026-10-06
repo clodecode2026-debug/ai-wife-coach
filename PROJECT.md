@@ -1,12 +1,12 @@
 # Паспорт проекта: ai-wife-coach
 
-**Цель:** Интеграция натурального женского голоса через edge-tts в проект ai-wife-coach
+**Цель:** Интеграция натурального женского голоса через edge-tts (SvetlanaNeural) в проект ai-wife-coach
 
-**Статус:** Готово к деплою на Render и синхронизации с GitHub
-**Обновлено:** 2026-10-06 20:46:44 UTC
+**Статус:** Успешно завершено и задеплоено на Render. Сервис полностью работает.
+**Обновлено:** 2026-10-06 20:49:02 UTC
 
 ## Стек технологий
-`FastAPI`, `Gemini/LLM`, `Supabase`, `Storj S3`, `Tailwind CSS`, `Python`, `pytest`, `edge-tts`
+`FastAPI`, `Gemini/LLM`, `Supabase`, `Storj S3`, `Tailwind CSS`, `Python`, `pytest`, `edge-tts`, `Render`
 
 ## Ключевые файлы и модули
 - **`main.py`**: подключение voice_router
@@ -23,9 +23,10 @@
 - **`requirements.txt`**: добавление edge-tts>=6.1.12
 - **`render.yaml`**: Файл .yaml
 - **`keep_alive.py`**: Файл .py
-- **`voice.py`**: эндпоинт /api/voice/tts с edge-tts
-- **`static/app.js`**: воспроизведение аудио через /api/voice/tts
+- **`voice.py`**: эндпоинт /api/voice/tts через edge-tts
+- **`static/app.js`**: интеграция голосового воспроизведения ответов коуча
 - **`tts_helper.js`**: Файл .js
+- **`static/tts_helper.js`**: клиентский плеер аудио стриминга
 
 ## Принятые решения
 - AI коуч-психолог с мягкой поддержкой
@@ -55,3 +56,6 @@
 - фронтенд app.js интегрирован с /api/voice/tts
 - edge-tts интегрирован в FastAPI через /api/voice/tts с голосом ru-RU-SvetlanaNeural
 - фронтенд app.js вызывает этот эндпоинт для натуральной озвучки ответов коуча
+- Добавлен эндпоинт POST /api/voice/tts с поддержкой edge-tts (голос ru-RU-SvetlanaNeural)
+- фронтенд озвращает ответы коуча через Edge TTS в фоновом режиме
+- зависимости обновлены в requirements.txt

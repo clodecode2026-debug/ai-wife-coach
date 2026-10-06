@@ -2,14 +2,14 @@
 
 **Цель:** Добавление натурального женского голоса через edge-tts в проект ai-wife-coach
 
-**Статус:** Голосовой модуль edge-tts интегрирован, проверен, готов к деплою
-**Обновлено:** 2026-10-06 20:33:23 UTC
+**Статус:** Голосовой модуль edge-tts интегрирован, протестирован, выгружаем на GitHub и деплоим на Render
+**Обновлено:** 2026-10-06 20:37:39 UTC
 
 ## Стек технологий
 `FastAPI`, `Gemini/LLM`, `Supabase`, `Storj S3`, `Tailwind CSS`, `Python`, `pytest`, `edge-tts`
 
 ## Ключевые файлы и модули
-- **`main.py`**: маршруты и подключение voice_router
+- **`main.py`**: подключение voice_router
 - **`models.py`**: схемы и базы данных
 - **`static/`**: веб-интерфейс
 - **`coach.py`**: коучинг
@@ -20,11 +20,11 @@
 - **`index.html`**: Файл .html
 - **`style.css`**: Файл .css
 - **`app.js`**: Файл .js
-- **`requirements.txt`**: edge-tts>=6.1.12
+- **`requirements.txt`**: добавление edge-tts>=6.1.12
 - **`render.yaml`**: Файл .yaml
 - **`keep_alive.py`**: Файл .py
-- **`voice.py`**: эндпоинт POST /api/voice/tts с edge-tts
-- **`static/app.js`**: функция speakText с запросом к /api/voice/tts и fallback
+- **`voice.py`**: эндпоинт TTS edge-tts
+- **`static/app.js`**: интеграция воспроизведения голоса через API
 
 ## Принятые решения
 - AI коуч-психолог с мягкой поддержкой
@@ -50,3 +50,5 @@
 - проведены тесты и валидация кода
 - интеграция edge-tts через /api/voice/tts с голосом ru-RU-SvetlanaNeural
 - обновление frontend app.js для воспроизведения аудио стриминга
+- эндпоинт POST /api/voice/tts с потоковым audio/mpeg
+- фронтенд app.js интегрирован с /api/voice/tts

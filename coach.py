@@ -1,65 +1,99 @@
 import os
 import json
-from typing import List, Dict, Any
+import logging
+from typing import List, Dict, Any, Optional
 
-class CoachService:
+logger = logging.getLogger(__name__)
+
+# Попытка импорта google-genai
+try:
+    from google import genai
+    from google.genai import types
+    HAS_GENAI = True
+except ImportError:
+    HAS_GENAI = False
+    logger.warning("google-genai не установлена. Установите через pip install google-genai")
+
+class AIFeminineCoach:
     def __init__(self):
-        self.system_prompt = (
-            "Ты — эмпатичный, нежный и мудрый коуч-психолог для любимой женщины. "
-            "Твоя задача — бережно выслушать, валидировать её эмоции, снять тревогу, "
-            "поддержать и мягко направить с помощью бережных вопросов. "
-            "Никакой критики, только безусловное принятие и теплота."
-        )
+        self.api_key = os.environ.get("GEMINI_API_KEY")
+        self.client = None
+        if HAS_GENAI and self.api_key:
+            try:
+                self.client = genai.Client(api_key=self.api_key)
+                logger.info("Google GenAI Client успешно инициализирован")
+            except Exception as e:
+                logger.error(f"Ошибка инициализации GenAI Client: {e}")
 
-    def get_empathetic_response(self, user_message: str, history: List[Dict[str, str]] = None) -> Dict[str, Any]:
-        """
-        Генерирует бережный ответ психолога.
-        При отсутствии ключа Gemini API возвращает эмпатичный шаблонный ответ,
-        сохраняя заботливый тон.
-        """
-        if not user_message:
-            return {
-                "reply": "Солнышко, я тебя слушаю. Расскажи, что у тебя на душе?",
-                "validation": "Ты всегда можешь поделиться со мной любыми переживаниями.",
-                "gentle_question": "Что сейчас чувствует твоё тело?"
-            }
+    def _get_system_prompt(self, dossier: Optional[Dict[str, Any]] = None) -> str:
+        dossier_info = ""
+        if dossier:
+            dossier_info = f"\n\nДОСЬЕ И ПРЕДПОЧТЕНИЯ ЖЕНЫ:\n{json.dumps(dossier, ensure_ascii=False, indent=2)}"
 
-        # Анализ ключевых слов для эмпатического ответа
-        lower_msg = user_message.lower()
-        
-        if any(w in lower_msg for w in ["устал", "устала", "нет сил", "выгорел", "выгорела", "тяжело"]):
-            reply = (
-                "Моя хорошая, ты так много делаешь и так стараешься. "
-                "Совершенно нормально чувствовать усталость, когда на плечах столько всего. "
-                "Пожалуйста, разреши себе прямо сейчас остановиться, выдохнуть и просто побыть в тишине."
+        return f"""Ты — профессиональный, невероятно нежный, эмпатичный и мудрый психолог-коуч, заботливый партнер и личный помощник для любимой жены.
+Твоя главная цель — выслушать, поддержать, снять тревогу, помочь бережно разобраться в эмоциях и вдохновить, не давая токсичных советов.
+Твой тон: теплый, любящий, понимающий, уважительный, с мягким юмором при необходимости.
+Используй мягкие валидации чувств («Я слышу, как тебе тяжело», «Ты имеешь право устать», «Я рядом»).{dossier_info}
+"""
+
+    def generate_response(self, message: str, history: List[Dict[str, str]] = None, dossier: Optional[Dict[str, Any]] = None) -> str:
+        if not self.client:
+            # Fallback если нет ключа
+            return self._fallback_response(message)
+
+        try:
+            system_prompt = self._get_system_prompt(dossier)
+            
+            # Формируем контент
+            contents = []
+            
+            # Добавляем историю если есть
+            if history:
+                for h in history[-10:]: # последние 10 сообщений
+                    role = h.get("role", "user")
+                    # в genai роли обычно 'user' и 'model'
+                    g_role = "user" if role == "user" else "model"
+                    contents.append(types.Content(
+                        role=g_role,
+                        parts=[types.Part.from_text(text=h.get("content", ""))]
+                    ))
+
+            # Добавляем текущее сообщение
+            contents.append(types.Content(
+                role="user",
+                parts=[types.Part.from_text(text=message)]
+            ))
+
+            config = types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                temperature=0.7,
+                max_output_tokens=1000,
             )
-            validation = "Принятие усталости — это первый шаг к заботе о себе."
-            question = "Хочешь, мы вместе придумаем, от каких дел на сегодня можно отказаться?"
-        elif any(w in lower_msg for w in ["тревог", "страх", "пережива", "волнуюсь", "беспоко"]):
-            reply = (
-                "Я слышу, как тебе сейчас тревожно. Тревога — это способ нашей психики защитить нас, "
-                "но сейчас ты в безопасности. Я рядом с тобой, и мы справимся со всем пошагово."
+
+            response = self.client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=contents,
+                config=config
             )
-            validation = "Твои чувства абсолютно важны и оправданы."
-            question = "Какая мысль сейчас крутится в голове сильнее всего? Давай разберем её вместе."
-        elif any(w in lower_msg for w in ["рад", "счастлив", "хорошо", "отлично", "получилось"]):
-            reply = (
-                "Как же радостно слышать это! Твоя улыбка и твои успехи — это лучшее вдохновение. "
-                "Ты невероятная, и ты заслуживаешь этого света."
-            )
-            validation = "Замечай и присваивай себе каждый такой чудесный момент."
-            question = "Что именно помогло тебе почувствовать эту радость сегодня?"
+
+            if response and response.text:
+                return response.text
+            else:
+                return "Любимая, я внимательно слушаю тебя, но сейчас немного задумался. Повтори, пожалуйста, что у тебя на душе?"
+
+        except Exception as e:
+            logger.error(f"Ошибка при вызове Gemini API: {e}")
+            return f"Солнышко, произошла небольшая техническая заминка связи с моим сердцем (API ошибкa: {str(e)[:100]}). Но я всегда рядом с тобой!"
+
+    def _fallback_response(self, message: str) -> str:
+        msg_lower = message.lower()
+        if any(w in msg_lower for w in ['устал', 'сил нет', 'выгорел', 'задолбал']):
+            return "Моя родная, ты так много на себя берешь. Пожалуйста, остановись и выдохни. Давай сегодня отложим все дела. Я могу заварить тебе чаю или просто посидеть рядом молча?"
+        elif any(w in msg_lower for w in ['тревог', 'страшно', 'переживаю', 'сомневаюсь']):
+            return "Я чувствую твою тревогу, солнышко. Это абсолютно нормально — чувствовать неуверенность. Давай разберем это вместе по шагам. Ты в полной безопасности со мной."
+        elif any(w in msg_lower for w in ['цель', 'мечта', 'план', 'хочу']):
+            return "Ты способна на любые свершения, моя умница! Твои желания очень важны. Какой маленький первый шаг мы можем сделать к этой цели сегодня?"
         else:
-            reply = (
-                "Я внимательно ловлю каждое твоё слово. Спасибо, что делишься со мной. "
-                "Помни, что ты окружена заботой, и твоё эмоциональное состояние — на первом месте."
-            )
-            validation = "Ты имеешь право чувствовать именно то, что чувствуешь."
-            question = "Как я могу поддержать тебя прямо в эту минуту?"
+            return "Любимая, я всегда готов выслушать тебя. Расскажи подробнее, что у тебя на сердце, я полностью на твоей стороне."
 
-        return {
-            "reply": reply,
-            "validation": validation,
-            "gentle_question": question,
-            "tone": "warm_and_supportive"
-        }
+coach = AIFeminineCoach()

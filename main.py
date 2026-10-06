@@ -8,6 +8,7 @@ from coach import CoachService
 from german import GermanTrainer
 from library import LibraryService
 from tasks import TaskTracker
+from voice import router as voice_router
 
 app = FastAPI(
     title="AI Wife Coach",
@@ -43,6 +44,9 @@ class BookCreateRequest(BaseModel):
 @app.get("/health")
 def health_check():
     return {"status": "ok", "project": "ai-wife-coach"}
+
+# Подключаем голосовой модуль
+app.include_router(voice_router)
 
 @app.post("/api/chat")
 def chat_with_coach(req: ChatRequest):

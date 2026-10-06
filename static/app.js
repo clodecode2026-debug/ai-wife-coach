@@ -1,7 +1,12 @@
 // Клиентская логика AI Wife Coach Super-App
 
 let currentTab = 'chat';
-let sessionId = 'session_' + Math.random().toString(36).substring(2, 9);
+// Сессия и сквозная память диалога
+let sessionId = localStorage.getItem('ai_coach_session_id');
+if (!sessionId) {
+    sessionId = 'wife_session_' + Math.random().toString(36).substring(2, 9);
+    localStorage.setItem('ai_coach_session_id', sessionId);
+}
 let isLiveActive = false;
 let liveRecognition = null;
 
@@ -9,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Инициализация при загрузке
     loadGermanCourse('A1');
     loadLibraryBooks();
+    loadChatHistory();
 });
 
 function switchTab(tabId) {
@@ -99,32 +105,41 @@ async function sendMessage() {
     }
 }
 
-function appendMessage(text, role) {
+function appendMessage(text, role, scroll = true) {
     const container = document.getElementById('chatMessages');
+    if (!container) return;
     const div = document.createElement('div');
     
     if (role === 'user') {
         div.className = 'flex items-start justify-end gap-2.5';
         div.innerHTML = `
-            <div class="bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-2xl p-3.5 max-w-xl text-sm shadow-sm">
-                <p>${escapeHtml(text)}</p>
+            <div class="bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-2xl p-3.5 max-w-xl text-xs sm:text-sm shadow-sm">
+                <p class="whitespace-pre-wrap">` + escapeHtml(text) + `</p>
             </div>
-            <div class="w-7 h-7 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold text-xs shadow">Я</div>
+            <div class="w-7 h-7 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold text-xs shadow shrink-0">Я</div>
         `;
     } else {
         div.className = 'flex items-start gap-2.5';
+        const msgId = 'msg_' + Math.random().toString(36).substring(2, 9);
         div.innerHTML = `
-            <div class="w-7 h-7 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-xs shadow">AI</div>
-            <div class="bg-rose-50 border border-rose-100 rounded-2xl p-3.5 max-w-xl text-slate-700 text-sm shadow-sm relative group">
-                <p>${escapeHtml(text)}</p>
-                <button onclick="playTTS(this, '${escapeQuotes(text)}')" class="absolute top-2 right-2 opacity-50 hover:opacity-100 text-rose-600 p-1 rounded transition" title="Озвучить">
+            <div class="w-7 h-7 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-xs shadow shrink-0">AI</div>
+            <div class="bg-rose-50 border border-rose-100 rounded-2xl p-3.5 max-w-xl text-slate-700 text-xs sm:text-sm shadow-sm relative group">
+                <p id="` + msgId + `" class="whitespace-pre-wrap pr-6">` + escapeHtml(text) + `</p>
+                <button onclick="playElementTTS('` + msgId + `')" class="absolute top-2.5 right-2.5 opacity-60 hover:opacity-100 text-rose-600 p-1 rounded-lg hover:bg-rose-100 transition" title="Озвучить ответ">
                     🔊
                 </button>
             </div>
         `;
     }
     container.appendChild(div);
-    container.scrollTop = container.scrollHeight;
+    if (scroll) container.scrollTop = container.scrollHeight;
+}
+
+function playElementTTS(elId) {
+    const el = document.getElementById(elId);
+    if (el) {
+        playTTS(null, el.textContent);
+    }
 }
 
 function appendLoadingMessage() {
@@ -433,3 +448,49 @@ async function loadGermanCourse(level) {
 }
 
 
+
+
+async function loadChatHistory() {
+    try {
+        const res = await fetch('/api/chat/history?session_id=' + sessionId);
+        if (!res.ok) return;
+        const messages = await res.json();
+        if (messages && messages.length > 0) {
+            const container = document.getElementById('chatMessages');
+            if (container) {
+                container.innerHTML = '';
+                messages.forEach(m => {
+                    appendMessage(m.content, m.role, false);
+                });
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+    } catch(e) {}
+}
+
+function sendMoodPrompt(text) {
+    const input = document.getElementById('chatInput');
+    if (input) {
+        input.value = text;
+        sendMessage();
+    }
+}
+
+function clearCurrentChat() {
+    if (confirm('Начать новый разговор с чистого листа?')) {
+        sessionId = 'wife_session_' + Math.random().toString(36).substring(2, 9);
+        localStorage.setItem('ai_coach_session_id', sessionId);
+        const container = document.getElementById('chatMessages');
+        if (container) {
+            container.innerHTML = `
+                <div class="flex items-start gap-2.5">
+                    <div class="w-7 h-7 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-xs shadow shrink-0">AI</div>
+                    <div class="bg-rose-50 border border-rose-100 rounded-2xl p-3.5 max-w-xl text-slate-700 text-xs sm:text-sm shadow-sm">
+                        <p class="font-semibold text-rose-900 mb-1">Новый диалог начат ✨</p>
+                        <p>Я рядом, любимая. Расскажи, о чем ты сейчас думаешь?</p>
+                    </div>
+                </div>
+            `;
+        }
+    }
+}

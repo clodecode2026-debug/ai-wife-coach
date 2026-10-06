@@ -64,4 +64,23 @@ class SupabaseManager:
             logger.error(f"Ошибка получения истории чата из Supabase: {e}")
         return []
 
+
+    def save_dossier(self, name: str, notes: str, user_id: str = "default_wife") -> None:
+        if not self.client:
+            return
+        try:
+            dossier_data = {
+                "name": name,
+                "notes": notes,
+                "preferences": {"tea": "Жасминовый зеленый", "comfort": "Плед и тишина"},
+                "goals": ["Изучение немецкого B2", "Гармония и баланс"]
+            }
+            self.client.table("wife_dossier").upsert({
+                "user_id": user_id,
+                "dossier_data": dossier_data
+            }, on_conflict="user_id").execute()
+            logger.info("Досье успешно сохранено в Supabase")
+        except Exception as e:
+            logger.error(f"Ошибка сохранения досье в Supabase: {e}")
+
 db_manager = SupabaseManager()

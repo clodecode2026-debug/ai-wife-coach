@@ -12,21 +12,21 @@
     "Gemini 2.5 Flash/Pro"
   ],
   "architecture": {
-    "main.py": "API для мультичатов и досье",
+    "main.py": "FastAPI API с эндпоинтами чатов, досье, задач и библиотеки",
     "models.py": "схемы и базы данных",
     "static/": "веб-интерфейс",
-    "coach.py": "каскад Gemini 2.5 + досье",
+    "coach.py": "логика эмпатичного ИИ-коуча и каскад Gemini 2.5",
     "german.py": "немецкий тренажер",
     "library.py": "библиотека",
     "tasks.py": "трекер задач",
-    "test_coach.py": "тесты",
+    "test_coach.py": "юнит-тесты",
     "index.html": "Файл .html",
     "style.css": "Файл .css",
     "app.js": "Файл .js",
     "requirements.txt": "Файл .txt",
     "render.yaml": "Файл .yaml",
-    "database.py": "клиент Supabase",
-    "static/index.html & app.js": "сайдбар чатов, вкладка досье, голосовой ввод/вывод",
+    "database.py": "клиент Supabase и CRUD",
+    "static/index.html & app.js": "адаптивный UI с сайдбаром чатов, вкладкой досье и голосовым управлением",
     "tasks_router.py": "Файл .py"
   },
   "key_decisions": [
@@ -50,9 +50,15 @@
     "Gemini 2.5 Flash/Pro каскад",
     "Досье жены с авто-извлечением фактов",
     "Мультичаты",
-    "Живой голос (SpeechRecognition + SpeechSynthesis)"
+    "Живой голос (SpeechRecognition + SpeechSynthesis)",
+    "Supabase персистентность подключена",
+    "Долгосрочное досье жены с авто-извлечением фактов",
+    "Каскад моделей Gemini 2.5 Flash/Pro с локальным fallback",
+    "Мультичаты с историей",
+    "Голосовой ввод и синтез речи",
+    "Все тесты зеленые"
   ],
-  "current_status": "Реализация технического плана и интеграция всех модулей",
-  "updated_at": "2026-10-06T18:02:34.556389+00:00",
+  "current_status": "Реализовано, протестировано и успешно выгружено в репозиторий clodecode2026-debug/ai-wife-coach",
+  "updated_at": "2026-10-06T18:04:16.751847+00:00",
   "project_name": "default"
 }

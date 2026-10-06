@@ -170,3 +170,7 @@ GERMAN_COURSE_DATA = {
         }
     ]
 }
+
+
+def get_german_course():
+    return GERMAN_COURSE_DATA

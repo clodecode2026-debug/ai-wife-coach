@@ -1,5 +1,5 @@
 {
-  "goal": "Добавление натурального женского голоса edge-tts (ru-RU-SvetlanaNeural) в проект ai-wife-coach",
+  "goal": "Добавление натурального женского голоса для диалога через edge-tts в проект ai-wife-coach",
   "tech_stack": [
     "FastAPI",
     "Gemini/LLM",
@@ -11,7 +11,7 @@
     "edge-tts"
   ],
   "architecture": {
-    "main.py": "FastAPI приложение и роуты",
+    "main.py": "эндпоинты",
     "models.py": "схемы и базы данных",
     "static/": "веб-интерфейс",
     "coach.py": "коучинг",
@@ -22,11 +22,11 @@
     "index.html": "Файл .html",
     "style.css": "Файл .css",
     "app.js": "Файл .js",
-    "requirements.txt": "добавлены edge-tts и supabase.",
+    "requirements.txt": "edge-tts зависимость.",
     "render.yaml": "Файл .yaml",
     "keep_alive.py": "Файл .py",
-    "voice.py": "edge-tts модуль",
-    "static/app.js": "фронтенд интеграция TTS"
+    "voice.py": "edge-tts интеграция",
+    "static/app.js": "фронтенд TTS и аудио"
   },
   "key_decisions": [
     "AI коуч-психолог с мягкой поддержкой",
@@ -41,12 +41,15 @@
     "FastAPI",
     "Tailwind CSS",
     "Интеграция edge-tts для озвучивания ответов коуча (ru-RU-SvetlanaNeural)",
-    "добавлены эндпоинты /api/voice/tts и фронтенд-кнопки озвучки в реальном времени."
+    "добавлены эндпоинты /api/voice/tts и фронтенд-кнопки озвучки в реальном времени.",
+    "Добавлен модуль голосового синтеза edge-tts (/api/voice/tts) с русской озвучкой SvetlanaNeural",
+    "интерфейс чата обогащен кнопками озвучивания и голосовым вводом."
   ],
-  "current_status": "Готово к деплою на Render и синхронизации с GitHub",
-  "updated_at": "2026-10-06T20:23:56.235576+00:00",
+  "current_status": "Голосовой модуль edge-tts успешно внедрен, протестирован, задеплоен и проверен.",
+  "updated_at": "2026-10-06T20:24:43.996579+00:00",
   "project_name": "ai-wife-coach",
   "post_mortems": [
-    "Проверена валидация кода и зависимости requirements.txt"
+    "Проверена валидация кода и зависимости requirements.txt",
+    "Обязательная установка зависимостей в виртуальное окружение перед запуском тестов."
   ]
 }

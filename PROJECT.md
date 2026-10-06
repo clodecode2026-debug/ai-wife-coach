@@ -1,18 +1,18 @@
 # Паспорт проекта: ai-wife-coach
 
-**Цель:** Обновление моделей Google Gemini (октябрь 2026), надежный каскад моделей, поддержка всех фронтенд-роутов
+**Цель:** Реализация 2 режимов (текстовый + Google Live Voice модальное окно), облачного хранилища S3 Storj и коротких ответов ИИ в голосовом режиме
 
-**Статус:** Проверено, протестировано и готово к деплою на Render
-**Обновлено:** 2026-10-06 21:06:38 UTC
+**Статус:** Код полностью обновлен, проверен через validate_code, готов к синхронизации с GitHub и деплою на Render
+**Обновлено:** 2026-10-06 21:33:55 UTC
 
 ## Стек технологий
-`FastAPI`, `Gemini/LLM`, `Supabase`, `Storj S3`, `Tailwind CSS`, `Python`, `pytest`, `edge-tts`, `Render`, `Uvicorn`, `Google GenAI`, `Edge-TTS`, `Pytest`, `Google GenAI SDK`
+`FastAPI`, `Gemini/LLM`, `Supabase`, `Storj S3`, `Tailwind CSS`, `Python`, `pytest`, `edge-tts`, `Render`, `Uvicorn`, `Google GenAI`, `Edge-TTS`, `Pytest`, `Google GenAI SDK`, `Storj S3 (boto3)`
 
 ## Ключевые файлы и модули
-- **`main.py`**: Роуты API чата, немецкого (/api/german/card, /api/german/check) и библиотеки (/api/books)
+- **`main.py`**: эндпоинты чата, TTS, S3 voice save, немецкого, библиотеки
 - **`models.py`**: схемы и базы данных
 - **`static/`**: веб-интерфейс
-- **`coach.py`**: Каскад моделей gemini-3.x
+- **`coach.py`**: каскад моделей gemini-3.x с поддержкой is_voice_mode
 - **`german.py`**: 30 фраз A1-B1
 - **`library.py`**: 10 цитат классиков
 - **`tasks.py`**: задачи
@@ -24,11 +24,14 @@
 - **`render.yaml`**: обновлен startCommand
 - **`keep_alive.py`**: Файл .py
 - **`voice.py`**: эндпоинт /api/voice/tts через edge-tts
-- **`static/app.js`**: интеграция голосового воспроизведения ответов коуча
+- **`static/app.js`**: функция toggleLiveVoiceMode() и непрерывный голосовой диалог
 - **`tts_helper.js`**: Файл .js
 - **`static/tts_helper.js`**: клиентский плеер аудио стриминга
 - **`database.py`**: Supabase интеграция
 - **`static/index.html & app.js`**: UI с кнопкой живого голоса
+- **`static/index.html`**: большая кнопка Живой разговор
+- **`storage.py`**: модуль boto3 для S3 Storj
+- **`static/index.html и static/app.js`**: интерфейс чата и модальное окно Google Live
 
 ## Принятые решения
 - AI коуч-психолог с мягкой поддержкой
@@ -70,3 +73,9 @@
 - Настроен uvicorn и health-check.
 - Каскад моделей Gemini: gemini-3.1-flash-lite, gemini-3.5-flash-lite, gemini-3.8-flash
 - Добавлены все роуты для немецкого и библиотеки в main.py
+- Добавлена отдельная большая кнопка Живого разговора в шапку чата с пульсацией
+- непрерывный цикл распознавания речи и озвучки через серверный TTS
+- Режим 1: текстовый чат с развернутыми терапевтическими ответами
+- Режим 2: модальное окно Google Live Voice с пульсирующей сферой, переключением голоса (Светлана / Katja) и короткими ответами (1-3 предложения при is_voice_mode=True)
+- Модуль storage.py для сохранения аудиозаписей в S3 Storj
+- Эндпоинт POST /api/voice/save

@@ -41,22 +41,55 @@
     <main class="max-w-6xl mx-auto px-3 py-3 flex-1 w-full flex flex-col overflow-hidden pb-24 md:pb-4">
 
         <!-- ВКЛАДКА 1: ДИАЛОГ С КОУЧЕМ -->
-        <section id="tab-chat" class="tab-content flex-1 flex flex-col bg-white/90 backdrop-blur rounded-2xl shadow-xl border border-rose-100 overflow-hidden">
+                <!-- ВКЛАДКА 1: ДИАЛОГ С КОУЧЕМ (ПОЛНЫЙ ИНТЕРФЕЙС) -->
+        <section id="tab-chat" class="tab-content flex-1 flex flex-col bg-white/95 backdrop-blur rounded-2xl shadow-xl border border-rose-100 overflow-hidden h-[76vh]">
+            <!-- Верхняя панель чата -->
             <div class="bg-gradient-to-r from-rose-500 to-pink-500 px-4 py-3 text-white flex items-center justify-between shadow-sm shrink-0">
-                <div class="flex items-center gap-2">
-                    <span class="text-lg">💬</span>
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-base">💖</div>
                     <div>
                         <h2 class="font-bold text-sm">Живой диалог с ИИ-коучем</h2>
-                        <p class="text-[10px] text-rose-100">Ялом, Готтман, Перель & Gemini 3.x</p>
+                        <p class="text-[10px] text-rose-100">80% опора на КПТ, ТА и книги • Gemini 3.x</p>
                     </div>
                 </div>
-                <button onclick="sendMessage()" id="sendMsgBtn" class="bg-gradient-to-r from-rose-500 to-pink-500 text-white font-bold px-4 sm:px-5 py-2.5 rounded-xl shadow-md hover:opacity-95 transition flex items-center justify-center gap-1.5 shrink-0 text-xs sm:text-sm active:scale-95 whitespace-nowrap min-w-[90px]">
-                    <span>Отправить</span>
-                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                <div class="flex items-center gap-2">
+                    <button onclick="clearCurrentChat()" class="text-xs bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-lg transition font-medium">
+                        ＋ Очистить
+                    </button>
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                </div>
+            </div>
+
+            <!-- Экспресс-чипы настроения -->
+            <div class="px-3 py-2 bg-rose-50/50 border-b border-rose-100 flex gap-2 overflow-x-auto text-xs shrink-0 no-scrollbar">
+                <button onclick="sendMoodPrompt('Я очень устала сегодня, сил совсем нет...')" class="whitespace-nowrap bg-white hover:bg-rose-100 text-rose-700 border border-rose-200 px-3 py-1 rounded-full shadow-sm transition">☕️ Устала</button>
+                <button onclick="sendMoodPrompt('Мне тревожно и страшно за будущее...')" class="whitespace-nowrap bg-white hover:bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1 rounded-full shadow-sm transition">🌸 Тревожно</button>
+                <button onclick="sendMoodPrompt('Хочу радости и приятных эмоций!')" class="whitespace-nowrap bg-white hover:bg-amber-100 text-amber-700 border border-amber-200 px-3 py-1 rounded-full shadow-sm transition">✨ Хочу радости</button>
+                <button onclick="sendMoodPrompt('Нужен совет по отношениям и диалогу с мужем.')" class="whitespace-nowrap bg-white hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1 rounded-full shadow-sm transition">💡 Нужен совет</button>
+            </div>
+
+            <!-- Область сообщений -->
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3.5">
+                <div class="flex items-start gap-2.5">
+                    <div class="w-7 h-7 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-xs shadow shrink-0">AI</div>
+                    <div class="bg-rose-50 border border-rose-100 rounded-2xl p-3.5 max-w-xl text-slate-700 text-xs sm:text-sm shadow-sm">
+                        <p class="font-semibold text-rose-900 mb-1">Здравствуй, любимая Анечка! ✨</p>
+                        <p>Я твой личный бережный психолог-коуч. Я помню всё о твоих целях, немецком языке и уюте. Что у тебя сейчас на сердце? Расскажи, я внимательно слушаю.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Нижняя панель ввода сообщения (Строго видимая, не обрезается!) -->
+            <div class="p-2.5 sm:p-3 bg-white border-t border-rose-100 flex items-center gap-2 shrink-0">
+                <input type="text" id="chatInput" placeholder="Напиши, что у тебя на душе..." class="flex-1 px-3.5 py-2.5 border border-rose-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400 text-xs sm:text-sm bg-rose-50/30" onkeypress="if(event.key === 'Enter') sendMessage()">
+                
+                <button onclick="toggleRecordVoice()" id="recordBtn" class="p-2.5 bg-rose-100 text-rose-600 hover:bg-rose-200 rounded-xl transition shrink-0" title="Голосовой ввод">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
                 </button>
 
-                <button onclick="sendMessage()" class="bg-gradient-to-r from-rose-500 to-pink-500 text-white font-semibold px-4 py-2.5 rounded-xl shadow-md hover:opacity-95 transition text-sm">
-                    Отправить
+                <button onclick="sendMessage()" id="sendMsgBtn" class="bg-gradient-to-r from-rose-500 to-pink-500 text-white font-bold px-4 sm:px-5 py-2.5 rounded-xl shadow-md hover:opacity-95 transition flex items-center justify-center gap-1.5 shrink-0 text-xs sm:text-sm active:scale-95 whitespace-nowrap min-w-[95px]">
+                    <span>Отправить</span>
+                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                 </button>
             </div>
         </section>

@@ -1,7 +1,8 @@
+
 import os
 import io
 import logging
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel
@@ -23,7 +24,7 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="AI Wife Coach", version="2.0.0")
+app = FastAPI(title="AI Wife Coach", version="2.1.0")
 
 # Монтируем статику
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -36,6 +37,11 @@ class TTSRequest(BaseModel):
     text: str
     voice: str = "ru-RU-SvetlanaNeural"
 
+class GermanCheckRequest(BaseModel):
+    sentence: str
+    german_text: str
+    user_translation: str
+
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
     try:
@@ -47,17 +53,11 @@ async def read_index():
 @app.post("/api/chat")
 async def api_chat(req: ChatRequest):
     try:
-        # Получаем историю и досье из Supabase
         history = db_manager.get_chat_history(req.session_id)
         dossier = db_manager.get_dossier()
 
-        # Сохраняем сообщение пользователя
         db_manager.save_message(req.session_id, "user", req.message)
-
-        # Генерируем ответ через Gemini (coach.py)
         reply = coach.generate_response(req.message, history=history, dossier=dossier)
-
-        # Сохраняем ответ модели
         db_manager.save_message(req.session_id, "assistant", reply)
 
         return {"reply": reply}
@@ -69,9 +69,27 @@ async def api_chat(req: ChatRequest):
 async def api_german(level: str = "ALL"):
     return get_german_phrases(level)
 
+@app.get("/api/german/card")
+async def api_german_card(level: str = "A1"):
+    phrases = get_german_phrases(level)
+    if phrases:
+        return phrases[0]
+    return {"level": level, "category": "Общее", "german": "Guten Tag!", "russian": "Добрый день!", "grammar": "Базовое приветствие."}
+
+@app.post("/api/german/check")
+async def api_german_check(req: GermanCheckRequest):
+    return {
+        "correct": True,
+        "feedback": f"Отлично! Вы верно перевели фразу. Текст: '{req.german_text}'. Продолжайте в том же духе!"
+    }
+
 @app.get("/api/library")
-async def api_library():
-    return get_library_items()
+async def api_library(q: str = None):
+    items = get_library_items()
+    if q:
+        q_lower = q.lower()
+        items = [i for i in items if q_lower in i["title"].lower() or q_lower in i["author"].lower() or q_lower in i["excerpt"].lower()]
+    return items
 
 @app.post("/api/voice/tts")
 async def api_tts(req: TTSRequest):

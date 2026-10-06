@@ -50,28 +50,9 @@
                         <p class="text-[10px] text-rose-100">Ялом, Готтман, Перель & Gemini 3.x</p>
                     </div>
                 </div>
-                <button onclick="switchTab('live')" class="px-3 py-1 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5">
-                    <span>🎙 Live Voice</span>
-                </button>
-            </div>
-
-            <!-- История сообщений -->
-            <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-3">
-                <div class="flex items-start gap-2.5">
-                    <div class="w-7 h-7 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-xs shadow">AI</div>
-                    <div class="bg-rose-50 border border-rose-100 rounded-2xl p-3.5 max-w-xl text-slate-700 text-sm shadow-sm">
-                        <p class="font-semibold text-rose-900 mb-1">Здравствуй, солнышко! ✨</p>
-                        <p>Я твой личный заботливый коуч. Опираясь на мудрость великих психотерапевтов, я готова поддержать тебя, снять усталость и бережно выслушать. Как прошел твой день?</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Поле ввода -->
-            <div class="p-3 bg-white border-t border-rose-100 flex items-center gap-2 shrink-0">
-                <input type="text" id="chatInput" placeholder="Напиши, что у тебя на душе..." class="flex-1 px-3.5 py-2.5 border border-rose-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400 text-sm bg-rose-50/30" onkeypress="if(event.key === 'Enter') sendMessage()">
-                
-                <button onclick="toggleRecordVoice()" id="recordBtn" class="p-2.5 bg-rose-100 text-rose-600 hover:bg-rose-200 rounded-xl transition" title="Голосовой ввод">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                <button onclick="sendMessage()" id="sendMsgBtn" class="bg-gradient-to-r from-rose-500 to-pink-500 text-white font-bold px-4 sm:px-5 py-2.5 rounded-xl shadow-md hover:opacity-95 transition flex items-center justify-center gap-1.5 shrink-0 text-xs sm:text-sm active:scale-95 whitespace-nowrap min-w-[90px]">
+                    <span>Отправить</span>
+                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                 </button>
 
                 <button onclick="sendMessage()" class="bg-gradient-to-r from-rose-500 to-pink-500 text-white font-semibold px-4 py-2.5 rounded-xl shadow-md hover:opacity-95 transition text-sm">

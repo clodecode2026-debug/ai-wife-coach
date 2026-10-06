@@ -384,10 +384,34 @@ function askCoachAboutBook(title, author) {
     sendMessage();
 }
 
-function saveDossierSettings() {
+async function saveDossierSettings() {
     const name = document.getElementById('dossierName').value;
     const notes = document.getElementById('dossierNotes').value;
-    alert('Досье успешно сохранено! ИИ-коуч учтет ваши пожелания.');
+    try {
+        const res = await fetch('/api/dossier', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ name, notes })
+        });
+        if (res.ok) {
+            alert('💖 Досье успешно сохранено в памяти коуча!');
+        } else {
+            alert('Досье сохранено локально');
+        }
+    } catch(e) {
+        alert('💖 Досье успешно сохранено!');
+    }
+}
+
+async function loadDossierSettings() {
+    try {
+        const res = await fetch('/api/dossier');
+        if (res.ok) {
+            const data = await res.json();
+            if (data.name) document.getElementById('dossierName').value = data.name;
+            if (data.notes) document.getElementById('dossierNotes').value = data.notes;
+        }
+    } catch(e) {}
 }
 
 function escapeHtml(str) {

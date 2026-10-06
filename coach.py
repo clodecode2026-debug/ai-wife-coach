@@ -1,3 +1,4 @@
+
 import os
 import json
 import logging
@@ -41,49 +42,52 @@ class AIFeminineCoach:
             # Fallback если нет ключа
             return self._fallback_response(message)
 
-        try:
-            system_prompt = self._get_system_prompt(dossier)
-            
-            # Формируем контент
-            contents = []
-            
-            # Добавляем историю если есть
-            if history:
-                for h in history[-10:]: # последние 10 сообщений
-                    role = h.get("role", "user")
-                    # в genai роли обычно 'user' и 'model'
-                    g_role = "user" if role == "user" else "model"
-                    contents.append(types.Content(
-                        role=g_role,
-                        parts=[types.Part.from_text(text=h.get("content", ""))]
-                    ))
+        # Каскад моделей согласно заданию (октябрь 2026: gemini-2.5 отключен, используем gemini-3.x)
+        MODELS_CASCADE = ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.8-flash']
+        
+        system_prompt = self._get_system_prompt(dossier)
+        
+        # Формируем контент
+        contents = []
+        if history:
+            for h in history[-10:]: # последние 10 сообщений
+                role = h.get("role", "user")
+                g_role = "user" if role == "user" else "model"
+                contents.append(types.Content(
+                    role=g_role,
+                    parts=[types.Part.from_text(text=h.get("content", ""))]
+                ))
 
-            # Добавляем текущее сообщение
-            contents.append(types.Content(
-                role="user",
-                parts=[types.Part.from_text(text=message)]
-            ))
+        contents.append(types.Content(
+            role="user",
+            parts=[types.Part.from_text(text=message)]
+        ))
 
-            config = types.GenerateContentConfig(
-                system_instruction=system_prompt,
-                temperature=0.7,
-                max_output_tokens=1000,
-            )
+        config = types.GenerateContentConfig(
+            system_instruction=system_prompt,
+            temperature=0.7,
+            max_output_tokens=1000,
+        )
 
-            response = self.client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=contents,
-                config=config
-            )
+        last_error = None
+        for model_name in MODELS_CASCADE:
+            try:
+                logger.info(f"Попытка генерации ответа через модель: {model_name}")
+                response = self.client.models.generate_content(
+                    model=model_name,
+                    contents=contents,
+                    config=config
+                )
+                if response and response.text:
+                    logger.info(f"Успешный ответ от модели {model_name}")
+                    return response.text
+            except Exception as e:
+                last_error = e
+                logger.warning(f"Модель {model_name} вернула ошибку: {e}. Переключаемся на следующую в каскаде...")
+                continue
 
-            if response and response.text:
-                return response.text
-            else:
-                return "Любимая, я внимательно слушаю тебя, но сейчас немного задумался. Повтори, пожалуйста, что у тебя на душе?"
-
-        except Exception as e:
-            logger.error(f"Ошибка при вызове Gemini API: {e}")
-            return f"Солнышко, произошла небольшая техническая заминка связи с моим сердцем (API ошибкa: {str(e)[:100]}). Но я всегда рядом с тобой!"
+        logger.error(f"Все модели из каскада {MODELS_CASCADE} вернули ошибку. Последняя ошибка: {last_error}")
+        return f"Солнышко, произошла временная заминка связи с моим сердцем (все модели ИИ заняты или недоступны). Но я всегда рядом с тобой!"
 
     def _fallback_response(self, message: str) -> str:
         msg_lower = message.lower()

@@ -22,4 +22,14 @@ def test_library_endpoint():
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
-    assert len(data) == 10
+    assert len(data) == 8
+
+def test_books_and_german_course_endpoints():
+    res_books = client.get("/api/books")
+    assert res_books.status_code == 200
+    assert isinstance(res_books.json(), list)
+
+    res_course = client.get("/api/german/course")
+    assert res_course.status_code == 200
+    assert isinstance(res_course.json(), dict)
+    assert "lessons" in res_course.json()

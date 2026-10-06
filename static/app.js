@@ -94,9 +94,9 @@ async function sendChatMessage(presetText = null) {
         messagesContainer.appendChild(replyDiv);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-        // Speak reply via Server edge-tts (SvetlanaNeural)
+        // Speak reply softly
         if (isVoiceOutputEnabled) {
-            playServerVoice(replyText);
+            speakText(replyText);
         }
     } catch (e) {
         console.error('Chat error:', e);
@@ -171,45 +171,8 @@ function toggleVoice() {
     recognition.start();
 }
 
-// VOICE OUTPUT (Live Server Voice via edge-tts SvetlanaNeural) + Visualizer
-async function playServerVoice(text) {
-    if (!text || !text.trim()) return;
-    const cleanText = text.replace(/[*_#✨💖🌸☕️💡👤]/g, '');
-    
-    // Add visual glowing wave effect on coach card / header
-    const coachCard = document.getElementById('tab-coach');
-    if (coachCard) {
-        coachCard.classList.add('voice-speaking-pulse');
-    }
-
-    try {
-        const resp = await fetch('/api/voice/tts', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ text: cleanText, voice: 'ru-RU-SvetlanaNeural' })
-        });
-        if (!resp.ok) throw new Error('Voice fetch failed: ' + resp.status);
-        const blob = await resp.blob();
-        const audioUrl = URL.createObjectURL(blob);
-        const audio = new Audio(audioUrl);
-        
-        audio.onended = () => {
-            if (coachCard) coachCard.classList.remove('voice-speaking-pulse');
-        };
-        audio.onerror = () => {
-            if (coachCard) coachCard.classList.remove('voice-speaking-pulse');
-        };
-
-        await audio.play();
-    } catch (err) {
-        console.error('Audio play error:', err);
-        if (coachCard) coachCard.classList.remove('voice-speaking-pulse');
-        // Fallback to Web Speech API if server tts unreachable
-        fallbackSpeakText(cleanText);
-    }
-}
-
-function fallbackSpeakText(text) {
+// VOICE OUTPUT (TTS)
+function speakText(text) {
     if (!('speechSynthesis' in window)) return;
     try {
         window.speechSynthesis.cancel();
@@ -218,228 +181,202 @@ function fallbackSpeakText(text) {
         utterance.lang = 'ru-RU';
         utterance.rate = 0.95;
         utterance.pitch = 1.05;
+        
+        const voices = window.speechSynthesis.getVoices();
+        const ruVoice = voices.find(v => v.lang.startsWith('ru') && (v.name.includes('Milena') || v.name.includes('Yuri') || v.name.includes('Google') || v.name.includes('Tatyana')));
+        if (ruVoice) utterance.voice = ruVoice;
+
         window.speechSynthesis.speak(utterance);
     } catch (e) {
-        console.warn('Fallback speech error:', e);
+        console.warn('TTS error:', e);
     }
 }
 
-// SESSIONS / HISTORY
+// MULTI-CHAT SESSIONS
 async function loadSessions() {
     try {
         const res = await fetch('/api/sessions');
-        const data = await res.json();
-        const list = document.getElementById('chat-sessions-list');
-        if (!list) return;
-
-        if (!data.sessions || data.sessions.length === 0) {
-            list.innerHTML = `<div class="text-[11px] text-slate-400 italic">Нет сохраненных историй пока</div>`;
+        const sessions = await res.json();
+        const container = document.getElementById('chat-sessions-list');
+        if (!container) return;
+        
+        if (!sessions || sessions.length === 0) {
+            container.innerHTML = '<div class="text-[11px] text-pink-400 p-2">История диалогов пока пуста</div>';
             return;
         }
 
-        list.innerHTML = data.sessions.map(s => `
-            <div onclick="switchSession('${s.id}')" class="p-2 bg-white rounded-xl border border-pink-100 hover:bg-pink-100/50 cursor-pointer text-xs flex justify-between items-center transition ${activeSessionId === s.id ? 'border-pink-400 bg-pink-50 font-semibold' : ''}">
-                <span class="truncate max-w-[200px] text-slate-700">${escapeHtml(s.title || 'Разговор')}</span>
-                <span class="text-[10px] text-slate-400">${new Date(s.updated_at * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-            </div>
+        container.innerHTML = sessions.map(s => `
+            <button onclick="switchSession('${s.id}')" class="text-left w-full text-xs p-2 rounded-xl transition truncate ${activeSessionId === s.id ? 'bg-pink-200 text-pink-900 font-semibold' : 'hover:bg-pink-100/60 text-slate-600'}">
+                💬 ${escapeHtml(s.title || 'Разговор')}
+            </button>
         `).join('');
     } catch (e) {
-        console.warn('Load sessions error:', e);
+        console.warn('Load sessions err:', e);
     }
 }
 
-async function switchSession(sessionId) {
-    activeSessionId = sessionId;
-    localStorage.setItem('ai_wife_session_id', sessionId);
-    document.getElementById('sessions-drawer').classList.add('hidden');
-    
+async function switchSession(sid) {
+    activeSessionId = sid;
+    localStorage.setItem('ai_wife_session_id', sid);
+    loadSessions();
+
     try {
-        const res = await fetch(`/api/sessions/${sessionId}`);
-        const data = await res.json();
+        const res = await fetch(`/api/sessions/${sid}/messages`);
+        const messages = await res.json();
         const messagesContainer = document.getElementById('chat-messages');
         if (!messagesContainer) return;
 
-        if (data.messages && data.messages.length > 0) {
-            messagesContainer.innerHTML = data.messages.map(m => {
+        messagesContainer.innerHTML = '';
+        if (messages && messages.length > 0) {
+            messages.forEach(m => {
                 if (m.role === 'user') {
-                    return `
+                    messagesContainer.innerHTML += `
                         <div class="flex items-end justify-end space-x-2">
-                            <div class="bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-2xl p-3.5 max-w-[85%] text-sm shadow-sm break-words">${escapeHtml(m.content)}</div>
+                            <div class="bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-2xl p-3.5 max-w-[85%] text-sm shadow-sm break-words">
+                                ${escapeHtml(m.content)}
+                            </div>
                             <div class="w-8 h-8 rounded-full bg-purple-200 flex items-center justify-center text-sm flex-shrink-0">👤</div>
                         </div>
                     `;
                 } else {
-                    return `
+                    const gentleQ = m.gentle_question ? `<div class="mt-2 pt-2 border-t border-pink-100 text-xs text-purple-700 font-medium">✨ ${escapeHtml(m.gentle_question)}</div>` : '';
+                    messagesContainer.innerHTML += `
                         <div class="flex items-start space-x-2">
                             <div class="w-8 h-8 rounded-full bg-pink-200 flex items-center justify-center text-sm flex-shrink-0">💖</div>
-                            <div class="bg-pink-50/80 rounded-2xl p-3.5 max-w-[85%] text-sm border border-pink-100 shadow-sm text-slate-700 break-words">${escapeHtml(m.content)}</div>
+                            <div class="bg-pink-50/80 rounded-2xl p-3.5 max-w-[85%] text-sm border border-pink-100 shadow-sm text-slate-700 break-words">
+                                ${escapeHtml(m.content)}
+                                ${gentleQ}
+                            </div>
                         </div>
                     `;
                 }
-            }).join('');
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            });
         }
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
     } catch (e) {
-        console.error('Switch session error:', e);
+        console.warn('Load session messages err:', e);
     }
-    loadSessions();
 }
 
-// GERMAN FLASHCARDS & QUIZ
+// GERMAN TRAINER
 let currentFlashcards = [];
 let currentCardIndex = 0;
 let isCardFlipped = false;
 
-async function loadGermanFlashcards(level, btnEl) {
-    document.querySelectorAll('.german-level-btn').forEach(b => {
-        b.className = 'german-level-btn bg-purple-100 text-purple-700 px-4 py-1.5 rounded-full text-xs font-medium';
+async function loadGermanFlashcards(level = 'A1', btnEl = null) {
+    document.querySelectorAll('.german-level-btn').forEach(btn => {
+        btn.className = 'german-level-btn bg-purple-100 text-purple-700 px-4 py-1.5 rounded-full text-xs font-medium';
     });
     if (btnEl) {
         btnEl.className = 'german-level-btn bg-purple-600 text-white px-4 py-1.5 rounded-full text-xs font-medium shadow';
     }
 
     try {
-        const res = await fetch(`/api/german/cards?level=${level}`);
+        const res = await fetch(`/api/german/card?level=${level}`);
         const data = await res.json();
-        currentFlashcards = data.cards || [];
+        currentFlashcards = Array.isArray(data) ? data : [data];
         currentCardIndex = 0;
         isCardFlipped = false;
-        displayCurrentCard();
-    } catch (e) {
-        console.error('Load german cards error:', e);
+        renderFlashcard();
+    } catch(e) {
+        console.warn('German card error:', e);
     }
 }
 
-function displayCurrentCard() {
+function renderFlashcard() {
     if (!currentFlashcards.length) return;
-    const card = currentFlashcards[currentCardIndex];
-    const lvlEl = document.getElementById('fc-level');
-    const wordEl = document.getElementById('fc-word');
-    const transEl = document.getElementById('fc-translation');
-    const exEl = document.getElementById('fc-example');
+    const card = currentFlashcards[currentCardIndex % currentFlashcards.length];
+    const word = card.word || card.de || '';
+    const translation = card.translation || card.ru || '';
+    const example = card.example || card.hint || card.de || '';
 
-    if (lvlEl) lvlEl.innerText = card.level || 'A1';
-    if (wordEl) wordEl.innerText = card.word;
-    if (transEl) {
-        transEl.innerText = card.translation;
-        transEl.classList.add('hidden');
+    const elLevel = document.getElementById('fc-level');
+    const elWord = document.getElementById('fc-word');
+    const elTrans = document.getElementById('fc-translation');
+    const elEx = document.getElementById('fc-example');
+
+    if (elLevel) elLevel.innerText = card.level || 'A1';
+    if (elWord) elWord.innerText = isCardFlipped ? translation : word;
+    if (elTrans) {
+        elTrans.innerText = translation;
+        elTrans.classList.toggle('hidden', !isCardFlipped);
     }
-    if (exEl) {
-        if (card.example) {
-            exEl.innerText = `Пример: ${card.example} (${card.example_translation || ''})`;
-            exEl.classList.add('hidden');
-        } else {
-            exEl.classList.add('hidden');
-        }
+    if (elEx) {
+        elEx.innerText = `Пример: ${example}`;
+        elEx.classList.toggle('hidden', !isCardFlipped);
     }
-    isCardFlipped = false;
 }
 
 function flipCard() {
     isCardFlipped = !isCardFlipped;
-    const transEl = document.getElementById('fc-translation');
-    const exEl = document.getElementById('fc-example');
-    if (transEl) {
-        if (isCardFlipped) transEl.classList.remove('hidden');
-        else transEl.classList.add('hidden');
-    }
-    if (exEl && currentFlashcards.length) {
-        const card = currentFlashcards[currentCardIndex];
-        if (card.example) {
-            if (isCardFlipped) exEl.classList.remove('hidden');
-            else exEl.classList.add('hidden');
-        }
+    renderFlashcard();
+    if (!isCardFlipped) {
+        currentCardIndex++;
+        renderFlashcard();
     }
 }
 
-function nextCard() {
-    if (!currentFlashcards.length) return;
-    currentCardIndex = (currentCardIndex + 1) % currentFlashcards.length;
-    displayCurrentCard();
-}
+async function checkGermanSentence() {
+    const input = document.getElementById('german-input');
+    const text = input ? input.value.trim() : '';
+    if (!text) return;
 
-async function pronounceGerman(word) {
-    if (!word) return;
     try {
-        const resp = await fetch('/api/voice/tts', {
+        const res = await fetch('/api/german/check', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ text: word, voice: 'de-DE-KatjaNeural' })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sentence: text, german_text: text, user_translation: text })
         });
-        if (!resp.ok) throw new Error('German TTS failed');
-        const blob = await resp.blob();
-        const audioUrl = URL.createObjectURL(blob);
-        const audio = new Audio(audioUrl);
-        audio.play();
-    } catch (e) {
-        console.warn('German TTS error, using fallback');
-        fallbackSpeakText(word);
+        const data = await res.json();
+        const fb = document.getElementById('german-feedback');
+        if (fb) {
+            fb.classList.remove('hidden');
+            const feedbackText = data.feedback || data.message || 'Отлично! Твоя практика зафиксирована.';
+            fb.innerHTML = `<strong>Результат:</strong> ${escapeHtml(feedbackText)}`;
+        }
+    } catch(e) {
+        console.error(e);
     }
 }
 
 // LIBRARY
 async function loadBooks() {
     try {
-        const res = await fetch('/api/library/books');
-        const data = await res.json();
-        const container = document.getElementById('library-books');
-        if (!container) return;
+        const res = await fetch('/api/books');
+        const books = await res.json();
+        renderBooks(books);
+    } catch(e) {
+        console.error(e);
+    }
+}
 
-        if (!data.books || data.books.length === 0) {
-            container.innerHTML = `<div class="text-sm text-slate-400">Библиотека пуста</div>`;
-            return;
-        }
-
-        container.innerHTML = data.books.map(b => `
-            <div onclick="openBook('${b.id}')" class="bg-gradient-to-br from-amber-50 to-pink-50 p-4 rounded-2xl border border-amber-200/60 shadow-sm hover:shadow-md transition cursor-pointer flex flex-col justify-between">
-                <div>
-                    <span class="text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full font-semibold">${escapeHtml(b.category || 'Книга')}</span>
-                    <h3 class="font-bold text-slate-800 mt-2 text-sm sm:text-base">${escapeHtml(b.title)}</h3>
-                    <p class="text-xs text-slate-600 mt-1">${escapeHtml(b.author)}</p>
-                </div>
-                <div class="mt-4 flex items-center justify-between text-xs text-purple-600 font-semibold">
-                    <span>Читать конспект ➔</span>
-                </div>
+function renderBooks(books) {
+    const container = document.getElementById('books-list');
+    if (!container) return;
+    if (!books || !books.length) {
+        container.innerHTML = '<div class="text-xs text-slate-400 p-4">Книг пока нет</div>';
+        return;
+    }
+    container.innerHTML = books.map(b => `
+        <div class="bg-amber-50/50 border border-amber-100 p-4 rounded-2xl shadow-sm flex flex-col justify-between">
+            <div>
+                <h3 class="font-bold text-slate-800 text-sm">${escapeHtml(b.title || '')}</h3>
+                <p class="text-xs text-amber-800 italic mt-1">«${escapeHtml(b.excerpt || b.quote || '')}»</p>
             </div>
-        `).join('');
-    } catch (e) {
-        console.error('Load books error:', e);
-    }
+            <div class="text-[10px] text-slate-400 mt-3 pt-2 border-t border-amber-100/60">${escapeHtml(b.author || 'Психология')}</div>
+        </div>
+    `).join('');
 }
 
-async function openBook(bookId) {
+async function searchBooks() {
+    const input = document.getElementById('book-search');
+    const q = input ? input.value.trim() : '';
     try {
-        const res = await fetch(`/api/library/books/${bookId}`);
-        const b = await res.json();
-        const view = document.getElementById('book-reader-view');
-        const list = document.getElementById('library-list-view');
-        if (!view || !list) return;
-
-        list.classList.add('hidden');
-        view.classList.remove('hidden');
-
-        document.getElementById('reader-title').innerText = b.title;
-        document.getElementById('reader-author').innerText = b.author;
-        document.getElementById('reader-summary').innerText = b.summary || '';
-
-        const quotesEl = document.getElementById('reader-quotes');
-        if (b.quotes && b.quotes.length > 0) {
-            quotesEl.innerHTML = `<h4 class="font-bold text-xs text-amber-800 mb-2">💡 Ключевые цитаты:</h4>` + 
-                b.quotes.map(q => `<blockquote class="italic text-xs text-slate-700 bg-white/70 p-2.5 rounded-xl border border-amber-100 mb-2">«${escapeHtml(q)}»</blockquote>`).join('');
-        } else {
-            quotesEl.innerHTML = '';
-        }
-    } catch (e) {
-        console.error('Open book error:', e);
-    }
-}
-
-function closeBookReader() {
-    const view = document.getElementById('book-reader-view');
-    const list = document.getElementById('library-list-view');
-    if (view && list) {
-        view.classList.add('hidden');
-        list.classList.remove('hidden');
+        const res = await fetch(`/api/books?q=${encodeURIComponent(q)}`);
+        const books = await res.json();
+        renderBooks(books);
+    } catch(e) {
+        console.error(e);
     }
 }
 
@@ -447,76 +384,81 @@ function closeBookReader() {
 async function loadTasks() {
     try {
         const res = await fetch('/api/tasks');
-        const data = await res.json();
-        const container = document.getElementById('tasks-list');
-        if (!container) return;
-
-        if (!data.tasks || data.tasks.length === 0) {
-            container.innerHTML = `<div class="text-sm text-slate-400 text-center py-6">У тебя нет задач. Отдохни и побудь собой! ✨</div>`;
-            return;
-        }
-
-        container.innerHTML = data.tasks.map(t => `
-            <div class="bg-white p-3.5 rounded-2xl border border-pink-100 flex items-center justify-between shadow-sm">
-                <div class="flex items-center space-x-3">
-                    <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask('${t.id}')" class="w-4 h-4 text-pink-600 rounded focus:ring-pink-400 cursor-pointer">
-                    <span class="text-sm ${t.completed ? 'line-through text-slate-400' : 'text-slate-700 font-medium'}">${escapeHtml(t.title)}</span>
-                </div>
-                <button onclick="deleteTask('${t.id}')" class="text-slate-300 hover:text-rose-500 text-xs px-2 py-1 transition">✕</button>
-            </div>
-        `).join('');
-    } catch (e) {
-        console.error('Load tasks error:', e);
+        const tasks = await res.json();
+        renderTasks(tasks);
+    } catch(e) {
+        console.error(e);
     }
 }
 
-async function addTask() {
+function renderTasks(tasks) {
+    const container = document.getElementById('tasks-list');
+    if (!container) return;
+    if (!tasks || !tasks.length) {
+        container.innerHTML = '<div class="text-xs text-slate-400 p-3">Список забот пока пуст</div>';
+        return;
+    }
+    container.innerHTML = tasks.map(t => {
+        const taskId = String(t.id);
+        return `
+            <div class="flex items-center justify-between p-3 bg-pink-50/40 border border-pink-100 rounded-2xl shadow-sm">
+                <div class="flex items-center space-x-3">
+                    <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask('${escapeHtml(taskId)}')" class="w-4 h-4 text-pink-600 rounded border-pink-300 focus:ring-pink-400 cursor-pointer">
+                    <span class="text-sm ${t.completed ? 'line-through text-slate-400' : 'text-slate-700 font-medium'}">${escapeHtml(t.title || '')}</span>
+                </div>
+                <button onclick="deleteTask('${escapeHtml(taskId)}')" class="text-slate-400 hover:text-red-500 text-xs px-2 py-1 transition">✕</button>
+            </div>
+        `;
+    }).join('');
+}
+
+async function addNewTask() {
     const input = document.getElementById('new-task-input');
-    if (!input || !input.value.trim()) return;
-    const title = input.value.trim();
-    input.value = '';
+    const title = input ? input.value.trim() : '';
+    if (!title) return;
 
     try {
         await fetch('/api/tasks', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ title })
         });
+        if (input) input.value = '';
         loadTasks();
-    } catch (e) {
-        console.error('Add task error:', e);
-    }
+    } catch(e) { console.error(e); }
 }
 
-async function toggleTask(taskId) {
+async function toggleTask(id) {
     try {
-        await fetch(`/api/tasks/${taskId}/toggle`, { method: 'POST' });
+        await fetch(`/api/tasks/${encodeURIComponent(id)}/toggle`, { method: 'POST' });
         loadTasks();
-    } catch (e) {
-        console.error('Toggle task error:', e);
-    }
+    } catch(e) { console.error(e); }
 }
 
-async function deleteTask(taskId) {
+async function deleteTask(id) {
     try {
-        await fetch(`/api/tasks/${taskId}`, { method: 'DELETE' });
+        await fetch(`/api/tasks/${encodeURIComponent(id)}`, { method: 'DELETE' });
         loadTasks();
-    } catch (e) {
-        console.error('Delete task error:', e);
-    }
+    } catch(e) { console.error(e); }
 }
 
-// Helpers
-function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/&/g, '&amp;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;')
-              .replace(/"/g, '&quot;')
-              .replace(/'/g, '&#039;');
+function handleTaskKey(e) {
+    if (e.key === 'Enter') addNewTask();
 }
 
-// Init on load
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
+}
+
+// SAFE INITIALIZATION ON DOM READY
 document.addEventListener('DOMContentLoaded', () => {
-    loadSessions();
+    try {
+        loadGermanFlashcards('A1');
+        loadTasks();
+        loadSessions();
+    } catch (e) {
+        console.error('Init error:', e);
+    }
 });

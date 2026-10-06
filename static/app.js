@@ -343,9 +343,9 @@ async function loadGermanCourse(level) {
         const btn = document.getElementById('german-btn-' + l);
         if (btn) {
             if (l === level.toLowerCase()) {
-                btn.className = 'px-2.5 py-1 text-xs font-semibold rounded-lg bg-rose-500 text-white shadow';
+                btn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg bg-rose-500 text-white shadow';
             } else {
-                btn.className = 'px-2.5 py-1 text-xs font-semibold rounded-lg bg-rose-100 text-rose-700';
+                btn.className = 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200 transition';
             }
         }
     });
@@ -356,181 +356,80 @@ async function loadGermanCourse(level) {
     try {
         const res = await fetch('/api/german/course');
         const data = await res.json();
-        const lessons = data.lessons.filter(l => l.level === level);
-
+        
         container.innerHTML = '';
+
+        // 1. Отображаем карточку плана обучения для текущего уровня
+        if (data.study_plan) {
+            const planItem = data.study_plan.find(p => p.stage.startsWith(level)) || data.study_plan[0];
+            const planCard = document.createElement('div');
+            planCard.className = 'bg-gradient-to-r from-amber-50 to-rose-50 border border-amber-200/70 rounded-xl p-3.5 shadow-sm text-xs space-y-1 mb-2';
+            planCard.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <span class="font-bold text-amber-900 flex items-center gap-1.5">🎯 ` + escapeHtml(planItem.stage) + `</span>
+                    <span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-semibold text-[10px]">Срок: ` + escapeHtml(planItem.duration) + `</span>
+                </div>
+                <p class="text-slate-600">` + escapeHtml(planItem.goal) + `</p>
+            `;
+            container.appendChild(planCard);
+        }
+
+        const lessons = data.lessons.filter(l => l.level === level);
         if (lessons.length === 0) {
-            container.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">Уроков для этого уровня пока нет.</p>';
+            container.innerHTML += '<p class="text-xs text-slate-500 text-center py-4">Уроков для этого уровня пока нет.</p>';
             return;
         }
 
         lessons.forEach(lesson => {
             const card = document.createElement('div');
-            card.className = 'bg-rose-50/40 border border-rose-100 rounded-xl p-4 space-y-3';
+            card.className = 'bg-white border border-rose-100 rounded-xl p-4 space-y-3 shadow-sm';
             
             let vocabHtml = '<div class="space-y-2 mt-2">';
             lesson.vocabulary.forEach(v => {
+                const voiceHint = v.voice_hint || 'de-DE-KatjaNeural';
+                const speakerName = voiceHint.includes('Conrad') ? 'Conrad 👨' : 'Katja 👩';
                 vocabHtml += `
-                    <div class="flex items-center justify-between bg-white p-2.5 rounded-lg border border-rose-100 text-xs">
-                        <div>
-                            <span class="font-bold text-rose-900">${escapeHtml(v.german)}</span>
-                            <span class="text-slate-500 ml-2">(${escapeHtml(v.russian)})</span>
+                    <div class="flex items-center justify-between bg-rose-50/40 p-2.5 rounded-lg border border-rose-100/60 text-xs gap-2">
+                        <div class="flex-1">
+                            <span class="font-bold text-rose-900">` + escapeHtml(v.german) + `</span>
+                            <span class="text-slate-600 block sm:inline sm:ml-2">(` + escapeHtml(v.russian) + `)</span>
                         </div>
-                        <button onclick="playTTS(this, '${escapeQuotes(v.german)}', '${v.voice_hint || 'de-DE-KatjaNeural'}')" class="p-1.5 bg-rose-100 text-rose-700 rounded-md hover:bg-rose-200 transition" title="Озвучить немецкий">
-                            🔊
+                        <button onclick="playTTS(this, '` + escapeQuotes(v.german) + `', '` + voiceHint + `')" class="px-2.5 py-1.5 bg-white text-rose-700 font-semibold rounded-lg shadow-sm border border-rose-200 hover:bg-rose-100 transition shrink-0 flex items-center gap-1 text-[11px]" title="Озвучить немецким диктором">
+                            <span>🔊</span> <span>` + speakerName + `</span>
                         </button>
                     </div>
                 `;
             });
             vocabHtml += '</div>';
 
-            card.innerHTML = `
-                <div>
-                    <span class="px-2 py-0.5 bg-rose-500 text-white rounded text-[10px] font-bold">${lesson.level}</span>
-                    <h3 class="font-bold text-sm text-slate-800 mt-1">${escapeHtml(lesson.title)}</h3>
-                    <p class="text-xs text-slate-600 mt-1"><b>Грамматика:</b> ${escapeHtml(lesson.grammar)}</p>
-                </div>
-                ${vocabHtml}
-            `;
-            container.appendChild(card);
-        });
-    } catch (e) {
-        container.innerHTML = '<p class="text-xs text-rose-500 text-center py-4">Не удалось загрузить курс немецкого.</p>';
-    }
-}
-
-// ПСИХОЛОГИЧЕСКАЯ БИБЛИОТЕКА
-async function loadLibraryBooks(searchQuery = '') {
-    const container = document.getElementById('libraryList');
-    container.innerHTML = '<div class="text-center py-6 text-slate-400 text-xs col-span-2">Загрузка библиотеки книг...</div>';
-
-    try {
-        let url = '/api/books/psychology';
-        if (searchQuery) url += `?q=${encodeURIComponent(searchQuery)}`;
-        const res = await fetch(url);
-        const books = await res.json();
-
-        container.innerHTML = '';
-        if (books.length === 0) {
-            container.innerHTML = '<p class="text-xs text-slate-500 text-center py-4 col-span-2">Книги не найдены.</p>';
-            return;
-        }
-
-        books.forEach(b => {
-            const card = document.createElement('div');
-            card.className = 'bg-white border border-rose-100 rounded-xl p-4 shadow-sm flex flex-col justify-between space-y-3';
-            
-            let ideasHtml = '<ul class="list-disc list-inside text-[11px] text-slate-600 space-y-1 mt-2">';
-            (b.key_ideas || []).forEach(idea => {
-                ideasHtml += `<li>${escapeHtml(idea)}</li>`;
-            });
-            ideasHtml += '</ul>';
-
-            card.innerHTML = `
-                <div>
-                    <div class="flex items-center justify-between">
-                        <span class="px-2 py-0.5 bg-rose-100 text-rose-700 rounded text-[10px] font-bold">${escapeHtml(b.category)}</span>
-                        <span class="text-xs font-semibold text-amber-600">⭐ ${b.rating}</span>
+            let dialogueHtml = '';
+            if (lesson.dialogue_simulator) {
+                dialogueHtml = `
+                    <div class="mt-3 bg-purple-50/60 border border-purple-100 rounded-lg p-3 text-xs space-y-1">
+                        <div class="font-bold text-purple-900 flex items-center gap-1">💬 Интерактивный диалог: ` + escapeHtml(lesson.dialogue_simulator.situation) + `</div>
+                        <div class="text-purple-700 italic">Пример: «` + escapeHtml(lesson.dialogue_simulator.example) + `»</div>
+                        <div class="text-slate-500 text-[11px]">💡 Подсказка: ` + escapeHtml(lesson.dialogue_simulator.tips) + `</div>
                     </div>
-                    <h3 class="font-bold text-sm text-slate-800 mt-2">${escapeHtml(b.title)}</h3>
-                    <p class="text-xs font-medium text-rose-600">${escapeHtml(b.author)} (${b.year || 2000})</p>
-                    <p class="text-xs text-slate-600 mt-2 italic">«${escapeHtml(b.excerpt)}»</p>
-                    ${ideasHtml}
+                `;
+            }
+
+            card.innerHTML = `
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 bg-rose-500 text-white rounded text-[10px] font-bold">` + lesson.level + `</span>
+                        <h3 class="font-bold text-sm text-slate-800">` + escapeHtml(lesson.title) + `</h3>
+                    </div>
+                    <p class="text-xs text-rose-700 font-medium mt-1.5 bg-rose-50/70 p-2 rounded-lg border border-rose-100">📖 Грамматика: ` + escapeHtml(lesson.grammar) + `</p>
+                    ` + (lesson.rule_explanation ? `<p class="text-[11px] text-slate-600 mt-1 italic pl-1">💡 ` + escapeHtml(lesson.rule_explanation) + `</p>` : '') + `
                 </div>
-                <button onclick="askCoachAboutBook('${escapeQuotes(b.title)}', '${escapeQuotes(b.author)}')" class="w-full py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold rounded-lg text-xs transition border border-rose-200">
-                    ✨ Обсудить с ИИ-коучем
-                </button>
+                ` + vocabHtml + `
+                ` + dialogueHtml + `
             `;
             container.appendChild(card);
         });
     } catch (e) {
-        container.innerHTML = '<p class="text-xs text-rose-500 text-center py-4 col-span-2">Не удалось загрузить библиотеку.</p>';
+        container.innerHTML = '<div class="text-center py-6 text-rose-500 text-xs">Ошибка загрузки немецкого курса. Попробуйте обновить страницу.</div>';
     }
 }
 
-function filterLibrary() {
-    const q = document.getElementById('librarySearch').value;
-    loadLibraryBooks(q);
-}
 
-function askCoachAboutBook(title, author) {
-    switchTab('chat');
-    const input = document.getElementById('chatInput');
-    input.value = `Расскажи подробнее про идеи из книги «${title}» автора ${author} и как применить их в наших отношениях.`;
-    sendMessage();
-}
-
-async function saveDossierSettings() {
-    const name = document.getElementById('dossierName').value;
-    const notes = document.getElementById('dossierNotes').value;
-    try {
-        const res = await fetch('/api/dossier', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ name, notes })
-        });
-        if (res.ok) {
-            alert('💖 Досье успешно сохранено в памяти коуча!');
-        } else {
-            alert('Досье сохранено локально');
-        }
-    } catch(e) {
-        alert('💖 Досье успешно сохранено!');
-    }
-}
-
-async function loadDossierSettings() {
-    try {
-        const res = await fetch('/api/dossier');
-        if (res.ok) {
-            const data = await res.json();
-            if (data.name) document.getElementById('dossierName').value = data.name;
-            if (data.notes) document.getElementById('dossierNotes').value = data.notes;
-        }
-    } catch(e) {}
-}
-
-function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>'"]/g, 
-        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
-    );
-}
-
-function escapeQuotes(str) {
-    if (!str) return '';
-    return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-}
-
-
-// Обычный голосовой ввод для поля ввода
-function toggleRecordVoice() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-        alert("Голосовой ввод не поддерживается вашим браузером. Используйте мобильный Chrome/Safari.");
-        return;
-    }
-    const rec = new SpeechRecognition();
-    rec.lang = 'ru-RU';
-    const btn = document.getElementById('recordBtn');
-    if (btn) btn.classList.add('animate-pulse', 'bg-rose-300');
-    rec.onresult = (e) => {
-        const transcript = e.results[0][0].transcript;
-        const input = document.getElementById('chatInput');
-        if (input) {
-            input.value = transcript;
-            sendMessage();
-        }
-    };
-    rec.onend = () => {
-        if (btn) btn.classList.remove('animate-pulse', 'bg-rose-300');
-    };
-    rec.onerror = () => {
-        if (btn) btn.classList.remove('animate-pulse', 'bg-rose-300');
-    };
-    try {
-        rec.start();
-    } catch(err) {
-        console.error("Mic start error:", err);
-    }
-}

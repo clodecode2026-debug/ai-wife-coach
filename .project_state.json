@@ -26,7 +26,8 @@
     "render.yaml": "Файл .yaml",
     "keep_alive.py": "Файл .py",
     "voice.py": "эндпоинт /api/voice/tts с edge-tts",
-    "static/app.js": "воспроизведение аудио через /api/voice/tts"
+    "static/app.js": "воспроизведение аудио через /api/voice/tts",
+    "tts_helper.js": "Файл .js"
   },
   "key_decisions": [
     "AI коуч-психолог с мягкой поддержкой",
@@ -58,7 +59,7 @@
     "фронтенд app.js вызывает этот эндпоинт для натуральной озвучки ответов коуча"
   ],
   "current_status": "Готово к деплою на Render и синхронизации с GitHub",
-  "updated_at": "2026-10-06T20:41:18.702202+00:00",
+  "updated_at": "2026-10-06T20:46:44.660758+00:00",
   "project_name": "ai-wife-coach",
   "post_mortems": [
     "Проверена валидация кода и зависимости requirements.txt",

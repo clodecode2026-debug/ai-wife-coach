@@ -401,3 +401,36 @@ function escapeQuotes(str) {
     if (!str) return '';
     return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
 }
+
+
+// Обычный голосовой ввод для поля ввода
+function toggleRecordVoice() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        alert("Голосовой ввод не поддерживается вашим браузером. Используйте мобильный Chrome/Safari.");
+        return;
+    }
+    const rec = new SpeechRecognition();
+    rec.lang = 'ru-RU';
+    const btn = document.getElementById('recordBtn');
+    if (btn) btn.classList.add('animate-pulse', 'bg-rose-300');
+    rec.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
+        const input = document.getElementById('chatInput');
+        if (input) {
+            input.value = transcript;
+            sendMessage();
+        }
+    };
+    rec.onend = () => {
+        if (btn) btn.classList.remove('animate-pulse', 'bg-rose-300');
+    };
+    rec.onerror = () => {
+        if (btn) btn.classList.remove('animate-pulse', 'bg-rose-300');
+    };
+    try {
+        rec.start();
+    } catch(err) {
+        console.error("Mic start error:", err);
+    }
+}

@@ -13,6 +13,8 @@ from coach import coach
 from database import db_manager
 from german import get_german_phrases
 from library import get_library_items
+from storage import s3_storage
+import base64
 
 # Попытка импорта edge-tts
 try:
@@ -32,10 +34,15 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 class ChatRequest(BaseModel):
     message: str
     session_id: str = "default_session"
+    is_voice_mode: bool = False
 
 class TTSRequest(BaseModel):
     text: str
     voice: str = "ru-RU-SvetlanaNeural"
+
+class VoiceSaveRequest(BaseModel):
+    audio_base64: str
+    filename: str = "voice_note.mp3"
 
 class GermanCheckRequest(BaseModel):
     sentence: str
@@ -57,7 +64,7 @@ async def api_chat(req: ChatRequest):
         dossier = db_manager.get_dossier()
 
         db_manager.save_message(req.session_id, "user", req.message)
-        reply = coach.generate_response(req.message, history=history, dossier=dossier)
+        reply = coach.generate_response(req.message, history=history, dossier=dossier, is_voice_mode=req.is_voice_mode)
         db_manager.save_message(req.session_id, "assistant", reply)
 
         return {"reply": reply}
@@ -107,6 +114,18 @@ async def api_tts(req: TTSRequest):
         return Response(content=audio_stream.read(), media_type="audio/mpeg")
     except Exception as e:
         logger.error(f"TTS Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/voice/save")
+async def api_voice_save(req: VoiceSaveRequest):
+    try:
+        binary_data = base64.b64decode(req.audio_base64)
+        file_url = s3_storage.upload_file_bytes(binary_data, req.filename)
+        if not file_url:
+            raise HTTPException(status_code=500, detail="Не удалось загрузить файл в S3 Storj хранилище")
+        return {"status": "success", "url": file_url}
+    except Exception as e:
+        logger.error(f"Voice Save Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health")

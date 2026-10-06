@@ -3,7 +3,7 @@
 **Цель:** Реализация 2 режимов (текстовый + Google Live Voice модальное окно), облачного хранилища S3 Storj и коротких ответов ИИ в голосовом режиме
 
 **Статус:** Код проверен через validate_code, пройдены юнит-тесты pytest, готовим деплой и синхронизацию с GitHub
-**Обновлено:** 2026-10-06 21:37:12 UTC
+**Обновлено:** 2026-10-06 22:13:04 UTC
 
 ## Стек технологий
 `FastAPI`, `Gemini/LLM`, `Supabase`, `Storj S3`, `Tailwind CSS`, `Python`, `pytest`, `edge-tts`, `Render`, `Uvicorn`, `Google GenAI`, `Edge-TTS`, `Pytest`, `Google GenAI SDK`, `Storj S3 (boto3)`
@@ -32,6 +32,8 @@
 - **`static/index.html`**: добавлено модальное окно google-live-modal
 - **`storage.py`**: модуль boto3 для S3 Storj
 - **`static/index.html и static/app.js`**: интерфейс чата и модальное окно Google Live
+- **`psychology_books.py`**: Файл .py
+- **`german_course.py`**: Файл .py
 
 ## Принятые решения
 - AI коуч-психолог с мягкой поддержкой

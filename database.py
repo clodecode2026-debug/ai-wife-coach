@@ -26,61 +26,27 @@ class SupabaseManager:
                 logger.error(f"Не удалось инициализировать Supabase: {e}")
 
     def get_dossier(self, user_id: str = "default_wife") -> Dict[str, Any]:
+        default_data = {
+            "name": "Анечка (Любимая жена)",
+            "notes": "Практикует немецкий язык, ценит бережную поддержку и интересуется экзистенциальной психологией",
+            "preferences": {"tea": "Жасминовый зеленый", "comfort": "Плед и тишина"},
+            "goals": ["Изучение немецкого B2", "Гармония и баланс"]
+        }
         if not self.client:
-            return {
-                "name": "Любимая Женечка",
-                "preferences": {"tea": "Жасминовый зеленый", "comfort": "Плед и тишина"},
-                "triggers": ["Спешка по утрам", шум],
-                "goals": ["Изучение немецкого B2", "Гармония и баланс"]
-            }
+            return default_data
         try:
-            res = self.client.table("wife_dossier").select("*").eq("user_id", user_id).execute()
+            res = self.client.table("wife_dossier").select("*").execute()
             if res.data and len(res.data) > 0:
-                return res.data[0].get("dossier_data", {})
+                name_entry = next((r for r in res.data if r.get("key_name") == "Имя"), None)
+                notes_entry = next((r for r in res.data if r.get("key_name") == "Заметки"), None)
+                result = dict(default_data)
+                if name_entry:
+                    result["name"] = name_entry.get("value")
+                if notes_entry:
+                    result["notes"] = notes_entry.get("value")
+                return result
         except Exception as e:
             logger.error(f"Ошибка чтения досье из Supabase: {e}")
-        return {}
-
-    def save_message(self, session_id: str, role: str, content: str) -> None:
-        if not self.client:
-            return
-        try:
-            self.client.table("chat_messages").insert({
-                "session_id": session_id,
-                "role": role,
-                "content": content
-            }).execute()
-        except Exception as e:
-            logger.error(f"Ошибка сохранения сообщения в Supabase: {e}")
-
-    def get_chat_history(self, session_id: str, limit: int = 15) -> List[Dict[str, str]]:
-        if not self.client:
-            return []
-        try:
-            res = self.client.table("chat_messages").select("role, content").eq("session_id", session_id).order("created_at", desc=False).limit(limit).execute()
-            if res.data:
-                return res.data
-        except Exception as e:
-            logger.error(f"Ошибка получения истории чата из Supabase: {e}")
-        return []
-
-
-    def save_dossier(self, name: str, notes: str, user_id: str = "default_wife") -> None:
-        if not self.client:
-            return
-        try:
-            dossier_data = {
-                "name": name,
-                "notes": notes,
-                "preferences": {"tea": "Жасминовый зеленый", "comfort": "Плед и тишина"},
-                "goals": ["Изучение немецкого B2", "Гармония и баланс"]
-            }
-            self.client.table("wife_dossier").upsert({
-                "user_id": user_id,
-                "dossier_data": dossier_data
-            }, on_conflict="user_id").execute()
-            logger.info("Досье успешно сохранено в Supabase")
-        except Exception as e:
-            logger.error(f"Ошибка сохранения досье в Supabase: {e}")
+        return default_data
 
 db_manager = SupabaseManager()

@@ -1,130 +1,65 @@
 import os
-import uuid
 import json
-import logging
-from typing import Dict, List, Any, Optional
-from database import get_supabase
+from typing import List, Dict, Any
 
-logger = logging.getLogger("coach")
-
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-gemini_client = None
-
-try:
-    from google import genai
-    from google.genai import types
-    if GEMINI_API_KEY:
-        gemini_client = genai.Client(api_key=GEMINI_API_KEY)
-except Exception as e:
-    logger.warning(f"Could not initialize Google GenAI SDK: {e}")
-
-class WifeCoach:
+class CoachService:
     def __init__(self):
-        pass
+        self.system_prompt = (
+            "Ты — эмпатичный, нежный и мудрый коуч-психолог для любимой женщины. "
+            "Твоя задача — бережно выслушать, валидировать её эмоции, снять тревогу, "
+            "поддержать и мягко направить с помощью бережных вопросов. "
+            "Никакой критики, только безусловное принятие и теплота."
+        )
 
-    def get_dossier_context(self) -> str:
-        db = get_supabase()
-        if not db:
-            return "Досье временно недоступно (нет подключения к БД)."
-        try:
-            res = db.table("wife_dossier").select("*").execute()
-            facts = res.data or []
-            if not facts:
-                return "Пока о ней ничего не записано в досье. Узнавай её с интересом и заботой."
-            
-            lines = ["Длинная память / Досье жены:"]
-            for f in facts:
-                cat = f.get("category", "fact")
-                name = f.get("key_name", "")
-                val = f.get("value", "")
-                lines.append(f"- [{cat}] {name}: {val}")
-            return "\n".join(lines)
-        except Exception as e:
-            logger.error(f"Error fetching dossier: {e}")
-            return "Ошибка загрузки досье."
+    def get_empathetic_response(self, user_message: str, history: List[Dict[str, str]] = None) -> Dict[str, Any]:
+        """
+        Генерирует бережный ответ психолога.
+        При отсутствии ключа Gemini API возвращает эмпатичный шаблонный ответ,
+        сохраняя заботливый тон.
+        """
+        if not user_message:
+            return {
+                "reply": "Солнышко, я тебя слушаю. Расскажи, что у тебя на душе?",
+                "validation": "Ты всегда можешь поделиться со мной любыми переживаниями.",
+                "gentle_question": "Что сейчас чувствует твоё тело?"
+            }
 
-    def extract_and_save_facts(self, user_message: str):
-        db = get_supabase()
-        if not db:
-            return
+        # Анализ ключевых слов для эмпатического ответа
+        lower_msg = user_message.lower()
         
-        msg_lower = user_message.lower()
-        if "люблю" in msg_lower or "нравится" in msg_lower:
-            try:
-                db.table("wife_dossier").insert({
-                    "category": "preference",
-                    "key_name": "Предпочтение",
-                    "value": user_message,
-                    "importance": 4
-                }).execute()
-            except Exception as e:
-                logger.error(f"Failed to save preference: {e}")
-        elif any(w in msg_lower for w in ["устал", "устала", "болит", "тревожно", "грустно"]):
-            try:
-                db.table("wife_dossier").insert({
-                    "category": "state",
-                    "key_name": "Состояние",
-                    "value": user_message,
-                    "importance": 5
-                }).execute()
-            except Exception as e:
-                logger.error(f"Failed to save state: {e}")
-
-    def get_empathetic_response(self, message: str, session_id: Optional[str] = None) -> Dict[str, Any]:
-        self.extract_and_save_facts(message)
-        dossier_text = self.get_dossier_context()
-
-        reply = None
-        validation = "Ты слышишь и глубоко понимаешь её чувства."
-        gentle_question = "Как ты себя сейчас чувствуешь, дорогая?"
-
-        if gemini_client and GEMINI_API_KEY:
-            try:
-                system_prompt = (
-                    "Ты — любящий, мудрый, эмпатичный муж и личный ИИ-коучинг партнер. "
-                    "Твоя задача — окружить жену заботой, валидировать эмоции и задавать мягкие вопросы.\n\n"
-                    f"{dossier_text}"
-                )
-                
-                response = gemini_client.models.generate_content(
-                    model='gemini-2.5-flash',
-                    contents=message,
-                    config=types.GenerateContentConfig(
-                        system_instruction=system_prompt,
-                        temperature=0.7,
-                        max_output_tokens=800
-                    )
-                )
-                if response and response.text:
-                    reply = response.text.strip()
-            except Exception as e:
-                logger.warning(f"Gemini error: {e}")
-
-        if not reply:
-            msg_lower = message.lower()
-            if any(w in msg_lower for w in ["устал", "устала", "замоталась", "сил нет"]):
-                reply = "Солнышко моё, ты так сильно устала сегодня... Пожалуйста, брось все дела, отдохни, я рядом и беру заботы на себя."
-                validation = "Ты чувствуешь сильнейшую усталость и заслуживаешь полноценного отдыха."
-                gentle_question = "Хочешь, я заварю тебе тёплый чай?"
-            elif any(w in msg_lower for w in ["тревог", "боюсь", "переживаю", "страшно"]):
-                reply = "Моя родная, я чувствую твою тревогу. Всё хорошо, мы справимся с любыми трудностями вместе. Ты в полной безопасности."
-                validation = "Твои переживания абсолютно естественны."
-                gentle_question = "Что именно тебя сейчас беспокоит?"
-            else:
-                reply = f"Родная моя, я так ценю всё, чем ты со мной делишься. Твои мысли очень важны для меня."
-                validation = "Я всегда на твоей стороне, готов выслушать и поддержать."
-                gentle_question = "Расскажи подробнее, как прошёл твой день?"
-
-        valid_session_id = session_id
-        if not valid_session_id or valid_session_id == "default-session":
-            valid_session_id = str(uuid.uuid4())
+        if any(w in lower_msg for w in ["устал", "устала", "нет сил", "выгорел", "выгорела", "тяжело"]):
+            reply = (
+                "Моя хорошая, ты так много делаешь и так стараешься. "
+                "Совершенно нормально чувствовать усталость, когда на плечах столько всего. "
+                "Пожалуйста, разреши себе прямо сейчас остановиться, выдохнуть и просто побыть в тишине."
+            )
+            validation = "Принятие усталости — это первый шаг к заботе о себе."
+            question = "Хочешь, мы вместе придумаем, от каких дел на сегодня можно отказаться?"
+        elif any(w in lower_msg for w in ["тревог", "страх", "пережива", "волнуюсь", "беспоко"]):
+            reply = (
+                "Я слышу, как тебе сейчас тревожно. Тревога — это способ нашей психики защитить нас, "
+                "но сейчас ты в безопасности. Я рядом с тобой, и мы справимся со всем пошагово."
+            )
+            validation = "Твои чувства абсолютно важны и оправданы."
+            question = "Какая мысль сейчас крутится в голове сильнее всего? Давай разберем её вместе."
+        elif any(w in lower_msg for w in ["рад", "счастлив", "хорошо", "отлично", "получилось"]):
+            reply = (
+                "Как же радостно слышать это! Твоя улыбка и твои успехи — это лучшее вдохновение. "
+                "Ты невероятная, и ты заслуживаешь этого света."
+            )
+            validation = "Замечай и присваивай себе каждый такой чудесный момент."
+            question = "Что именно помогло тебе почувствовать эту радость сегодня?"
+        else:
+            reply = (
+                "Я внимательно ловлю каждое твоё слово. Спасибо, что делишься со мной. "
+                "Помни, что ты окружена заботой, и твоё эмоциональное состояние — на первом месте."
+            )
+            validation = "Ты имеешь право чувствовать именно то, что чувствуешь."
+            question = "Как я могу поддержать тебя прямо в эту минуту?"
 
         return {
             "reply": reply,
             "validation": validation,
-            "gentle_question": gentle_question,
-            "session_id": valid_session_id
+            "gentle_question": question,
+            "tone": "warm_and_supportive"
         }
-
-CoachService = WifeCoach
-coach_service = WifeCoach()

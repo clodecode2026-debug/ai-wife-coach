@@ -2,8 +2,8 @@
 
 **Цель:** Реализация 2 режимов (текстовый + Google Live Voice модальное окно), облачного хранилища S3 Storj и коротких ответов ИИ в голосовом режиме
 
-**Статус:** Код полностью обновлен, проверен через validate_code, готов к синхронизации с GitHub и деплою на Render
-**Обновлено:** 2026-10-06 21:33:55 UTC
+**Статус:** Код проверен через validate_code, пройдены юнит-тесты pytest, готовим деплой и синхронизацию с GitHub
+**Обновлено:** 2026-10-06 21:37:12 UTC
 
 ## Стек технологий
 `FastAPI`, `Gemini/LLM`, `Supabase`, `Storj S3`, `Tailwind CSS`, `Python`, `pytest`, `edge-tts`, `Render`, `Uvicorn`, `Google GenAI`, `Edge-TTS`, `Pytest`, `Google GenAI SDK`, `Storj S3 (boto3)`
@@ -12,7 +12,7 @@
 - **`main.py`**: эндпоинты чата, TTS, S3 voice save, немецкого, библиотеки
 - **`models.py`**: схемы и базы данных
 - **`static/`**: веб-интерфейс
-- **`coach.py`**: каскад моделей gemini-3.x с поддержкой is_voice_mode
+- **`coach.py`**: добавлен параметр max_output_tokens=120 для is_voice_mode
 - **`german.py`**: 30 фраз A1-B1
 - **`library.py`**: 10 цитат классиков
 - **`tasks.py`**: задачи
@@ -29,7 +29,7 @@
 - **`static/tts_helper.js`**: клиентский плеер аудио стриминга
 - **`database.py`**: Supabase интеграция
 - **`static/index.html & app.js`**: UI с кнопкой живого голоса
-- **`static/index.html`**: большая кнопка Живой разговор
+- **`static/index.html`**: добавлено модальное окно google-live-modal
 - **`storage.py`**: модуль boto3 для S3 Storj
 - **`static/index.html и static/app.js`**: интерфейс чата и модальное окно Google Live
 
@@ -79,3 +79,5 @@
 - Режим 2: модальное окно Google Live Voice с пульсирующей сферой, переключением голоса (Светлана / Katja) и короткими ответами (1-3 предложения при is_voice_mode=True)
 - Модуль storage.py для сохранения аудиозаписей в S3 Storj
 - Эндпоинт POST /api/voice/save
+- Добавлено модальное окно Google Live Voice в static/index.html
+- в coach.py для голосового режима max_output_tokens=120 ограничено до 2 предложений

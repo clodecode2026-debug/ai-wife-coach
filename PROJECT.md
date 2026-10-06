@@ -1,18 +1,18 @@
 # Паспорт проекта: ai-wife-coach
 
-**Цель:** Исправление статических шаблонов коуча, интеграция реального Google Gemini 2.5 API и Supabase, добавление живого голосового диалога и наполнение материалов.
+**Цель:** Обновление моделей Google Gemini (октябрь 2026), надежный каскад моделей, поддержка всех фронтенд-роутов
 
-**Статус:** Успешно проверено и готово к деплою на Render
-**Обновлено:** 2026-10-06 20:57:35 UTC
+**Статус:** Проверено, протестировано и готово к деплою на Render
+**Обновлено:** 2026-10-06 21:06:38 UTC
 
 ## Стек технологий
-`FastAPI`, `Gemini/LLM`, `Supabase`, `Storj S3`, `Tailwind CSS`, `Python`, `pytest`, `edge-tts`, `Render`, `Uvicorn`, `Google GenAI`, `Edge-TTS`, `Pytest`
+`FastAPI`, `Gemini/LLM`, `Supabase`, `Storj S3`, `Tailwind CSS`, `Python`, `pytest`, `edge-tts`, `Render`, `Uvicorn`, `Google GenAI`, `Edge-TTS`, `Pytest`, `Google GenAI SDK`
 
 ## Ключевые файлы и модули
-- **`main.py`**: FastAPI сервер
+- **`main.py`**: Роуты API чата, немецкого (/api/german/card, /api/german/check) и библиотеки (/api/books)
 - **`models.py`**: схемы и базы данных
 - **`static/`**: веб-интерфейс
-- **`coach.py`**: Gemini 2.5 генерация
+- **`coach.py`**: Каскад моделей gemini-3.x
 - **`german.py`**: 30 фраз A1-B1
 - **`library.py`**: 10 цитат классиков
 - **`tasks.py`**: задачи
@@ -20,7 +20,7 @@
 - **`index.html`**: Файл .html
 - **`style.css`**: Файл .css
 - **`app.js`**: Файл .js
-- **`requirements.txt`**: добавление edge-tts>=6.1.12
+- **`requirements.txt`**: Полный набор зависимостей
 - **`render.yaml`**: обновлен startCommand
 - **`keep_alive.py`**: Файл .py
 - **`voice.py`**: эндпоинт /api/voice/tts через edge-tts
@@ -68,3 +68,5 @@
 - Добавлена кнопка и режим Живого голосового диалога в веб-интерфейсе
 - Расширена база немецких фраз (30 шт) и цитат психологов (10 шт)
 - Настроен uvicorn и health-check.
+- Каскад моделей Gemini: gemini-3.1-flash-lite, gemini-3.5-flash-lite, gemini-3.8-flash
+- Добавлены все роуты для немецкого и библиотеки в main.py

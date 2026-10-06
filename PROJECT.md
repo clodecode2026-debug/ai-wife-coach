@@ -3,7 +3,7 @@
 **Цель:** Интеграция натурального женского голоса через edge-tts в проект ai-wife-coach
 
 **Статус:** Готово к деплою на Render и синхронизации с GitHub
-**Обновлено:** 2026-10-06 20:41:18 UTC
+**Обновлено:** 2026-10-06 20:46:44 UTC
 
 ## Стек технологий
 `FastAPI`, `Gemini/LLM`, `Supabase`, `Storj S3`, `Tailwind CSS`, `Python`, `pytest`, `edge-tts`
@@ -25,6 +25,7 @@
 - **`keep_alive.py`**: Файл .py
 - **`voice.py`**: эндпоинт /api/voice/tts с edge-tts
 - **`static/app.js`**: воспроизведение аудио через /api/voice/tts
+- **`tts_helper.js`**: Файл .js
 
 ## Принятые решения
 - AI коуч-психолог с мягкой поддержкой

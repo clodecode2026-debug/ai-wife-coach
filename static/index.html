@@ -2,179 +2,143 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Wife Coach 💖 Твой уютный уголок</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Wife Coach — Ваш нежный психолог и поддержка</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
 </head>
-<body class="bg-gradient-to-br from-pink-50 via-purple-50 to-amber-50 min-h-screen text-slate-700 font-['Plus_Jakarta_Sans',sans-serif] flex flex-col">
+<body class="bg-gradient-to-br from-rose-50 via-pink-50 to-amber-50 min-h-screen text-slate-800 font-['Plus_Jakarta_Sans',sans-serif] flex flex-col">
 
-    <!-- Header -->
-    <header class="bg-white/90 backdrop-blur-md border-b border-pink-100 sticky top-0 z-40 shadow-sm">
-        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center space-x-2">
-                <span class="text-2xl animate-pulse">💖</span>
-                <h1 class="text-base sm:text-lg font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">AI Wife Coach</h1>
-            </div>
-            <div class="flex items-center space-x-2">
-                <button onclick="clearChat()" class="text-xs bg-white text-pink-600 border border-pink-200 px-3 py-1.5 rounded-full hover:bg-pink-50 transition shadow-sm font-medium">＋ Новый разговор</button>
-                <div class="flex items-center space-x-1.5 text-xs bg-pink-100/80 text-pink-700 px-2.5 py-1.5 rounded-full font-medium">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                    <span class="hidden sm:inline">Рядом с тобой</span>
+    <!-- Верхняя панель -->
+    <header class="bg-white/80 backdrop-blur-md border-b border-rose-100 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-rose-400 to-pink-500 flex items-center justify-center text-white shadow-md shadow-rose-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">AI Wife Coach</h1>
+                    <p class="text-xs text-slate-500">Твой личный нежный психолог, опора и вдохновение</p>
                 </div>
             </div>
+            
+            <!-- Навигация по вкладкам -->
+            <nav class="flex space-x-1 md:space-x-2 bg-rose-50/80 p-1 rounded-xl border border-rose-100">
+                <button onclick="switchTab('chat')" id="tab-btn-chat" class="px-3 py-1.5 text-xs md:text-sm font-semibold rounded-lg bg-white text-rose-600 shadow-sm transition">💬 Диалог</button>
+                <button onclick="switchTab('german')" id="tab-btn-german" class="px-3 py-1.5 text-xs md:text-sm font-medium rounded-lg text-slate-600 hover:text-rose-600 transition">🇩🇪 Немецкий</button>
+                <button onclick="switchTab('library')" id="tab-btn-library" class="px-3 py-1.5 text-xs md:text-sm font-medium rounded-lg text-slate-600 hover:text-rose-600 transition">📚 Библиотека</button>
+                <button onclick="switchTab('tasks')" id="tab-btn-tasks" class="px-3 py-1.5 text-xs md:text-sm font-medium rounded-lg text-slate-600 hover:text-rose-600 transition">✨ Задачи</button>
+            </nav>
         </div>
     </header>
 
-    <!-- Main Container -->
-    <main class="flex-1 max-w-4xl w-full mx-auto p-3 sm:p-6 pb-24">
-        
-        <!-- TAB 1: COACH & MULTI-CHAT -->
-        <section id="tab-coach" class="tab-content flex flex-col h-[78vh] bg-white/95 rounded-3xl shadow-lg border border-pink-100 overflow-hidden">
+    <!-- Основной контейнер -->
+    <main class="max-w-6xl mx-auto px-4 py-6 flex-1 w-full flex flex-col">
+
+        <!-- ВКЛАДКА 1: ЧАТ С КОУЧЕМ -->
+        <section id="tab-chat" class="tab-content flex-1 flex flex-col bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-rose-100 overflow-hidden">
             
-            <!-- Top Chat Header -->
-            <div class="p-3 sm:p-4 bg-gradient-to-r from-pink-100/70 to-purple-100/70 border-b border-pink-100 flex justify-between items-center">
+            <!-- Шапка чата -->
+            <div class="bg-gradient-to-r from-rose-500 to-pink-500 px-6 py-4 text-white flex flex-wrap items-center justify-between gap-3 shadow-sm">
                 <div>
-                    <h2 class="font-bold text-slate-800 text-sm sm:text-base">Бережный Психолог & Коуч</h2>
-                    <p class="text-[11px] sm:text-xs text-slate-500">Я выслушаю, обниму словами и помогу найти опору</p>
+                    <h2 class="font-bold text-base flex items-center gap-2">
+                        <span>💬 Живой диалог с ИИ-коучем</span>
+                        <span class="inline-block w-2.5 h-2.5 bg-emerald-400 rounded-full animate-pulse"></span>
+                    </h2>
+                    <p class="text-xs text-rose-100"> Gemini 3.x • Эмпатичная поддержка и понимание</p>
                 </div>
-                <button onclick="document.getElementById('sessions-drawer').classList.toggle('hidden')" class="text-xs bg-pink-50 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-full hover:bg-purple-100 transition shadow-sm font-medium">
-                    💬 Истории тем
+            </div>
+
+            <!-- ОТДЕЛЬНАЯ БОЛЬШАЯ КНОПКА РЕЖИМА 'ЖИВОЙ РАЗГОВОР' (Google Live) -->
+            <div class="px-6 pt-4 pb-2 bg-white/50 border-b border-rose-100">
+                <button id="live-voice-mode-btn" onclick="openGoogleLiveModal()" class="w-full py-3.5 px-5 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-600 hover:from-pink-600 hover:to-indigo-700 text-white font-bold text-base rounded-xl shadow-lg transition flex items-center justify-center gap-3 transform hover:scale-[1.01]">
+                    <span class="text-2xl animate-pulse">🎙</span> <span>Включить режим Живого разговора (Google Live Voice)</span>
                 </button>
             </div>
 
-            <!-- Sessions Drawer (Collapsible) -->
-            <div id="sessions-drawer" class="hidden p-3 bg-pink-50/70 border-b border-pink-100 space-y-2 max-h-36 overflow-y-auto">
-                <div class="text-[11px] font-semibold text-slate-600 flex justify-between items-center">
-                    <span>Твои сохранённые разговоры:</span>
-                    <button onclick="document.getElementById('sessions-drawer').classList.add('hidden')" class="text-slate-400 text-xs">✕ Закрыть</button>
-                </div>
-                <div id="chat-sessions-list" class="space-y-1">
-                    <!-- Dynamic sessions -->
-                </div>
-            </div>
-
-            <!-- Mood Quick Chips -->
-            <div class="px-3 sm:px-4 py-2 bg-pink-50/40 border-b border-pink-100 flex gap-2 overflow-x-auto text-xs no-scrollbar">
-                <button onclick="sendMood('Устала')" class="whitespace-nowrap bg-white hover:bg-pink-100 text-pink-700 border border-pink-200 px-3 py-1 rounded-full shadow-sm transition">☕️ Устала</button>
-                <button onclick="sendMood('Тревожно')" class="whitespace-nowrap bg-white hover:bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1 rounded-full shadow-sm transition">🌸 Тревожно</button>
-                <button onclick="sendMood('Хочу радости')" class="whitespace-nowrap bg-white hover:bg-amber-100 text-amber-700 border border-amber-200 px-3 py-1 rounded-full shadow-sm transition">✨ Хочу радости</button>
-                <button onclick="sendMood('Нужен совет')" class="whitespace-nowrap bg-white hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1 rounded-full shadow-sm transition">💡 Нужен совет</button>
-            </div>
-
-            <!-- Chat Messages Area -->
-            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4">
-                <div class="flex items-start space-x-2">
-                    <div class="w-8 h-8 rounded-full bg-pink-200 flex items-center justify-center text-sm flex-shrink-0">💖</div>
-                    <div class="bg-pink-50/80 rounded-2xl p-3.5 max-w-[85%] text-sm border border-pink-100 shadow-sm">
-                        Привет, родная! Как твоё самочувствие сегодня? Расскажи, что на душе, я всегда рядом.
+            <!-- История сообщений -->
+            <div id="chatMessages" class="flex-1 p-6 overflow-y-auto space-y-4 max-h-[50vh] min-h-[350px]">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-sm shadow">AI</div>
+                    <div class="bg-rose-50 border border-rose-100 rounded-2xl p-4 max-w-xl text-slate-700 shadow-sm">
+                        <p class="font-medium text-rose-900 mb-1">Здравствуй, солнышко! ✨</p>
+                        <p>Я твой личный заботливый коуч. Как прошел твой день? Что у тебя на душе? Хочешь поделиться усталостью, разобрать тревоги или попланировать приятные цели? Я внимательно слушаю тебя.</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Chat Composer -->
-            <div class="p-2.5 sm:p-3 bg-white border-t border-pink-100 flex items-center gap-2">
-                <input type="text" id="chat-input" placeholder="Напиши мне что-нибудь тёплое..." class="flex-1 border border-pink-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:border-pink-400 bg-pink-50/30" onkeypress="handleChatKey(event)">
-                <button onclick="toggleVoice()" id="voice-btn" class="bg-pink-100 text-pink-600 p-2.5 rounded-full hover:bg-pink-200 transition flex-shrink-0" title="Надиктовать голосом">🎤</button>
-                <button onclick="sendChatMessage()" class="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-5 py-2.5 rounded-full text-sm font-medium shadow-md hover:opacity-90 transition flex-shrink-0">Отправить</button>
+            <!-- Поле ввода сообщения -->
+            <div class="p-4 bg-white border-t border-rose-100 flex items-center gap-3">
+                <input type="text" id="chatInput" placeholder="Напиши, что у тебя на душе или начни говорить..." class="flex-1 px-4 py-3 border border-rose-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400 text-sm bg-rose-50/30" onkeypress="if(event.key === 'Enter') sendMessage()">
+                
+                <button onclick="toggleRecordVoice()" id="recordBtn" class="p-3 bg-rose-100 text-rose-600 hover:bg-rose-200 rounded-xl transition tooltip" title="Голосовой ввод">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                </button>
+
+                <button onclick="sendMessage()" class="bg-gradient-to-r from-rose-500 to-pink-500 text-white font-semibold px-6 py-3 rounded-xl shadow-md hover:opacity-95 transition flex items-center gap-2">
+                    <span>Отправить</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                </button>
             </div>
         </section>
 
-        <!-- TAB 2: GERMAN -->
-        <section id="tab-german" class="tab-content hidden space-y-4">
-            <div class="bg-white/95 p-5 rounded-3xl shadow-lg border border-purple-100">
-                <h2 class="text-base sm:text-lg font-bold text-slate-800 mb-1">🇩🇪 Немецкий с заботой</h2>
-                <p class="text-xs text-slate-500 mb-4">Учим по чуть-чуть каждый день без давления и экзаменов</p>
-                
-                <div class="flex gap-2 mb-4">
-                    <button onclick="loadGermanFlashcards('A1', this)" class="german-level-btn bg-purple-600 text-white px-4 py-1.5 rounded-full text-xs font-medium shadow">A1 Начинаем</button>
-                    <button onclick="loadGermanFlashcards('A2', this)" class="german-level-btn bg-purple-100 text-purple-700 px-4 py-1.5 rounded-full text-xs font-medium">A2 Уверенно</button>
-                    <button onclick="loadGermanFlashcards('B1', this)" class="german-level-btn bg-purple-100 text-purple-700 px-4 py-1.5 rounded-full text-xs font-medium">B1 Свободно</button>
+        <!-- ВКЛАДКА 2: НЕМЕЦКИЙ ЯЗЫК -->
+        <section id="tab-german" class="tab-content hidden flex-1 flex flex-col bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-rose-100 p-6">
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">🇩🇪 Немецкий язык: Психология и уют (A1 - B1)</h2>
+                    <p class="text-sm text-slate-500">Изучайте полезные фразы для жизни в Германии, выражения чувств и заботы</p>
                 </div>
-
-                <div id="flashcard-container" class="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-2xl border border-purple-100 text-center min-h-[160px] flex flex-col justify-center items-center relative shadow-inner">
-                    <div id="fc-level" class="absolute top-3 right-3 text-xs bg-purple-200 text-purple-800 px-2.5 py-0.5 rounded-full font-semibold">A1</div>
-                    <div id="fc-word" class="text-xl font-bold text-slate-800 mb-1">Guten Morgen!</div>
-                    <div id="fc-translation" class="text-sm text-purple-700 font-medium hidden">Доброе утро!</div>
-                    <div id="fc-example" class="text-xs text-slate-500 italic mt-2 hidden">Пример: Guten Morgen, mein Schatz!</div>
-                    <button onclick="flipCard()" class="mt-4 bg-white text-purple-600 border border-purple-200 px-4 py-1.5 rounded-full text-xs font-medium shadow-sm hover:bg-purple-50 transition">Перевернуть карточку ↺</button>
-                </div>
-            </div>
-
-            <!-- German Practice Box -->
-            <div class="bg-white/95 p-5 rounded-3xl shadow-lg border border-purple-100">
-                <h3 class="font-bold text-slate-800 text-sm mb-2">💬 Мягкая языковая практика</h3>
                 <div class="flex gap-2">
-                    <input type="text" id="german-input" placeholder="Напиши фразу на немецком..." class="flex-1 border border-purple-200 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-purple-400 bg-purple-50/20">
-                    <button onclick="checkGermanSentence()" class="bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-purple-700 transition">Проверить</button>
+                    <button onclick="filterGerman('ALL')" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-500 text-white shadow">Все (30)</button>
+                    <button onclick="filterGerman('A1')" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200">A1</button>
+                    <button onclick="filterGerman('A2')" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200">A2</button>
+                    <button onclick="filterGerman('B1')" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200">B1</button>
                 </div>
-                <div id="german-feedback" class="mt-3 text-xs p-3 rounded-xl bg-purple-50 text-purple-800 hidden"></div>
+            </div>
+            <div id="germanList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto max-h-[60vh] p-1">
+                <!-- Карточки подгружаются динамически -->
             </div>
         </section>
 
-        <!-- TAB 3: LIBRARY -->
-        <section id="tab-library" class="tab-content hidden space-y-4">
-            <div class="bg-white/95 p-5 rounded-3xl shadow-lg border border-amber-100">
-                <div class="flex justify-between items-center mb-3">
-                    <div>
-                        <h2 class="text-base sm:text-lg font-bold text-slate-800">📚 Библиотека тепла и мудрости</h2>
-                        <p class="text-xs text-slate-500">Книги по психологии, самопознанию и вдохновению</p>
-                    </div>
+        <!-- ВКЛАДКА 3: БИБЛИОТЕКА -->
+        <section id="tab-library" class="tab-content hidden flex-1 flex flex-col bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-rose-100 p-6">
+            <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">📚 Библиотека мудрости и вдохновения</h2>
+                    <p class="text-sm text-slate-500">Классические цитаты, глубокие мысли и опора для женской души</p>
                 </div>
-                
-                <div class="flex gap-2 mb-4">
-                    <input type="text" id="book-search" placeholder="Поиск по названию или цитатам..." class="flex-1 border border-amber-200 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-amber-400 bg-amber-50/20" oninput="searchBooks()">
-                </div>
-
-                <div id="books-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <!-- Loaded dynamically -->
-                </div>
+                <input type="text" id="librarySearch" placeholder="Поиск по книгам и авторам..." oninput="searchLibrary()" class="px-4 py-2 border border-rose-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-400 bg-rose-50/30 w-full md:w-72">
+            </div>
+            <div id="libraryList" class="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto max-h-[60vh] p-1">
+                <!-- Цитаты подгружаются динамически -->
             </div>
         </section>
 
-        <!-- TAB 4: TASKS -->
-        <section id="tab-tasks" class="tab-content hidden space-y-4">
-            <div class="bg-white/95 p-5 rounded-3xl shadow-lg border border-pink-100">
-                <h2 class="text-base sm:text-lg font-bold text-slate-800 mb-1">✨ Трекер заботы о себе</h2>
-                <p class="text-xs text-slate-500 mb-4">Маленькие шаги для большой любви к себе</p>
-                
-                <div class="flex gap-2 mb-4">
-                    <input type="text" id="new-task-input" placeholder="Добавить заботу о себе (например: выпить воды, погулять)..." class="flex-1 border border-pink-200 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-pink-400 bg-pink-50/20" onkeypress="handleTaskKey(event)">
-                    <button onclick="addNewTask()" class="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-5 py-2 rounded-full text-sm font-medium shadow hover:opacity-90 transition">Добавить</button>
-                </div>
-
-                <div id="tasks-list" class="space-y-2">
-                    <!-- Tasks loaded here -->
-                </div>
+        <!-- ВКЛАДКА 4: ЗАДАЧИ -->
+        <section id="tab-tasks" class="tab-content hidden flex-1 flex flex-col bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-rose-100 p-6">
+            <div class="mb-6">
+                <h2 class="text-xl font-bold text-slate-800">✨ Задачи и приятные ритуалы заботы</h2>
+                <p class="text-sm text-slate-500">Маленькие шаги к гармонии, отдыху и любви к себе</p>
+            </div>
+            <div class="flex gap-3 mb-6">
+                <input type="text" id="taskInput" placeholder="Добавить новый ритуал или задачу..." class="flex-1 px-4 py-3 border border-rose-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-400 bg-rose-50/30" onkeypress="if(event.key === 'Enter') addTask()">
+                <button onclick="addTask()" class="bg-gradient-to-r from-rose-500 to-pink-500 text-white font-semibold px-6 py-3 rounded-xl shadow-md hover:opacity-95 transition">Добавить</button>
+            </div>
+            <div id="taskList" class="space-y-3 overflow-y-auto max-h-[50vh] p-1">
+                <!-- Задачи подгружаются динамически -->
             </div>
         </section>
 
     </main>
 
-    <!-- Bottom Nav Bar -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-pink-100 shadow-lg py-2 px-4 z-50">
-        <div class="max-w-md mx-auto flex justify-around">
-            <button onclick="switchTab('coach')" class="nav-btn flex flex-col items-center text-pink-600 text-xs font-semibold py-1 px-3 rounded-xl transition" data-tab="coach">
-                <span class="text-xl">💖</span>
-                <span>Коуч</span>
-            </button>
-            <button onclick="switchTab('german')" class="nav-btn flex flex-col items-center text-slate-400 text-xs font-medium py-1 px-3 rounded-xl transition" data-tab="german">
-                <span class="text-xl">🇩🇪</span>
-                <span>Немецкий</span>
-            </button>
-            <button onclick="switchTab('library')" class="nav-btn flex flex-col items-center text-slate-400 text-xs font-medium py-1 px-3 rounded-xl transition" data-tab="library">
-                <span class="text-xl">📚</span>
-                <span>Книги</span>
-            </button>
-            <button onclick="switchTab('tasks')" class="nav-btn flex flex-col items-center text-slate-400 text-xs font-medium py-1 px-3 rounded-xl transition" data-tab="tasks">
-                <span class="text-xl">✨</span>
-                <span>Забота</span>
-            </button>
-        </div>
-    </nav>
+    <!-- Подвал -->
+    <footer class="text-center py-4 text-xs text-slate-400 border-t border-rose-100/50 bg-white/30">
+        AI Wife Coach • Создано с любовью и заботой о Вас 💖
+    </footer>
 
-    <script src="/app.js"></script>
+    <!-- Скрипты -->
     <script src="/static/app.js"></script>
 </body>
 </html>

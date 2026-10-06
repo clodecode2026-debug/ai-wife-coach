@@ -148,3 +148,17 @@ async def health_check():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run("main:app", host="0.0.0.0", port=port)
+
+
+class DossierUpdateRequest(BaseModel):
+    name: str = "Любимая жена"
+    notes: str = ""
+
+@app.get("/api/dossier")
+async def api_get_dossier():
+    return db_manager.get_dossier()
+
+@app.post("/api/dossier")
+async def api_save_dossier(req: DossierUpdateRequest):
+    db_manager.save_dossier(req.name, req.notes)
+    return {"status": "ok", "message": "Досье сохранено"}

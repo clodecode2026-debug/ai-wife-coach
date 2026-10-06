@@ -1,10 +1,10 @@
 import os
+import uuid
 import logging
 from typing import Dict, Any, List, Optional
 
 logger = logging.getLogger(__name__)
 
-# Пробуем импортировать supabase клиент
 try:
     from supabase import create_client, Client
     HAS_SUPABASE = True
@@ -24,6 +24,12 @@ class SupabaseManager:
                 logger.info("Supabase клиент успешно инициализирован")
             except Exception as e:
                 logger.error(f"Не удалось инициализировать Supabase: {e}")
+
+    def _to_uuid(self, session_id: str) -> str:
+        try:
+            return str(uuid.UUID(session_id))
+        except (ValueError, AttributeError):
+            return str(uuid.uuid5(uuid.NAMESPACE_DNS, str(session_id)))
 
     def get_dossier(self, user_id: str = "default_wife") -> Dict[str, Any]:
         default_data = {
@@ -53,7 +59,6 @@ class SupabaseManager:
         if not self.client:
             return
         try:
-            # Обновляем или добавляем записи с валидными полями схемы wife_dossier
             self.client.table("wife_dossier").upsert([
                 {"category": "profile", "key_name": "Имя", "value": name, "importance": 5},
                 {"category": "profile", "key_name": "Заметки", "value": notes, "importance": 5}
@@ -66,19 +71,30 @@ class SupabaseManager:
         if not self.client:
             return
         try:
+            sess_uuid = self._to_uuid(session_id)
+            try:
+                self.client.table("chat_sessions").upsert({
+                    "id": sess_uuid,
+                    "title": content[:40] if role == "user" else "Диалог с любимой"
+                }).execute()
+            except Exception as err_s:
+                logger.warning(f"Upsert chat_sessions notice: {err_s}")
+
             self.client.table("chat_messages").insert({
-                "session_id": session_id,
+                "session_id": sess_uuid,
                 "role": role,
                 "content": content
             }).execute()
+            logger.info(f"Сообщение {role} успешно сохранено в Supabase")
         except Exception as e:
             logger.error(f"Ошибка сохранения сообщения в Supabase: {e}")
 
-    def get_chat_history(self, session_id: str, limit: int = 15) -> List[Dict[str, str]]:
+    def get_chat_history(self, session_id: str, limit: int = 25) -> List[Dict[str, str]]:
         if not self.client:
             return []
         try:
-            res = self.client.table("chat_messages").select("role, content").eq("session_id", session_id).order("created_at", desc=False).limit(limit).execute()
+            sess_uuid = self._to_uuid(session_id)
+            res = self.client.table("chat_messages").select("role, content").eq("session_id", sess_uuid).order("created_at", desc=False).limit(limit).execute()
             if res.data:
                 return res.data
         except Exception as e:

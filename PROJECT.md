@@ -1,32 +1,34 @@
 # Паспорт проекта: ai-wife-coach
 
-**Цель:** Интеграция натурального женского голоса через edge-tts (SvetlanaNeural) в проект ai-wife-coach
+**Цель:** Исправление статических шаблонов коуча, интеграция реального Google Gemini 2.5 API и Supabase, добавление живого голосового диалога и наполнение материалов.
 
-**Статус:** Успешно завершено и задеплоено на Render. Сервис полностью работает.
-**Обновлено:** 2026-10-06 20:49:02 UTC
+**Статус:** Успешно проверено и готово к деплою на Render
+**Обновлено:** 2026-10-06 20:57:35 UTC
 
 ## Стек технологий
-`FastAPI`, `Gemini/LLM`, `Supabase`, `Storj S3`, `Tailwind CSS`, `Python`, `pytest`, `edge-tts`, `Render`
+`FastAPI`, `Gemini/LLM`, `Supabase`, `Storj S3`, `Tailwind CSS`, `Python`, `pytest`, `edge-tts`, `Render`, `Uvicorn`, `Google GenAI`, `Edge-TTS`, `Pytest`
 
 ## Ключевые файлы и модули
-- **`main.py`**: подключение voice_router
+- **`main.py`**: FastAPI сервер
 - **`models.py`**: схемы и базы данных
 - **`static/`**: веб-интерфейс
-- **`coach.py`**: коучинг
-- **`german.py`**: немецкий
-- **`library.py`**: книги
+- **`coach.py`**: Gemini 2.5 генерация
+- **`german.py`**: 30 фраз A1-B1
+- **`library.py`**: 10 цитат классиков
 - **`tasks.py`**: задачи
-- **`test_coach.py`**: тесты
+- **`test_coach.py`**: юнит-тесты.
 - **`index.html`**: Файл .html
 - **`style.css`**: Файл .css
 - **`app.js`**: Файл .js
 - **`requirements.txt`**: добавление edge-tts>=6.1.12
-- **`render.yaml`**: Файл .yaml
+- **`render.yaml`**: обновлен startCommand
 - **`keep_alive.py`**: Файл .py
 - **`voice.py`**: эндпоинт /api/voice/tts через edge-tts
 - **`static/app.js`**: интеграция голосового воспроизведения ответов коуча
 - **`tts_helper.js`**: Файл .js
 - **`static/tts_helper.js`**: клиентский плеер аудио стриминга
+- **`database.py`**: Supabase интеграция
+- **`static/index.html & app.js`**: UI с кнопкой живого голоса
 
 ## Принятые решения
 - AI коуч-психолог с мягкой поддержкой
@@ -59,3 +61,10 @@
 - Добавлен эндпоинт POST /api/voice/tts с поддержкой edge-tts (голос ru-RU-SvetlanaNeural)
 - фронтенд озвращает ответы коуча через Edge TTS в фоновом режиме
 - зависимости обновлены в requirements.txt
+- Добавлен блок if __name__ == '__main__' в main.py для корректного запуска uvicorn
+- старткоманда в render.yaml заменена на python main.py
+- Интегрирован Gemini 2.5 через google-genai
+- Подключен Supabase для истории и досье жены
+- Добавлена кнопка и режим Живого голосового диалога в веб-интерфейсе
+- Расширена база немецких фраз (30 шт) и цитат психологов (10 шт)
+- Настроен uvicorn и health-check.

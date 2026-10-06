@@ -171,49 +171,24 @@ function toggleVoice() {
     recognition.start();
 }
 
-// VOICE OUTPUT (TTS via backend edge-tts)
-async function speakText(text) {
-    try {
-        const clean = text.replace(/[*_#✨💖🌸☕️💡👤🇩🇪]/g, '').trim();
-        if (!clean) return;
-
-        const response = await fetch('/api/voice/tts', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: clean, voice: 'ru-RU-SvetlanaNeural' })
-        });
-
-        if (!response.ok) {
-            console.warn('Backend TTS failed, falling back to Web Speech API');
-            fallbackSpeak(clean);
-            return;
-        }
-
-        const blob = await response.blob();
-        const audioUrl = URL.createObjectURL(blob);
-        const audio = new Audio(audioUrl);
-        audio.play().catch(e => {
-            console.warn('Audio play error:', e);
-            fallbackSpeak(clean);
-        });
-    } catch (e) {
-        console.warn('TTS streaming error:', e);
-        fallbackSpeak(text);
-    }
-}
-
-function fallbackSpeak(text) {
+// VOICE OUTPUT (TTS)
+function speakText(text) {
     if (!('speechSynthesis' in window)) return;
     try {
         window.speechSynthesis.cancel();
-        const clean = text.replace(/[*_#✨💖🌸☕️💡👤🇩🇪]/g, '');
+        const clean = text.replace(/[*_#✨💖🌸☕️💡👤]/g, '');
         const utterance = new SpeechSynthesisUtterance(clean);
         utterance.lang = 'ru-RU';
         utterance.rate = 0.95;
         utterance.pitch = 1.05;
+        
+        const voices = window.speechSynthesis.getVoices();
+        const ruVoice = voices.find(v => v.lang.startsWith('ru') && (v.name.includes('Milena') || v.name.includes('Yuri') || v.name.includes('Google') || v.name.includes('Tatyana')));
+        if (ruVoice) utterance.voice = ruVoice;
+
         window.speechSynthesis.speak(utterance);
-    } catch (err) {
-        console.warn('Fallback speech error:', err);
+    } catch (e) {
+        console.warn('TTS error:', e);
     }
 }
 

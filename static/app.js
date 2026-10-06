@@ -94,9 +94,9 @@ async function sendChatMessage(presetText = null) {
         messagesContainer.appendChild(replyDiv);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-        // Speak reply softly
+        // Speak reply softly via edge-tts
         if (isVoiceOutputEnabled) {
-            speakText(replyText);
+            playEdgeTTS(replyText);
         }
     } catch (e) {
         console.error('Chat error:', e);
@@ -171,25 +171,31 @@ function toggleVoice() {
     recognition.start();
 }
 
-// VOICE OUTPUT (TTS)
-function speakText(text) {
-    if (!('speechSynthesis' in window)) return;
+// VOICE OUTPUT (EDGE-TTS)
+async function playEdgeTTS(text) {
     try {
-        window.speechSynthesis.cancel();
         const clean = text.replace(/[*_#✨💖🌸☕️💡👤]/g, '');
-        const utterance = new SpeechSynthesisUtterance(clean);
-        utterance.lang = 'ru-RU';
-        utterance.rate = 0.95;
-        utterance.pitch = 1.05;
-        
-        const voices = window.speechSynthesis.getVoices();
-        const ruVoice = voices.find(v => v.lang.startsWith('ru') && (v.name.includes('Milena') || v.name.includes('Yuri') || v.name.includes('Google') || v.name.includes('Tatyana')));
-        if (ruVoice) utterance.voice = ruVoice;
-
-        window.speechSynthesis.speak(utterance);
+        const res = await fetch('/api/voice/tts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: clean, voice: 'ru-RU-SvetlanaNeural' })
+        });
+        if (!res.ok) {
+            console.warn('TTS request failed');
+            return;
+        }
+        const blob = await res.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(audioUrl);
+        audio.play();
     } catch (e) {
-        console.warn('TTS error:', e);
+        console.warn('Edge-TTS playback error:', e);
     }
+}
+
+// Fallback speakText
+function speakText(text) {
+    playEdgeTTS(text);
 }
 
 // MULTI-CHAT SESSIONS

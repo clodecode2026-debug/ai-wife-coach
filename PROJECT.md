@@ -1,15 +1,15 @@
 # Паспорт проекта: ai-wife-coach
 
-**Цель:** Разработка персонального бережного коуч-психолога для супруги (ai-wife-coach) с немецким языком, библиотекой и трекером задач
+**Цель:** Добавление натурального женского голоса edge-tts (ru-RU-SvetlanaNeural) в проект ai-wife-coach
 
-**Статус:** Создание бэкенда и тестов проекта ai-wife-coach
-**Обновлено:** 2026-10-06 18:34:58 UTC
+**Статус:** Готово к деплою на Render и синхронизации с GitHub
+**Обновлено:** 2026-10-06 20:23:56 UTC
 
 ## Стек технологий
-`FastAPI`, `Gemini/LLM`, `Supabase`, `Storj S3`, `Tailwind CSS`, `Python`, `pytest`
+`FastAPI`, `Gemini/LLM`, `Supabase`, `Storj S3`, `Tailwind CSS`, `Python`, `pytest`, `edge-tts`
 
 ## Ключевые файлы и модули
-- **`main.py`**: FastAPI роуты
+- **`main.py`**: FastAPI приложение и роуты
 - **`models.py`**: схемы и базы данных
 - **`static/`**: веб-интерфейс
 - **`coach.py`**: коучинг
@@ -20,9 +20,11 @@
 - **`index.html`**: Файл .html
 - **`style.css`**: Файл .css
 - **`app.js`**: Файл .js
-- **`requirements.txt`**: Файл .txt
+- **`requirements.txt`**: добавлены edge-tts и supabase.
 - **`render.yaml`**: Файл .yaml
 - **`keep_alive.py`**: Файл .py
+- **`voice.py`**: edge-tts модуль
+- **`static/app.js`**: фронтенд интеграция TTS
 
 ## Принятые решения
 - AI коуч-психолог с мягкой поддержкой
@@ -36,3 +38,5 @@
 - трекер заботы
 - FastAPI
 - Tailwind CSS
+- Интеграция edge-tts для озвучивания ответов коуча (ru-RU-SvetlanaNeural)
+- добавлены эндпоинты /api/voice/tts и фронтенд-кнопки озвучки в реальном времени.

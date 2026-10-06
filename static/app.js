@@ -94,9 +94,9 @@ async function sendChatMessage(presetText = null) {
         messagesContainer.appendChild(replyDiv);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-        // Speak reply softly via Edge TTS backend
+        // Speak reply softly
         if (isVoiceOutputEnabled) {
-            playEdgeTTS(replyText);
+            speakText(replyText);
         }
     } catch (e) {
         console.error('Chat error:', e);

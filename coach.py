@@ -123,7 +123,8 @@ class AIFeminineCoach:
 
     def generate_response(self, message: str, history: List[Dict[str, str]] = None, dossier: Optional[Dict[str, Any]] = None, is_voice_mode: bool = False) -> str:
         system_prompt = self._get_system_prompt(dossier, is_voice_mode)
-        max_tokens = 80 if is_voice_mode else 350
+        # 70 токенов для живого голоса (1-2 емких предложения), 180 токенов для чата (быстрый, емкий, теплый ответ за 3-5с)
+        max_tokens = 70 if is_voice_mode else 180
 
         # Актуальный каскад на 7 октября 2026 года:
         # Приоритет отдаем самым быстрым моделям для мгновенного ответа

@@ -64,14 +64,19 @@ async def api_chat(req: ChatRequest):
         history = db_manager.get_chat_history(req.session_id)
         dossier = db_manager.get_dossier()
 
+        # Сохраняем входящее сообщение
         db_manager.save_message(req.session_id, "user", req.message)
+
+        # Генерация живого ответа через каскадный роутер
         reply = coach.generate_response(req.message, history=history, dossier=dossier, is_voice_mode=req.is_voice_mode)
+
+        # Сохраняем ответ ассистента
         db_manager.save_message(req.session_id, "assistant", reply)
 
         return {"reply": reply}
     except Exception as e:
         logger.error(f"Ошибка в /api/chat: {e}")
-        return {"reply": f"Солнышко, извини, произошла внутренняя ошибка: {str(e)}"}
+        return {"reply": f"Солнышко, извини, произошла временная заминка связи: {str(e)}"}
 
 @app.get("/api/german")
 async def api_german(level: str = "ALL"):

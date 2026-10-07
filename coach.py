@@ -113,7 +113,17 @@ class AIFeminineCoach:
 7. Хвали за каждое сказанное слово: "Toll, Alina!", "Super gemacht!".
 """
 
-        dossier_data = dossier or {
+        # Загрузка расширенного профиля долговременной памяти Алины
+        mem_profile = None
+        mem_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "alina_memory_profile.json")
+        if os.path.exists(mem_file):
+            try:
+                with open(mem_file, "r", encoding="utf-8") as mf:
+                    mem_profile = json.load(mf)
+            except Exception as e:
+                logger.warning(f"Memory profile load notice: {e}")
+
+        dossier_data = mem_profile or dossier or {
             "name": "Алина",
             "age": 35,
             "birthday": "25 сентября",

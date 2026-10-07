@@ -97,6 +97,38 @@ function switchTab(tabId) {
     }
 }
 
+// Мобильная поддержка свайп-жестов (Swipe gestures между вкладками на iPhone)
+let touchStartX = 0;
+let touchStartY = 0;
+
+document.addEventListener('touchstart', (e) => {
+    if (e.touches && e.touches.length === 1) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+    }
+}, { passive: true });
+
+document.addEventListener('touchend', (e) => {
+    if (!touchStartX || !touchStartY || !e.changedTouches || e.changedTouches.length !== 1) return;
+    const diffX = e.changedTouches[0].clientX - touchStartX;
+    const diffY = e.changedTouches[0].clientY - touchStartY;
+
+    // Горизонтальный свайп с защитой от вертикального скролла
+    if (Math.abs(diffX) > 75 && Math.abs(diffY) < 50) {
+        const tabs = ['chat', 'live', 'german', 'library', 'dossier'];
+        const currentIdx = tabs.indexOf(currentTab);
+        if (diffX < 0 && currentIdx < tabs.length - 1) {
+            // Свайп влево -> следующая вкладка
+            switchTab(tabs[currentIdx + 1]);
+        } else if (diffX > 0 && currentIdx > 0) {
+            // Свайп вправо -> предыдущая вкладка
+            switchTab(tabs[currentIdx - 1]);
+        }
+    }
+    touchStartX = 0;
+    touchStartY = 0;
+}, { passive: true });
+
 // ==========================================
 // 2. CHATGPT-ПОДОБНЫЙ МЕНЕДЖЕР СЕССИЙ (САЙДБАР)
 // ==========================================

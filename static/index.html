@@ -301,16 +301,20 @@
                 </div>
             </div>
 
-            <!-- Переключатель: Дорожка обучения Duolingo vs Карточки слов Anki -->
-            <div class="flex items-center justify-between gap-2 mb-2 bg-slate-100/80 p-1 rounded-xl border border-slate-200 shrink-0">
+            <!-- Переключатель: Дорожка обучения Duolingo vs Карточки слов Anki vs Работа над ошибками -->
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2 bg-slate-100/80 p-1 rounded-xl border border-slate-200 shrink-0">
                 <div class="flex gap-1">
-                    <button onclick="setGermanViewMode('path')" id="german-mode-path" class="px-3.5 py-1 text-xs font-black rounded-lg bg-white text-emerald-800 shadow-sm transition flex items-center gap-1.5">
+                    <button onclick="setGermanViewMode('path')" id="german-mode-path" class="px-3 py-1 text-xs font-black rounded-lg bg-white text-emerald-800 shadow-sm transition flex items-center gap-1.5">
                         <span>🗺️</span>
-                        <span>Дорожка уроков Duolingo</span>
+                        <span>Дорожка</span>
                     </button>
                     <button onclick="setGermanViewMode('flashcards')" id="german-mode-flashcards" class="px-3 py-1 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-800 transition flex items-center gap-1.5">
                         <span>📇</span>
-                        <span>Карточки слов (Anki)</span>
+                        <span>Карточки (Anki)</span>
+                    </button>
+                    <button onclick="openMistakesModal()" id="german-mode-mistakes" class="px-3 py-1 text-xs font-bold rounded-lg text-rose-600 hover:bg-rose-50 transition flex items-center gap-1.5">
+                        <span>🎯</span>
+                        <span>Ошибки (<span id="mistakesBadgeCount">0</span>)</span>
                     </button>
                 </div>
                 <div id="flashcardsStat" class="hidden text-[11px] text-slate-500 pr-2 font-bold">

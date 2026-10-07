@@ -1315,6 +1315,67 @@ function toggleLearnedWord(id) {
     renderFlashcardsView();
 }
 
+function updateMistakesBadgeUI() {
+    const badge = document.getElementById('mistakesBadgeCount');
+    if (badge && window.lingoEngine) {
+        badge.textContent = window.lingoEngine.getMistakesCount();
+    }
+}
+
+function openMistakesModal() {
+    const mistakes = JSON.parse(localStorage.getItem('lingo_mistakes_queue') || '[]');
+    const modal = document.createElement('div');
+    modal.id = 'lingoMistakesModal';
+    modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in';
+
+    if (mistakes.length === 0) {
+        modal.innerHTML = `
+            <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-rose-100 text-center">
+                <div class="text-4xl mb-2">🎉</div>
+                <h3 class="font-black text-lg text-slate-800">Ошибок нет!</h3>
+                <p class="text-xs text-slate-500 mt-1">Алина, вы проходите упражнения невероятно точно. Копилка повторения пуста!</p>
+                <button onclick="document.getElementById('lingoMistakesModal').remove()" class="w-full mt-4 py-2.5 bg-emerald-500 text-white font-bold rounded-xl text-xs hover:bg-emerald-600 transition">
+                    Отлично!
+                </button>
+            </div>
+        `;
+    } else {
+        modal.innerHTML = `
+            <div class="bg-white rounded-3xl p-5 max-w-md w-full shadow-2xl border border-rose-100 flex flex-col max-h-[85vh]">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                    <div>
+                        <h3 class="font-black text-base text-slate-800">🎯 Работа над ошибками</h3>
+                        <p class="text-[11px] text-slate-500">Слова и фразы, где были допущены неточности (${mistakes.length} шт)</p>
+                    </div>
+                    <button onclick="document.getElementById('lingoMistakesModal').remove()" class="text-slate-400 hover:text-slate-600 text-base">✕</button>
+                </div>
+                <div class="flex-1 overflow-y-auto space-y-2 pr-1">
+                    ${mistakes.map((m, idx) => `
+                        <div class="p-3 bg-rose-50/60 border border-rose-100 rounded-xl flex items-center justify-between gap-2">
+                            <div>
+                                <span class="font-black text-sm text-slate-800 block">${escapeHtml(m.german)}</span>
+                                <span class="text-xs text-slate-500">${escapeHtml(m.russian)}</span>
+                            </div>
+                            <button onclick="playTTS(this, '${escapeQuotes(m.german)}', 'de-DE-KatjaNeural')" class="p-2 bg-white rounded-lg border border-rose-200 text-xs shadow-2xs hover:bg-rose-100 shrink-0">
+                                🔊
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="pt-3 border-t border-slate-100 mt-3 flex gap-2">
+                    <button onclick="localStorage.removeItem('lingo_mistakes_queue'); updateMistakesBadgeUI(); document.getElementById('lingoMistakesModal').remove();" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs transition">
+                        Очистить список
+                    </button>
+                    <button onclick="document.getElementById('lingoMistakesModal').remove();" class="flex-1 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl text-xs transition shadow-sm">
+                        Понятно!
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+    document.body.appendChild(modal);
+}
+
 // ==========================================
 // 7. БИБЛИОТЕКА ПСИХОЛОГИИ
 // ==========================================

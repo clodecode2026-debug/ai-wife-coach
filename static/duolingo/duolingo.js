@@ -668,11 +668,26 @@ class LingoGameEngine {
             this.xp += 10;
             localStorage.setItem('lingo_xp', this.xp);
             this.playSound('correct');
+            // Тактильный виброотклик успеха (Haptic feedback)
+            if (navigator.vibrate) {
+                try { navigator.vibrate([40, 30, 60]); } catch(e){}
+            }
         } else {
             this.status = 'wrong';
             this.hearts = Math.max(0, this.hearts - 1);
             localStorage.setItem('lingo_hearts', this.hearts);
             this.playSound('incorrect');
+            // Тактильный отклик ошибки
+            if (navigator.vibrate) {
+                try { navigator.vibrate([100]); } catch(e){}
+            }
+
+            // Автоматическое сохранение ошибки в копилку повторения
+            if (challenge.correctOptionText || challenge.targetSentence || challenge.correctFull) {
+                const wrongDe = challenge.correctOptionText || challenge.targetSentence || challenge.correctFull;
+                const wrongRu = challenge.question || challenge.correctExplanation || '';
+                this.saveMistake(wrongDe, wrongRu);
+            }
 
             if (this.hearts === 0) {
                 setTimeout(() => {

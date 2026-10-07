@@ -331,6 +331,27 @@ function sendMoodPrompt(text) {
     }
 }
 
+function showRomanLoveNoteModal() {
+    const modal = document.createElement('div');
+    modal.id = 'romanLoveNoteModal';
+    modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in';
+    modal.innerHTML = `
+        <div class="bg-gradient-to-br from-rose-500 via-pink-500 to-rose-600 text-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-rose-300 relative text-center">
+            <button onclick="document.getElementById('romanLoveNoteModal').remove()" class="absolute top-3 right-3 text-white/70 hover:text-white text-lg">✕</button>
+            <div class="text-4xl mb-2">💌</div>
+            <h3 class="font-black text-lg">Записка от твоего мужа Романа</h3>
+            <p class="text-xs text-rose-100 mt-1 italic">С любовью и бесконечной верой в тебя</p>
+            <div class="bg-white/15 backdrop-blur-md rounded-2xl p-4 my-4 text-xs sm:text-sm text-left leading-relaxed border border-white/20">
+                «Алиночка, любимая моя! Я каждый день восхищаюсь тем, какая ты сильная, умная и красивая. Я вижу, сколько сил ты вкладываешь в адаптацию и немецкий язык. Помни: ты не одна. Я всегда держу тебя за руку, горжусь каждым твоим шагом и безгранично люблю тебя! Твой Роман ❤️»
+            </div>
+            <button onclick="document.getElementById('romanLoveNoteModal').remove()" class="w-full py-2.5 bg-white text-rose-600 font-bold rounded-xl text-xs shadow-md hover:bg-rose-50 transition">
+                Спасибо, любимый! ✨
+            </button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
 function startGermanPracticeInChat() {
     sendMoodPrompt('Давай проведем 10-минутную практику немецкого языка уровня B1. Задай мне жизненный вопрос или смоделируй ситуацию, а я отвечу на немецком.');
 }
@@ -411,6 +432,34 @@ function updateLiveSoundUI() {
             if (btn) btn.classList.add('bg-white/10', 'border-white/20');
         }
     }
+}
+
+let liveSlowVoiceEnabled = localStorage.getItem('ai_coach_live_slow') === 'true';
+
+function updateLiveSlowUI() {
+    const text = document.getElementById('liveSlowText');
+    const btn = document.getElementById('liveSlowToggleBtn');
+    if (text) {
+        text.textContent = liveSlowVoiceEnabled ? 'Темп: 0.8x 🐢' : 'Темп: 1.0x';
+    }
+    if (btn) {
+        if (liveSlowVoiceEnabled) {
+            btn.classList.add('bg-amber-500/30', 'border-amber-400');
+            btn.classList.remove('bg-white/10', 'border-white/20');
+        } else {
+            btn.classList.remove('bg-amber-500/30', 'border-amber-400');
+            btn.classList.add('bg-white/10', 'border-white/20');
+        }
+    }
+}
+
+function toggleSlowVoiceMode() {
+    liveSlowVoiceEnabled = !liveSlowVoiceEnabled;
+    localStorage.setItem('ai_coach_live_slow', liveSlowVoiceEnabled);
+    if (currentLiveAudio) {
+        currentLiveAudio.playbackRate = liveSlowVoiceEnabled ? 0.8 : 1.0;
+    }
+    updateLiveSlowUI();
 }
 
 function toggleLiveSound() {
@@ -759,6 +808,9 @@ async function playLiveTTS(text) {
             }
             const blob = await res.blob();
             currentLiveAudio = new Audio(URL.createObjectURL(blob));
+            if (liveSlowVoiceEnabled) {
+                currentLiveAudio.playbackRate = 0.8;
+            }
 
             currentLiveAudio.onended = () => {
                 isAITalking = false;

@@ -425,6 +425,17 @@ async function playTTS(btn, text, voice) {
             }
         }
 
+        // Кэширование аудио в оперативной памяти браузера для мгновенного повтора (0 мс задержка)
+        window._ttsAudioCache = window._ttsAudioCache || {};
+        const cacheKey = selectedVoice + ':' + cleanText;
+
+        if (window._ttsAudioCache[cacheKey]) {
+            const cachedAudio = new Audio(window._ttsAudioCache[cacheKey]);
+            cachedAudio.play();
+            if (btn) btn.textContent = oldText;
+            return;
+        }
+
         const res = await fetch('/api/voice/tts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -432,7 +443,10 @@ async function playTTS(btn, text, voice) {
         });
         if (!res.ok) throw new Error('TTS failed');
         const blob = await res.blob();
-        const audio = new Audio(URL.createObjectURL(blob));
+        const audioUrl = URL.createObjectURL(blob);
+        window._ttsAudioCache[cacheKey] = audioUrl;
+
+        const audio = new Audio(audioUrl);
         audio.play();
         if (btn) btn.textContent = oldText;
     } catch (e) {

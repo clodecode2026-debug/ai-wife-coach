@@ -1,6 +1,9 @@
 import os
 import io
+import uuid
+import asyncio
 import logging
+from typing import Optional
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, Response
@@ -27,10 +30,29 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="AI Wife Coach Super-App", version="3.0.0")
+app = FastAPI(title="AI Wife Coach Super-App", version="3.1.0")
 
 # Монтируем статику
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+async def supabase_anti_sleep_worker():
+    """Фоновый воркер анти-засыпания Supabase (каждые 6 часов)"""
+    while True:
+        try:
+            await asyncio.sleep(6 * 3600)
+            await asyncio.to_thread(db_manager.keepalive_ping)
+        except Exception as e:
+            logger.warning(f"Anti-sleep worker notice: {e}")
+            await asyncio.sleep(600)
+
+@app.on_event("startup")
+async def startup_event():
+    # Немедленный разогревающий пинг и запуск фонового цикла
+    try:
+        await asyncio.to_thread(db_manager.keepalive_ping)
+    except Exception as e:
+        logger.warning(f"Initial keepalive ping notice: {e}")
+    asyncio.create_task(supabase_anti_sleep_worker())
 
 class ChatRequest(BaseModel):
     message: str
@@ -152,7 +174,7 @@ async def health_check():
     return {"status": "healthy", "ai_active": ai_active, "supabase_active": bool(db_manager.client)}
 
 class DossierUpdateRequest(BaseModel):
-    name: str = "Любимая жена"
+    name: str = "Алина"
     notes: str = ""
 
 @app.get("/api/dossier")
@@ -164,10 +186,28 @@ def api_save_dossier(req: DossierUpdateRequest):
     db_manager.save_dossier(req.name, req.notes)
     return {"status": "ok", "message": "Досье сохранено"}
 
-
 @app.get("/api/chat/history")
 def api_chat_history(session_id: str = "default_wife"):
     return db_manager.get_chat_history(session_id)
+
+@app.get("/api/sessions")
+def api_get_sessions():
+    return db_manager.get_chat_sessions()
+
+class CreateSessionRequest(BaseModel):
+    title: Optional[str] = "Новый диалог с Алиной"
+
+@app.post("/api/sessions")
+def api_create_session(req: Optional[CreateSessionRequest] = None):
+    new_id = f"alina_{uuid.uuid4().hex[:12]}"
+    title = req.title if req and req.title else "Новый диалог с Алиной"
+    db_manager.save_message(new_id, "assistant", "Здравствуй, дорогая Алина! Я рядом, о чём ты сейчас думаешь?")
+    return {"id": new_id, "title": title}
+
+@app.delete("/api/sessions/{session_id}")
+def api_delete_session(session_id: str):
+    success = db_manager.delete_chat_session(session_id)
+    return {"status": "ok" if success else "error"}
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))

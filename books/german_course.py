@@ -18,10 +18,10 @@ GERMAN_COURSE_DATA = {
             "level": "A1",
             "title": "Урок 1: Первые шаги — Приветствия и знакомство (Begrüßung & Kennenlernen)",
             "grammar": "Личные местоимения (ich, du, er/sie, wir, ihr, sie/Sie) и спряжение глаголов sein (быть) и heißen (зваться) в Präsens.",
-            "rule_explanation": "Глагол в немецком повествовательном предложении ВСЕГДА стоит на 2-м месте: 'Ich heiße Anna' или 'Heute bin ich glücklich'.",
+            "rule_explanation": "Глагол в немецком повествовательном предложении ВСЕГДА стоит на 2-м месте: 'Ich heiße Alina' или 'Heute bin ich glücklich'.",
             "vocabulary": [
                 {"german": "Guten Tag! Wie heißen Sie?", "russian": "Добрый день! Как вас зовут? (вежливо)", "voice_hint": "de-DE-ConradNeural"},
-                {"german": "Ich heiße Anna und ich lerne Deutsch.", "russian": "Меня зовут Анна, и я учу немецкий.", "voice_hint": "de-DE-KatjaNeural"},
+                {"german": "Ich heiße Alina und ich lerne Deutsch.", "russian": "Меня зовут Алина, и я учу немецкий.", "voice_hint": "de-DE-KatjaNeural"},
                 {"german": "Freut mich sehr, Sie kennenzulernen.", "russian": "Очень приятно познакомиться с вами.", "voice_hint": "de-DE-ConradNeural"},
                 {"german": "Wie geht es dir heute?", "russian": "Как у тебя сегодня дела?", "voice_hint": "de-DE-KatjaNeural"},
                 {"german": "Mir geht es super, danke! Und dir?", "russian": "У меня всё супер, спасибо! А у тебя?", "voice_hint": "de-DE-KatjaNeural"},
@@ -29,7 +29,7 @@ GERMAN_COURSE_DATA = {
             ],
             "dialogue_simulator": {
                 "situation": "Вы встретили новую знакомую в языковой школе. Поздоровайтесь и спросите её имя.",
-                "example": "Hallo! Ich heiße Anna. Wie heißt du?",
+                "example": "Hallo! Ich heiße Alina. Wie heißt du?",
                 "tips": "Для неформального общения используйте 'du', для официального — 'Sie'."
             }
         },

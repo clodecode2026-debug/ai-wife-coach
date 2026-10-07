@@ -33,23 +33,37 @@ class SupabaseManager:
 
     def get_dossier(self, user_id: str = "default_wife") -> Dict[str, Any]:
         default_data = {
-            "name": "Анечка (Любимая жена)",
-            "notes": "Практикует немецкий язык, ценит бережную поддержку и интересуется экзистенциальной психологией",
-            "preferences": {"tea": "Жасминовый зеленый", "comfort": "Плед и тишина"},
-            "goals": ["Изучение немецкого B2", "Гармония и баланс"]
+            "name": "Алина",
+            "age": 35,
+            "birthday": "25 сентября",
+            "nationality": "Украинка (родом из Украины)",
+            "husband": "Роман",
+            "role": "Любимая жена Романа",
+            "notes": "Алина — украинка, 35 лет (день рождения 25 сентября). Любящий муж Роман искренне заботится о ней. Изучает немецкий язык (цель — уверенный уровень B1). Нуждается в глубокой, профессиональной психологической поддержке без инфантилизма: снятие тревоги, перегрузки, опора на безусловную ценность, когнитивная реструктуризация и транзактный анализ.",
+            "preferences": {"tea": "Мятный и жасминовый чай", "comfort": "Уютный плед, тишина, уважительное общение"},
+            "goals": ["Свободное владение немецким языком B1", "Эмоциональное спокойствие и уверенность", "Гармоничные, теплые отношения с мужем Романом"]
         }
         if not self.client:
             return default_data
         try:
             res = self.client.table("wife_dossier").select("*").execute()
             if res.data and len(res.data) > 0:
-                name_entry = next((r for r in res.data if r.get("key_name") == "Имя"), None)
-                notes_entry = next((r for r in res.data if r.get("key_name") == "Заметки"), None)
                 result = dict(default_data)
-                if name_entry and name_entry.get("value"):
-                    result["name"] = name_entry.get("value")
-                if notes_entry and notes_entry.get("value"):
-                    result["notes"] = notes_entry.get("value")
+                for item in res.data:
+                    k = item.get("key_name")
+                    v = item.get("value")
+                    if k == "Имя" and v:
+                        result["name"] = v
+                    elif k == "Возраст" and v:
+                        result["age"] = v
+                    elif k == "День рождения" and v:
+                        result["birthday"] = v
+                    elif k == "Происхождение" and v:
+                        result["nationality"] = v
+                    elif k == "Муж" and v:
+                        result["husband"] = v
+                    elif k == "Заметки" and v:
+                        result["notes"] = v
                 return result
         except Exception as e:
             logger.error(f"Ошибка чтения досье из Supabase: {e}")
@@ -73,10 +87,14 @@ class SupabaseManager:
         try:
             sess_uuid = self._to_uuid(session_id)
             try:
-                self.client.table("chat_sessions").upsert({
-                    "id": sess_uuid,
-                    "title": content[:40] if role == "user" else "Диалог с любимой"
-                }).execute()
+                # Проверяем, существует ли уже эта сессия
+                existing = self.client.table("chat_sessions").select("id").eq("id", sess_uuid).execute()
+                if not existing.data:
+                    title = content[:45] if role == "user" else "Диалог с Алиной"
+                    self.client.table("chat_sessions").insert({
+                        "id": sess_uuid,
+                        "title": title
+                    }).execute()
             except Exception as err_s:
                 logger.warning(f"Upsert chat_sessions notice: {err_s}")
 
@@ -89,16 +107,51 @@ class SupabaseManager:
         except Exception as e:
             logger.error(f"Ошибка сохранения сообщения в Supabase: {e}")
 
-    def get_chat_history(self, session_id: str, limit: int = 25) -> List[Dict[str, str]]:
+    def get_chat_history(self, session_id: str, limit: int = 50) -> List[Dict[str, str]]:
         if not self.client:
             return []
         try:
             sess_uuid = self._to_uuid(session_id)
-            res = self.client.table("chat_messages").select("role, content").eq("session_id", sess_uuid).order("created_at", desc=False).limit(limit).execute()
+            res = self.client.table("chat_messages").select("role, content, created_at").eq("session_id", sess_uuid).order("created_at", desc=False).limit(limit).execute()
             if res.data:
-                return res.data
+                return [{"role": r["role"], "content": r["content"]} for r in res.data]
         except Exception as e:
             logger.error(f"Ошибка получения истории чата из Supabase: {e}")
         return []
+
+    def get_chat_sessions(self, limit: int = 30) -> List[Dict[str, Any]]:
+        """Возвращает список всех сохраненных сессий для ChatGPT-интерфейса"""
+        if not self.client:
+            return []
+        try:
+            res = self.client.table("chat_sessions").select("id, title, created_at").order("created_at", desc=True).limit(limit).execute()
+            return res.data or []
+        except Exception as e:
+            logger.error(f"Ошибка получения сессий из Supabase: {e}")
+            return []
+
+    def delete_chat_session(self, session_id: str) -> bool:
+        if not self.client:
+            return False
+        try:
+            sess_uuid = self._to_uuid(session_id)
+            self.client.table("chat_messages").delete().eq("session_id", sess_uuid).execute()
+            self.client.table("chat_sessions").delete().eq("id", sess_uuid).execute()
+            return True
+        except Exception as e:
+            logger.error(f"Ошибка удаления сессии: {e}")
+            return False
+
+    def keepalive_ping(self) -> bool:
+        """Анти-засыпание базы Supabase (предотвращает спящий режим)"""
+        if not self.client:
+            return False
+        try:
+            res = self.client.table("wife_dossier").select("key_name").limit(1).execute()
+            logger.info("Supabase keepalive ping: OK")
+            return True
+        except Exception as e:
+            logger.warning(f"Supabase keepalive ping failed: {e}")
+            return False
 
 db_manager = SupabaseManager()

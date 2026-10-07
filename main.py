@@ -145,11 +145,6 @@ async def api_voice_save(req: VoiceSaveRequest):
 async def health_check():
     return {"status": "healthy", "gemini_active": bool(coach.client), "supabase_active": bool(db_manager.client)}
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port)
-
-
 class DossierUpdateRequest(BaseModel):
     name: str = "Любимая жена"
     notes: str = ""
@@ -167,3 +162,7 @@ async def api_save_dossier(req: DossierUpdateRequest):
 @app.get("/api/chat/history")
 async def api_chat_history(session_id: str = "default_wife"):
     return db_manager.get_chat_history(session_id)
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, timeout_keep_alive=65)

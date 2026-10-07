@@ -21,10 +21,16 @@ let liveAccumulatedText = '';
 let speechSilenceTimer = null;
 const LIVE_SILENCE_DELAY_MS = 2500; // 2.5 секунды тишины перед отправкой, чтобы Алина могла подумать и продолжить мысль
 
-// Платформа немецкого языка (уроки и flashcards)
-let currentGermanLevel = 'A1';
-let currentGermanMode = 'lessons'; // 'lessons' или 'flashcards'
+// Платформа немецкого языка (180 дней • A1+ ➔ B1 для Алины)
+let currentGermanLevel = localStorage.getItem('ai_coach_german_level') || 'A1+';
+let currentGermanMode = 'lessons'; // 'lessons' | 'flashcards' | 'duolingo'
 let allGermanCourseData = null;
+let currentCourseDay = parseInt(localStorage.getItem('ai_coach_german_day') || '1', 10);
+let lessonTimerSeconds = 0;
+let lessonTimerInterval = null;
+let isLessonTimerRunning = false;
+let courseStreak = parseInt(localStorage.getItem('lingo_streak') || '1', 10);
+let courseXp = parseInt(localStorage.getItem('lingo_xp') || '0', 10);
 let currentFlashcardLessonId = 'all';
 let currentFlashcards = [];
 let currentCardIdx = 0;
@@ -39,6 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDossier();
     updateLiveSoundUI();
     updateLearnedCountUI();
+    updateCourseProgressUI();
 });
 
 // ==========================================
@@ -739,20 +746,51 @@ function toggleRecordVoice() {
 }
 
 // ==========================================
-// 6. ПЛАТФОРМА ИЗУЧЕНИЯ НЕМЕЦКОГО ЯЗЫКА ДЛЯ АЛИНЫ
+// 6. ПЛАТФОРМА ИЗУЧЕНИЯ НЕМЕЦКОГО ЯЗЫКА ДЛЯ АЛИНЫ (180 ДНЕЙ • A1+ ➔ B1)
 // ==========================================
 async function loadGermanCourseData() {
     const container = document.getElementById('germanContent');
     if (!container) return;
-    container.innerHTML = '<div class="text-center py-6 text-slate-400 text-xs">Загрузка курса и карточек немецкого языка...</div>';
+    container.innerHTML = '<div class="text-center py-6 text-slate-400 text-xs">Загрузка 180-дневного курса немецкого языка...</div>';
 
     try {
         const res = await fetch('/api/german/course');
         allGermanCourseData = await res.json();
+        
+        // Синхронизация прогресса с сервером
+        try {
+            const progRes = await fetch('/api/german/progress');
+            if (progRes.ok) {
+                const prog = await progRes.json();
+                if (prog.xp) {
+                    courseXp = Math.max(courseXp, prog.xp);
+                    localStorage.setItem('lingo_xp', courseXp);
+                }
+                if (prog.streak) {
+                    courseStreak = Math.max(courseStreak, prog.streak);
+                    localStorage.setItem('lingo_streak', courseStreak);
+                }
+                if (prog.lesson_id && !localStorage.getItem('ai_coach_german_day')) {
+                    currentCourseDay = prog.lesson_id;
+                    localStorage.setItem('ai_coach_german_day', currentCourseDay);
+                }
+            }
+        } catch(e) {}
+
+        populateDaySelect(allGermanCourseData.lessons || []);
+        updateCourseProgressUI();
         renderGermanPlatform();
     } catch (e) {
         container.innerHTML = '<div class="text-center py-6 text-rose-500 text-xs">Ошибка загрузки немецкого курса. Пожалуйста, обновите страницу.</div>';
     }
+}
+
+function updateCourseProgressUI() {
+    const streakEl = document.getElementById('courseStreakDisplay');
+    const xpEl = document.getElementById('courseXpDisplay');
+    if (streakEl) streakEl.textContent = `${courseStreak} ${courseStreak === 1 ? 'день' : 'дн.'}`;
+    if (xpEl) xpEl.textContent = `${courseXp} XP`;
+    updateLessonTimerUI();
 }
 
 function updateLearnedCountUI() {
@@ -760,8 +798,121 @@ function updateLearnedCountUI() {
     if (el) el.textContent = learnedWords.length;
 }
 
+// 30-минутный таймер занятия
+function toggleLessonTimer() {
+    const btn = document.getElementById('lessonTimerBtn');
+    if (isLessonTimerRunning) {
+        clearInterval(lessonTimerInterval);
+        lessonTimerInterval = null;
+        isLessonTimerRunning = false;
+        if (btn) {
+            btn.textContent = 'Старт';
+            btn.className = 'px-2 py-0.5 bg-rose-500 hover:bg-rose-600 text-white rounded font-extrabold text-[10px] transition';
+        }
+    } else {
+        isLessonTimerRunning = true;
+        if (btn) {
+            btn.textContent = 'Пауза';
+            btn.className = 'px-2 py-0.5 bg-amber-500 hover:bg-amber-600 text-white rounded font-extrabold text-[10px] transition';
+        }
+        lessonTimerInterval = setInterval(() => {
+            lessonTimerSeconds++;
+            updateLessonTimerUI();
+
+            // При достижении 30 минут (1800 сек)
+            if (lessonTimerSeconds === 1800) {
+                if (window.confetti) {
+                    window.confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+                }
+                alert('🎉 Дорогая Алина! 30 минут ежедневного урока завершены! Ты сделала огромный шаг к свободному немецкому! 🔥');
+                courseXp += 50;
+                localStorage.setItem('lingo_xp', courseXp);
+                updateCourseProgressUI();
+            }
+        }, 1000);
+    }
+}
+
+function updateLessonTimerUI() {
+    const el = document.getElementById('lessonTimerDisplay');
+    if (!el) return;
+    const mins = Math.floor(lessonTimerSeconds / 60);
+    const secs = lessonTimerSeconds % 60;
+    const pad = (n) => n.toString().padStart(2, '0');
+    el.textContent = `${pad(mins)}:${pad(secs)} / 30:00`;
+}
+
+// Заполнение селектора всех 180 дней
+function populateDaySelect(lessons) {
+    const sel = document.getElementById('germanDaySelect');
+    if (!sel || !lessons.length) return;
+
+    let html = '';
+    let currentUnit = '';
+
+    lessons.forEach(l => {
+        const unitName = l.unit_title || `Unit ${l.unit_id || 1}`;
+        if (unitName !== currentUnit) {
+            if (currentUnit !== '') html += '</optgroup>';
+            currentUnit = unitName;
+            html += `<optgroup label="${escapeHtml(currentUnit)}">`;
+        }
+        const isSelected = l.day === currentCourseDay || l.id === currentCourseDay;
+        html += `<option value="${l.day || l.id}" ${isSelected ? 'selected' : ''}>День ${l.day || l.id}: ${escapeHtml(l.title.replace(/^День \d+:\s*/, ''))} (${l.level})</option>`;
+    });
+    if (currentUnit !== '') html += '</optgroup>';
+
+    sel.innerHTML = html;
+}
+
+function onSelectCourseDay(dayVal) {
+    const day = parseInt(dayVal, 10);
+    if (!day) return;
+    currentCourseDay = day;
+    localStorage.setItem('ai_coach_german_day', currentCourseDay);
+
+    // Определяем соответствующий уровень
+    if (currentCourseDay <= 30) {
+        currentGermanLevel = 'A1+';
+    } else if (currentCourseDay <= 90) {
+        currentGermanLevel = 'A2';
+    } else {
+        currentGermanLevel = 'B1';
+    }
+    localStorage.setItem('ai_coach_german_level', currentGermanLevel);
+
+    const sel = document.getElementById('germanDaySelect');
+    if (sel && sel.value != currentCourseDay) sel.value = currentCourseDay;
+
+    renderGermanPlatform();
+}
+
+function changeCourseDay(delta) {
+    if (!allGermanCourseData || !allGermanCourseData.lessons) return;
+    const maxDay = allGermanCourseData.lessons.length;
+    let newDay = currentCourseDay + delta;
+    if (newDay < 1) newDay = 1;
+    if (newDay > maxDay) newDay = maxDay;
+    onSelectCourseDay(newDay);
+}
+
 function setGermanLevel(level) {
-    currentGermanLevel = level;
+    currentGermanLevel = level === 'A1' ? 'A1+' : level;
+    localStorage.setItem('ai_coach_german_level', currentGermanLevel);
+
+    // Перемещаем на первый день этого уровня
+    if (currentGermanLevel === 'A1+') {
+        currentCourseDay = 1;
+    } else if (currentGermanLevel === 'A2') {
+        currentCourseDay = 31;
+    } else if (currentGermanLevel === 'B1') {
+        currentCourseDay = 91;
+    }
+    localStorage.setItem('ai_coach_german_day', currentCourseDay);
+
+    const sel = document.getElementById('germanDaySelect');
+    if (sel) sel.value = currentCourseDay;
+
     currentFlashcardLessonId = 'all';
     renderGermanPlatform();
 }
@@ -780,21 +931,72 @@ function startLingoLesson(lessonId) {
 }
 
 function startFlashcardsForLesson(lessonId, level) {
-    currentGermanLevel = level;
+    currentGermanLevel = level || currentGermanLevel;
     currentFlashcardLessonId = lessonId;
     currentGermanMode = 'flashcards';
     renderGermanPlatform();
 }
 
+// 4-й этап: Живой диалог с ИИ-коучем по теме урока
+function talkToCoachForLesson(lessonId) {
+    if (!allGermanCourseData || !allGermanCourseData.lessons) return;
+    const lesson = allGermanCourseData.lessons.find(l => l.id == lessonId || l.day == lessonId) || allGermanCourseData.lessons[0];
+    if (!lesson) return;
+
+    const situation = lesson.dialogue_simulator?.situation || lesson.title;
+    const promptText = `Привет, мой заботливый коуч! Давай проведем 5-минутную разговорную практику по теме Урока ${lesson.day || lesson.id}: "${lesson.title}". Ситуация: ${situation}. Задай мне первый вопрос на немецком языке (в скобках обязательно добавь подсказку и перевод на русский), а я отвечу тебе!`;
+
+    // Переключаем на вкладку чата
+    switchTab('chat');
+
+    const input = document.getElementById('chatInput');
+    if (input) {
+        input.value = promptText;
+        sendMessage();
+    }
+}
+
+// 5-й этап: Завершение урока дня и начисление очков
+async function completeDayLesson(dayNum) {
+    courseXp += 100;
+    courseStreak += 1;
+    localStorage.setItem('lingo_xp', courseXp);
+    localStorage.setItem('lingo_streak', courseStreak);
+    updateCourseProgressUI();
+
+    if (window.confetti) {
+        window.confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+    }
+
+    try {
+        await fetch('/api/german/progress', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                xp: courseXp,
+                hearts: 5,
+                streak: courseStreak,
+                lesson_id: dayNum
+            })
+        });
+    } catch(e) {}
+
+    alert(`🎉 Браво, Алина! Урок Дня ${dayNum} успешно пройден!\n\nВам начислено +100 XP ⭐ и серия продлена до ${courseStreak} дней 🔥.\nВы великолепно справляетесь!`);
+
+    // Переход к следующему дню
+    changeCourseDay(1);
+}
+
 function renderGermanPlatform() {
-    // 1. Обновляем кнопки уровней (A1 / A2 / B1)
+    // 1. Обновляем кнопки уровней (A1+ / A2 / B1)
+    const activeLevel = currentGermanLevel.startsWith('A1') ? 'a1' : currentGermanLevel.toLowerCase();
     ['a1', 'a2', 'b1'].forEach(l => {
         const btn = document.getElementById('german-btn-' + l);
         if (btn) {
-            if (l === currentGermanLevel.toLowerCase()) {
-                btn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg bg-rose-500 text-white shadow';
+            if (l === activeLevel) {
+                btn.className = 'px-2.5 py-1 text-xs font-bold rounded-lg bg-rose-500 text-white shadow transition';
             } else {
-                btn.className = 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200 transition';
+                btn.className = 'px-2.5 py-1 text-xs font-semibold rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200 transition';
             }
         }
     });
@@ -837,7 +1039,7 @@ function renderGermanPlatform() {
             const engine = window.lingoEngine || (typeof lingoEngine !== 'undefined' ? lingoEngine : null);
             if (engine) {
                 const lessons = (allGermanCourseData && allGermanCourseData.lessons) ? allGermanCourseData.lessons : [];
-                const currentLesson = lessons.find(l => l.level === currentGermanLevel) || lessons[0];
+                const currentLesson = lessons.find(l => l.day === currentCourseDay || l.id === currentCourseDay) || lessons[0];
                 engine.startLesson(currentLesson ? currentLesson.id : 1, lessons);
             } else {
                 lingoContainer.innerHTML = '<div class="text-center p-8 text-rose-500 font-bold text-sm">Загрузка Duolingo... Нажмите кнопку ещё раз через секунду.</div>';
@@ -863,94 +1065,163 @@ function renderGermanLessons() {
     if (!container || !allGermanCourseData) return;
     container.innerHTML = '';
 
-    // План обучения
-    if (allGermanCourseData.study_plan) {
-        const planItem = allGermanCourseData.study_plan.find(p => p.stage.startsWith(currentGermanLevel)) || allGermanCourseData.study_plan[0];
+    const lessons = allGermanCourseData.lessons || [];
+    const currentLesson = lessons.find(l => l.day === currentCourseDay || l.id === currentCourseDay) || lessons[0];
+
+    if (!currentLesson) {
+        container.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">Урок не найден.</p>';
+        return;
+    }
+
+    // 1. ПЛАН ЭТАПА / ЮНИТА
+    if (allGermanCourseData.stages || allGermanCourseData.study_plan) {
+        const stages = allGermanCourseData.stages || allGermanCourseData.study_plan;
+        const stageItem = stages.find(p => (p.stage || '').includes(currentGermanLevel.substring(0, 2))) || stages[0];
+        
         const planCard = document.createElement('div');
-        planCard.className = 'bg-gradient-to-r from-amber-50 to-rose-50 border border-amber-200/70 rounded-xl p-3.5 shadow-sm text-xs space-y-1 mb-2';
+        planCard.className = 'bg-gradient-to-r from-amber-50 to-rose-50 border border-amber-200/70 rounded-xl p-3 shadow-sm text-xs space-y-1';
         planCard.innerHTML = `
             <div class="flex items-center justify-between">
-                <span class="font-bold text-amber-900 flex items-center gap-1.5">🎯 ${escapeHtml(planItem.stage)}</span>
-                <span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-semibold text-[10px]">Срок: ${escapeHtml(planItem.duration)}</span>
+                <span class="font-bold text-amber-900 flex items-center gap-1.5">🎯 ${escapeHtml(stageItem.stage)}</span>
+                <span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-semibold text-[10px]">${escapeHtml(stageItem.days || stageItem.duration || '')}</span>
             </div>
-            <p class="text-slate-600">${escapeHtml(planItem.goal)}</p>
+            <p class="text-slate-600 text-[11px]">${escapeHtml(stageItem.goal)}</p>
         `;
         container.appendChild(planCard);
     }
 
-    const lessons = (allGermanCourseData.lessons || []).filter(l => l.level === currentGermanLevel);
-    if (lessons.length === 0) {
-        container.innerHTML += '<p class="text-xs text-slate-500 text-center py-4">Уроков для этого уровня пока нет.</p>';
-        return;
+    // 2. ГЛАВНАЯ КАРТОЧКА 30-МИНУТНОГО ЗАНЯТИЯ (ФОКУС ДНЯ)
+    const dayCard = document.createElement('div');
+    dayCard.className = 'bg-white border-2 border-rose-200 rounded-2xl p-4 sm:p-5 shadow-md space-y-4';
+
+    // Шапка урока
+    const unitTitle = currentLesson.unit_title ? `<div class="text-[11px] font-bold text-rose-600 uppercase tracking-wider">${escapeHtml(currentLesson.unit_title)}</div>` : '';
+    
+    // 5 этапов 30-минутного занятия
+    const stepsHtml = `
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5 p-2 bg-slate-50 rounded-xl border border-slate-200 text-center text-[10px]">
+            <div class="bg-white p-1.5 rounded-lg border border-slate-200 shadow-2xs">
+                <span class="font-bold text-slate-700 block">1️⃣ Разминка</span>
+                <span class="text-slate-400">5 мин • Карточки</span>
+            </div>
+            <div class="bg-white p-1.5 rounded-lg border border-slate-200 shadow-2xs">
+                <span class="font-bold text-rose-700 block">2️⃣ Правило</span>
+                <span class="text-slate-400">7 мин • Katja/Conrad</span>
+            </div>
+            <div class="bg-white p-1.5 rounded-lg border border-emerald-300 shadow-2xs">
+                <span class="font-bold text-emerald-700 block">3️⃣ Duolingo</span>
+                <span class="text-slate-400">10 мин • Игра</span>
+            </div>
+            <div class="bg-white p-1.5 rounded-lg border border-purple-300 shadow-2xs">
+                <span class="font-bold text-purple-700 block">4️⃣ Диалог</span>
+                <span class="text-slate-400">5 мин • ИИ-коуч</span>
+            </div>
+            <div class="bg-white p-1.5 rounded-lg border border-amber-300 shadow-2xs col-span-2 sm:col-span-1">
+                <span class="font-bold text-amber-700 block">5️⃣ Итоги</span>
+                <span class="text-slate-400">3 мин • +100 XP</span>
+            </div>
+        </div>
+    `;
+
+    // Словарь урока
+    let vocabHtml = '<div class="space-y-2 mt-2">';
+    (currentLesson.vocabulary || []).forEach(v => {
+        const voiceHint = v.voice_hint || 'de-DE-KatjaNeural';
+        const speakerName = voiceHint.includes('Conrad') ? 'Conrad 👨' : 'Katja 👩';
+        const transcriptionHtml = v.transcription ? `<span class="text-rose-500 font-mono text-[11px] block sm:inline sm:ml-1">${escapeHtml(v.transcription)}</span>` : '';
+        const exampleHtml = v.example ? `<div class="text-[11px] text-slate-500 mt-1 pl-1 border-l-2 border-rose-200">Пример: <i>${escapeHtml(v.example)}</i> ${v.example_translation ? `— ${escapeHtml(v.example_translation)}` : ''}</div>` : '';
+
+        vocabHtml += `
+            <div class="bg-rose-50/40 p-2.5 rounded-lg border border-rose-100/60 text-xs hover:bg-rose-50/70 transition">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex-1">
+                        <span class="font-bold text-rose-900 text-sm">${escapeHtml(v.german)}</span>
+                        ${transcriptionHtml}
+                        <span class="text-slate-700 block sm:inline sm:ml-2 font-medium">(${escapeHtml(v.russian)})</span>
+                    </div>
+                    <button onclick="playTTS(this, '${escapeQuotes(v.german)}', '${voiceHint}')" class="px-2.5 py-1.5 bg-white text-rose-700 font-semibold rounded-lg shadow-sm border border-rose-200 hover:bg-rose-100 transition shrink-0 flex items-center gap-1 text-[11px]" title="Озвучить эталонным голосом">
+                        <span>🔊</span> <span>${speakerName}</span>
+                    </button>
+                </div>
+                ${exampleHtml}
+            </div>
+        `;
+    });
+    vocabHtml += '</div>';
+
+    // Диалог-симулятор
+    let dialogueHtml = '';
+    if (currentLesson.dialogue_simulator) {
+        dialogueHtml = `
+            <div class="bg-purple-50/70 border border-purple-200 rounded-xl p-3.5 text-xs space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="font-bold text-purple-900 flex items-center gap-1.5 text-xs sm:text-sm">💬 Этап 4: Ролевой диалог в реальной жизни</span>
+                    <button onclick="talkToCoachForLesson(${currentLesson.id || currentLesson.day})" class="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold text-[11px] transition shadow-sm flex items-center gap-1">
+                        <span>🎙️ Потренировать с коучем</span>
+                    </button>
+                </div>
+                <div class="text-slate-700"><b>Ситуация:</b> ${escapeHtml(currentLesson.dialogue_simulator.situation)}</div>
+                <div class="text-purple-800 italic bg-white/70 p-2 rounded-lg border border-purple-100">«${escapeHtml(currentLesson.dialogue_simulator.example)}»</div>
+                <div class="text-slate-500 text-[11px]">💡 <b>Подсказка коуча:</b> ${escapeHtml(currentLesson.dialogue_simulator.tips)}</div>
+            </div>
+        `;
     }
 
-    lessons.forEach(lesson => {
-        const card = document.createElement('div');
-        card.className = 'bg-white border border-rose-100 rounded-xl p-4 space-y-3 shadow-sm';
-        
-        let vocabHtml = '<div class="space-y-2 mt-2">';
-        (lesson.vocabulary || []).forEach(v => {
-            const voiceHint = v.voice_hint || 'de-DE-KatjaNeural';
-            const speakerName = voiceHint.includes('Conrad') ? 'Conrad 👨' : 'Katja 👩';
-            const transcriptionHtml = v.transcription ? `<span class="text-rose-500 font-mono text-[11px] block sm:inline sm:ml-1">${escapeHtml(v.transcription)}</span>` : '';
-            const exampleHtml = v.example ? `<div class="text-[11px] text-slate-500 mt-1 pl-1 border-l-2 border-rose-200">Пример: <i>${escapeHtml(v.example)}</i> ${v.example_translation ? `— ${escapeHtml(v.example_translation)}` : ''}</div>` : '';
-
-            vocabHtml += `
-                <div class="bg-rose-50/40 p-2.5 rounded-lg border border-rose-100/60 text-xs">
-                    <div class="flex items-center justify-between gap-2">
-                        <div class="flex-1">
-                            <span class="font-bold text-rose-900 text-sm">${escapeHtml(v.german)}</span>
-                            ${transcriptionHtml}
-                            <span class="text-slate-700 block sm:inline sm:ml-2 font-medium">(${escapeHtml(v.russian)})</span>
-                        </div>
-                        <button onclick="playTTS(this, '${escapeQuotes(v.german)}', '${voiceHint}')" class="px-2.5 py-1.5 bg-white text-rose-700 font-semibold rounded-lg shadow-sm border border-rose-200 hover:bg-rose-100 transition shrink-0 flex items-center gap-1 text-[11px]" title="Озвучить диктором">
-                            <span>🔊</span> <span>${speakerName}</span>
-                        </button>
-                    </div>
-                    ${exampleHtml}
+    dayCard.innerHTML = `
+        <div>
+            ${unitTitle}
+            <div class="flex flex-wrap items-center justify-between gap-2 mt-1">
+                <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-0.5 bg-rose-500 text-white rounded-md text-xs font-black">День ${currentLesson.day || currentLesson.id} из 180</span>
+                    <span class="px-2 py-0.5 bg-rose-100 text-rose-800 rounded text-[11px] font-bold">${currentLesson.level}</span>
                 </div>
-            `;
-        });
-        vocabHtml += '</div>';
+                <div class="text-xs font-semibold text-slate-500">⏱️ Рекомендуемое время: 30 минут</div>
+            </div>
+            <h3 class="text-base sm:text-lg font-black text-slate-800 mt-1.5">${escapeHtml(currentLesson.title)}</h3>
+        </div>
 
-        let dialogueHtml = '';
-        if (lesson.dialogue_simulator) {
-            dialogueHtml = `
-                <div class="mt-3 bg-purple-50/60 border border-purple-100 rounded-lg p-3 text-xs space-y-1">
-                    <div class="font-bold text-purple-900 flex items-center gap-1">💬 Тренажер диалога: ${escapeHtml(lesson.dialogue_simulator.situation)}</div>
-                    <div class="text-purple-700 italic">Пример: «${escapeHtml(lesson.dialogue_simulator.example)}»</div>
-                    <div class="text-slate-500 text-[11px]">💡 Подсказка: ${escapeHtml(lesson.dialogue_simulator.tips)}</div>
-                </div>
-            `;
-        }
+        ${stepsHtml}
 
-        const vocabCount = (lesson.vocabulary || []).length;
+        <!-- Этап 2: Новая грамматика дня -->
+        <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-3 text-xs space-y-1">
+            <span class="font-bold text-amber-900 flex items-center gap-1">📖 Этап 2: Грамматическое правило дня</span>
+            <p class="text-amber-800 font-semibold">${escapeHtml(currentLesson.grammar)}</p>
+            ${currentLesson.rule_explanation ? `<p class="text-slate-600 text-[11px] mt-1 pt-1 border-t border-amber-200/50">💡 <b>Разбор:</b> ${escapeHtml(currentLesson.rule_explanation)}</p>` : ''}
+        </div>
 
-        card.innerHTML = `
-            <div>
-                <div class="flex items-start justify-between gap-2">
-                    <div class="flex items-center gap-2">
-                        <span class="px-2 py-0.5 bg-rose-500 text-white rounded text-[10px] font-bold">${lesson.level}</span>
-                        <h3 class="font-bold text-sm sm:text-base text-slate-800">${escapeHtml(lesson.title)}</h3>
-                    </div>
-                    <div class="flex items-center gap-1.5 shrink-0">
-                        <button onclick="startLingoLesson(${lesson.id})" class="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-white border-b-2 border-emerald-600 active:border-b-0 rounded-lg text-[11px] font-extrabold transition flex items-center gap-1 shadow-sm" title="Пройти урок в Duolingo">
-                            <img src="/static/duolingo/mascot.svg" class="w-3.5 h-3.5" alt="Owl">
-                            🎮 Duolingo
-                        </button>
-                        <button onclick="startFlashcardsForLesson('${lesson.id}', '${lesson.level}')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-[11px] font-bold transition flex items-center gap-1 shadow-sm">
-                            📇 Карточки (${vocabCount})
-                        </button>
-                    </div>
-                </div>
-                <p class="text-xs text-rose-700 font-medium mt-1.5 bg-rose-50/70 p-2 rounded-lg border border-rose-100">📖 Грамматика: ${escapeHtml(lesson.grammar)}</p>
-                ${lesson.rule_explanation ? `<p class="text-[11px] text-slate-600 mt-1 italic pl-1">💡 ${escapeHtml(lesson.rule_explanation)}</p>` : ''}
+        <!-- Ключевые фразы дня -->
+        <div>
+            <div class="flex items-center justify-between">
+                <h4 class="font-bold text-slate-700 text-xs">🗣️ Ключевые озвученные фразы дня (${(currentLesson.vocabulary || []).length} шт):</h4>
+                <button onclick="startFlashcardsForLesson('${currentLesson.id || currentLesson.day}', '${currentLesson.level}')" class="text-rose-600 hover:text-rose-700 font-bold text-[11px] transition">
+                    📇 Разминка на карточках ➔
+                </button>
             </div>
             ${vocabHtml}
-            ${dialogueHtml}
-        `;
-        container.appendChild(card);
-    });
+        </div>
+
+        <!-- Ролевой диалог -->
+        ${dialogueHtml}
+
+        <!-- Кнопки действий 30-минутного занятия -->
+        <div class="pt-3 border-t border-rose-100 flex flex-wrap gap-2">
+            <button onclick="startLingoLesson(${currentLesson.id || currentLesson.day})" 
+                    class="flex-1 min-w-[200px] py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-extrabold text-xs uppercase tracking-wider border-b-4 border-emerald-600 active:border-b-0 transition shadow-md flex items-center justify-center gap-2">
+                <img src="/static/duolingo/mascot.svg" class="w-5 h-5" alt="Duolingo Owl">
+                <span>🎮 Играть в Duolingo Дня ${currentLesson.day || currentLesson.id}</span>
+            </button>
+            <button onclick="talkToCoachForLesson(${currentLesson.id || currentLesson.day})" 
+                    class="py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-xs transition shadow-sm flex items-center gap-1.5">
+                <span>💬 Диалог с коучем</span>
+            </button>
+            <button onclick="completeDayLesson(${currentLesson.day || currentLesson.id})" 
+                    class="py-3 px-4 bg-gradient-to-r from-amber-500 to-rose-500 hover:opacity-95 text-white rounded-xl font-extrabold text-xs transition shadow-sm flex items-center gap-1.5">
+                <span>✅ Завершить урок (+100 XP)</span>
+            </button>
+        </div>
+    `;
+
+    container.appendChild(dayCard);
 }
 
 function prepareFlashcards() {

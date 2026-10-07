@@ -225,32 +225,73 @@
             </div>
         </section>
 
-        <!-- ВКЛАДКА 3: НЕМЕЦКИЙ ЯЗЫК (A1 - B1 ДЛЯ АЛИНЫ) -->
+        <!-- ВКЛАДКА 3: НЕМЕЦКИЙ ЯЗЫК (A1+ -> B1 НА 180 ДНЕЙ ДЛЯ АЛИНЫ) -->
         <section id="tab-german" class="tab-content hidden flex-1 flex flex-col bg-white/90 backdrop-blur rounded-2xl shadow-xl border border-rose-100 p-4 overflow-hidden h-full">
+            <!-- Шапка курса -->
             <div class="flex flex-wrap items-center justify-between gap-2 mb-2 shrink-0">
                 <div>
-                    <h2 class="text-lg font-bold text-slate-800">🇩🇪 Платформа изучения немецкого для Алины</h2>
-                    <p class="text-xs text-slate-500">15 пошаговых уроков A1-B1, интерактивные карточки со словами, транскрипции и аудио Katja & Conrad</p>
+                    <h2 class="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-1.5">
+                        <span>🇩🇪 Немецкий для Алины: 180 дней</span>
+                        <span class="text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">A1+ ➔ B1</span>
+                    </h2>
+                    <p class="text-[11px] sm:text-xs text-slate-500">30 минут в день • 36 юнитов • Duolingo тренажер • Диалоги с коучем • Без элементарного алфавита</p>
                 </div>
-                <div class="flex gap-1.5">
-                    <button onclick="setGermanLevel('A1')" id="german-btn-a1" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-rose-500 text-white shadow">A1 Старт</button>
-                    <button onclick="setGermanLevel('A2')" id="german-btn-a2" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-100 text-rose-700">A2 Жизнь</button>
-                    <button onclick="setGermanLevel('B1')" id="german-btn-b1" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-100 text-rose-700">B1 Профи</button>
+                <!-- Уровни курса: A1+ Старт, A2 Жизнь, B1 Профи -->
+                <div class="flex items-center gap-1.5">
+                    <button onclick="setGermanLevel('A1+')" id="german-btn-a1" class="px-2.5 py-1 text-xs font-bold rounded-lg bg-rose-500 text-white shadow transition">A1+ Старт (1-30)</button>
+                    <button onclick="setGermanLevel('A2')" id="german-btn-a2" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200 transition">A2 Жизнь (31-90)</button>
+                    <button onclick="setGermanLevel('B1')" id="german-btn-b1" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200 transition">B1 Профи (91-180)</button>
                 </div>
             </div>
 
-            <!-- Режимы: Уроки vs Интерактивные карточки (Flashcards) vs Duolingo Lingo -->
-            <div class="flex flex-wrap items-center justify-between gap-2 mb-3 bg-rose-50/70 p-1.5 rounded-xl border border-rose-100 shrink-0">
+            <!-- Селектор дней и индикаторы прогресса (XP, Streak, Таймер) -->
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5 bg-gradient-to-r from-rose-50/90 to-amber-50/80 p-2 rounded-xl border border-rose-100 shrink-0 text-xs">
+                <!-- Выбор дня курса -->
+                <div class="flex items-center gap-1.5 flex-1 min-w-[240px]">
+                    <button onclick="changeCourseDay(-1)" class="px-2 py-1 bg-white hover:bg-rose-50 border border-rose-200 rounded-lg text-rose-700 font-bold text-xs shadow-sm transition" title="Предыдущий день">◀</button>
+                    <div class="flex-1 relative">
+                        <select id="germanDaySelect" onchange="onSelectCourseDay(this.value)" class="w-full bg-white border border-rose-200 text-slate-800 font-bold text-xs rounded-lg px-2.5 py-1 shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-400">
+                            <!-- Заполняется динамически на 180 дней -->
+                        </select>
+                    </div>
+                    <button onclick="changeCourseDay(1)" class="px-2 py-1 bg-white hover:bg-rose-50 border border-rose-200 rounded-lg text-rose-700 font-bold text-xs shadow-sm transition" title="Следующий день">▶</button>
+                </div>
+
+                <!-- 30-минутный таймер занятия -->
+                <div class="flex items-center gap-2 bg-white px-2.5 py-1 rounded-lg border border-rose-200 shadow-sm shrink-0">
+                    <span class="text-rose-600 font-bold text-xs flex items-center gap-1">
+                        ⏱️ <span id="lessonTimerDisplay">00:00 / 30:00</span>
+                    </span>
+                    <button id="lessonTimerBtn" onclick="toggleLessonTimer()" class="px-2 py-0.5 bg-rose-500 hover:bg-rose-600 text-white rounded font-extrabold text-[10px] transition">
+                        Старт
+                    </button>
+                </div>
+
+                <!-- Очки и Серия дней -->
+                <div class="flex items-center gap-3 shrink-0">
+                    <div class="flex items-center gap-1 font-bold text-amber-600">
+                        <span>🔥</span>
+                        <span id="courseStreakDisplay">1 день</span>
+                    </div>
+                    <div class="flex items-center gap-1 font-bold text-emerald-600">
+                        <span>⭐</span>
+                        <span id="courseXpDisplay">0 XP</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Режимы: 30-минутный урок дня vs Duolingo Lingo vs Карточки слов -->
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5 bg-rose-50/70 p-1.5 rounded-xl border border-rose-100 shrink-0">
                 <div class="flex flex-wrap gap-1">
                     <button onclick="setGermanViewMode('lessons')" id="german-mode-lessons" class="px-3 py-1 text-xs font-bold rounded-lg bg-white text-rose-700 shadow-sm transition">
-                        📖 Пошаговые уроки
-                    </button>
-                    <button onclick="setGermanViewMode('flashcards')" id="german-mode-flashcards" class="px-3 py-1 text-xs font-semibold rounded-lg text-slate-600 hover:text-rose-700 transition">
-                        📇 Карточки слов
+                        🎯 30-мин план дня
                     </button>
                     <button onclick="setGermanViewMode('duolingo')" id="german-mode-duolingo" class="px-3 py-1 text-xs font-bold rounded-lg text-emerald-800 bg-emerald-100/80 hover:bg-emerald-200 border border-emerald-300 transition flex items-center gap-1.5 shadow-sm">
                         <img src="/static/duolingo/mascot.svg" class="w-4 h-4" alt="Owl">
                         🎮 Игра Duolingo
+                    </button>
+                    <button onclick="setGermanViewMode('flashcards')" id="german-mode-flashcards" class="px-3 py-1 text-xs font-semibold rounded-lg text-slate-600 hover:text-rose-700 transition">
+                        📇 Anki-карточки
                     </button>
                 </div>
                 <div id="flashcardsStat" class="hidden text-[11px] text-slate-500 pr-2 font-medium">

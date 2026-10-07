@@ -404,13 +404,17 @@ class LingoGameEngine {
                 </div>
 
                 <div class="w-full space-y-2 pt-2">
-                    <button onclick="lingoEngine.startLesson(${this.currentLessonId + 1}, allGermanCourseData.lessons)" 
-                            class="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-extrabold text-sm uppercase tracking-wider border-b-4 border-emerald-600 active:border-b-0 transition shadow-md">
-                        Следующий урок ➔
+                    <button onclick="talkToCoachForLesson(${this.currentLessonId})" 
+                            class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-extrabold text-xs uppercase tracking-wider border-b-4 border-purple-800 active:border-b-0 transition shadow-md flex items-center justify-center gap-2">
+                        <span>💬 Этап 4: Ролевой диалог с ИИ-коучем ➔</span>
+                    </button>
+                    <button onclick="lingoEngine.startLesson(${this.currentLessonId + 1}, (typeof allGermanCourseData !== 'undefined' ? allGermanCourseData.lessons : []))" 
+                            class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-extrabold text-xs uppercase tracking-wider border-b-4 border-emerald-600 active:border-b-0 transition shadow-md">
+                        Следующий Duolingo урок ➔
                     </button>
                     <button onclick="setGermanViewMode('lessons')" 
-                            class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition">
-                        Вернуться к списку уроков
+                            class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition">
+                        🎯 Вернуться к плану дня
                     </button>
                 </div>
             </div>

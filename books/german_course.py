@@ -1,33 +1,66 @@
-"""
-Модуль: Профессиональная обучающая платформа немецкого языка (A1 -> A2 -> B1).
-Включает пошаговые уроки, интерактивные карточки для запоминания слов (Flashcards),
-грамматические правила, жизненные темы (Bürgeramt, Jobcenter, врач, жилье, работа),
-диалоги-тренажеры и эталонную нейро-озвучку Katja (женский) и Conrad (мужской).
-"""
+import os
+import json
+import logging
 
-GERMAN_COURSE_DATA = {
-    "levels": ["A1", "A2", "B1"],
-    "study_plan": [
-        {
-            "stage": "A1: Базовый старт (С нуля до уверенных фраз)",
-            "duration": "4-6 недель",
-            "goal": "Понимание базовых фраз, приветствие, покупки в супермаркете, заказ в кафе, ориентация в городе, рассказ о себе, семье и дне.",
-            "modules_count": "5 пошаговых уроков • 30 ключевых карточек"
-        },
-        {
-            "stage": "A2: Повседневная жизнь в Германии",
-            "duration": "6-8 недель",
-            "goal": "Визиты к врачу, диалог в Jobcenter / Bürgeramt, аренда квартиры, общественный транспорт, прошедшее время Perfekt.",
-            "modules_count": "5 практических уроков • 35 ключевых карточек"
-        },
-        {
-            "stage": "B1: Свободное общение, работа и психология",
-            "duration": "8-10 недель",
-            "goal": "Выражение личного мнения, эмоций, обоснование решений (weil, dass, obwohl), собеседования, уверенное ведение дел и рефлексия.",
-            "modules_count": "5 продвинутых уроков • 35 ключевых карточек"
-        }
-    ],
-    "lessons": [
+logger = logging.getLogger(__name__)
+
+# Попытка загрузить полный 180-дневный курс (A1+ -> A2 -> B1)
+COURSE_JSON_PATH = os.path.join(os.path.dirname(__file__), "german_180days_course.json")
+
+def load_german_course_from_file():
+    if os.path.exists(COURSE_JSON_PATH):
+        try:
+            with open(COURSE_JSON_PATH, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                # Нормализация полей для совместимости
+                if "levels" not in data:
+                    data["levels"] = ["A1+", "A2", "B1"]
+                if "study_plan" not in data and "stages" in data:
+                    data["study_plan"] = [
+                        {
+                            "stage": s["stage"],
+                            "duration": s.get("days", "30-90 дней"),
+                            "goal": s.get("goal", ""),
+                            "modules_count": s.get("units", "")
+                        }
+                        for s in data["stages"]
+                    ]
+                logger.info(f"Успешно загружен 180-дневный курс немецкого языка: {len(data.get('lessons', []))} уроков.")
+                return data
+        except Exception as e:
+            logger.error(f"Ошибка загрузки german_180days_course.json: {e}")
+    return None
+
+GERMAN_COURSE_DATA = load_german_course_from_file()
+
+if not GERMAN_COURSE_DATA:
+    GERMAN_COURSE_DATA = {
+        "title": "Курс немецкого языка для Алины",
+        "duration_days": 180,
+        "daily_minutes": 30,
+        "total_units": 36,
+        "levels": ["A1+", "A2", "B1"],
+        "study_plan": [
+            {
+                "stage": "A1+ Уверенный старт (Трамплин)",
+                "duration": "Дни 1-30",
+                "goal": "Активация базы, снятие каши в грамматике, порядок слов, nicht/kein, Akkusativ, модальные глаголы.",
+                "modules_count": "Юниты 1-6"
+            },
+            {
+                "stage": "A2 Жизнь в Германии и ведомства",
+                "duration": "Дни 31-90",
+                "goal": "Bürgeramt, Jobcenter, врачи, аптека, аренда квартиры, Dativ, Wechselpräpositionen, все формы Perfekt.",
+                "modules_count": "Юниты 7-18"
+            },
+            {
+                "stage": "B1 Профессиональный немецкий и свобода",
+                "duration": "Дни 91-180",
+                "goal": "Работа, резюме Lebenslauf, собеседование Vorstellungsgespräch, союзы weil/dass/obwohl, Konjunktiv II, свободная речь.",
+                "modules_count": "Юниты 19-36"
+            }
+        ],
+        "lessons": [
         # ==========================================
         # УРОВЕНЬ A1 (5 УРОКОВ)
         # ==========================================

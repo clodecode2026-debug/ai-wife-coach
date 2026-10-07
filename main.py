@@ -143,7 +143,8 @@ async def api_voice_save(req: VoiceSaveRequest):
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "gemini_active": bool(coach.client), "supabase_active": bool(db_manager.client)}
+    ai_active = bool(coach.ag_client or coach.genai_client)
+    return {"status": "healthy", "ai_active": ai_active, "supabase_active": bool(db_manager.client)}
 
 class DossierUpdateRequest(BaseModel):
     name: str = "Любимая жена"

@@ -142,6 +142,41 @@ class SupabaseManager:
             logger.error(f"Ошибка удаления сессии: {e}")
             return False
 
+    def save_german_progress(self, progress: Dict[str, Any]) -> bool:
+        """Сохраняет прогресс Lingo (XP, жизни, стрик) в Supabase"""
+        if not self.client:
+            return False
+        try:
+            self.client.table("wife_dossier").upsert([
+                {"key_name": "Lingo_XP", "value": str(progress.get("xp", 0))},
+                {"key_name": "Lingo_Hearts", "value": str(progress.get("hearts", 5))},
+                {"key_name": "Lingo_Streak", "value": str(progress.get("streak", 1))},
+                {"key_name": "Lingo_LastLesson", "value": str(progress.get("lesson_id", 1))},
+            ]).execute()
+            return True
+        except Exception as e:
+            logger.warning(f"Ошибка сохранения прогресса Lingo в Supabase: {e}")
+            return False
+
+    def get_german_progress(self) -> Dict[str, Any]:
+        """Загружает прогресс Lingo (XP, жизни, стрик) из Supabase"""
+        default_res = {"xp": 0, "hearts": 5, "streak": 1, "lesson_id": 1}
+        if not self.client:
+            return default_res
+        try:
+            res = self.client.table("wife_dossier").select("*").in_("key_name", ["Lingo_XP", "Lingo_Hearts", "Lingo_Streak", "Lingo_LastLesson"]).execute()
+            if res.data:
+                for row in res.data:
+                    k = row.get("key_name")
+                    v = row.get("value")
+                    if k == "Lingo_XP" and v: default_res["xp"] = int(v)
+                    elif k == "Lingo_Hearts" and v: default_res["hearts"] = int(v)
+                    elif k == "Lingo_Streak" and v: default_res["streak"] = int(v)
+                    elif k == "Lingo_LastLesson" and v: default_res["lesson_id"] = int(v)
+            return default_res
+        except Exception as e:
+            return default_res
+
     def keepalive_ping(self) -> bool:
         """Анти-засыпание базы Supabase (предотвращает спящий режим)"""
         if not self.client:

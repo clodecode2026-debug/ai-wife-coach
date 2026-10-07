@@ -239,14 +239,18 @@
                 </div>
             </div>
 
-            <!-- Режимы: Уроки vs Интерактивные карточки (Flashcards) -->
-            <div class="flex items-center justify-between gap-2 mb-3 bg-rose-50/70 p-1.5 rounded-xl border border-rose-100 shrink-0">
-                <div class="flex gap-1">
+            <!-- Режимы: Уроки vs Интерактивные карточки (Flashcards) vs Duolingo Lingo -->
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3 bg-rose-50/70 p-1.5 rounded-xl border border-rose-100 shrink-0">
+                <div class="flex flex-wrap gap-1">
                     <button onclick="setGermanViewMode('lessons')" id="german-mode-lessons" class="px-3 py-1 text-xs font-bold rounded-lg bg-white text-rose-700 shadow-sm transition">
                         📖 Пошаговые уроки
                     </button>
                     <button onclick="setGermanViewMode('flashcards')" id="german-mode-flashcards" class="px-3 py-1 text-xs font-semibold rounded-lg text-slate-600 hover:text-rose-700 transition">
-                        📇 Карточки для запоминания слов (Flashcards)
+                        📇 Карточки слов
+                    </button>
+                    <button onclick="setGermanViewMode('duolingo')" id="german-mode-duolingo" class="px-3 py-1 text-xs font-bold rounded-lg text-emerald-800 bg-emerald-100/80 hover:bg-emerald-200 border border-emerald-300 transition flex items-center gap-1.5 shadow-sm">
+                        <img src="/static/duolingo/mascot.svg" class="w-4 h-4" alt="Owl">
+                        🎮 Игра Duolingo
                     </button>
                 </div>
                 <div id="flashcardsStat" class="hidden text-[11px] text-slate-500 pr-2 font-medium">
@@ -256,6 +260,10 @@
 
             <div id="germanContent" class="flex-1 overflow-y-auto space-y-4 pr-1">
                 <!-- Динамически загружается через JS -->
+            </div>
+
+            <div id="lingoAppContainer" class="hidden flex-1 overflow-y-auto h-full">
+                <!-- Контейнер для готового движка Duolingo Clone -->
             </div>
         </section>
 
@@ -340,6 +348,8 @@
         </button>
     </nav>
 
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <script src="/static/duolingo/duolingo.js"></script>
     <script src="/static/app.js"></script>
 </body>
 </html>

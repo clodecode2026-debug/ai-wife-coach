@@ -771,6 +771,14 @@ function setGermanViewMode(mode) {
     renderGermanPlatform();
 }
 
+function startLingoLesson(lessonId) {
+    currentGermanMode = 'duolingo';
+    renderGermanPlatform();
+    if (window.lingoEngine && allGermanCourseData) {
+        lingoEngine.startLesson(lessonId, allGermanCourseData.lessons);
+    }
+}
+
 function startFlashcardsForLesson(lessonId, level) {
     currentGermanLevel = level;
     currentFlashcardLessonId = lessonId;
@@ -794,27 +802,54 @@ function renderGermanPlatform() {
     // 2. Обновляем кнопки переключения режимов
     const btnLessons = document.getElementById('german-mode-lessons');
     const btnCards = document.getElementById('german-mode-flashcards');
+    const btnDuolingo = document.getElementById('german-mode-duolingo');
     const statEl = document.getElementById('flashcardsStat');
+    const germanContent = document.getElementById('germanContent');
+    const lingoContainer = document.getElementById('lingoAppContainer');
 
-    if (btnLessons && btnCards) {
-        if (currentGermanMode === 'lessons') {
-            btnLessons.className = 'px-3 py-1 text-xs font-bold rounded-lg bg-white text-rose-700 shadow-sm transition';
-            btnCards.className = 'px-3 py-1 text-xs font-semibold rounded-lg text-slate-600 hover:text-rose-700 transition';
-            if (statEl) statEl.classList.add('hidden');
-        } else {
-            btnLessons.className = 'px-3 py-1 text-xs font-semibold rounded-lg text-slate-600 hover:text-rose-700 transition';
-            btnCards.className = 'px-3 py-1 text-xs font-bold rounded-lg bg-white text-rose-700 shadow-sm transition';
-            if (statEl) statEl.classList.remove('hidden');
-        }
+    if (btnLessons) {
+        btnLessons.className = currentGermanMode === 'lessons'
+            ? 'px-3 py-1 text-xs font-bold rounded-lg bg-white text-rose-700 shadow-sm transition'
+            : 'px-3 py-1 text-xs font-semibold rounded-lg text-slate-600 hover:text-rose-700 transition';
+    }
+
+    if (btnCards) {
+        btnCards.className = currentGermanMode === 'flashcards'
+            ? 'px-3 py-1 text-xs font-bold rounded-lg bg-white text-rose-700 shadow-sm transition'
+            : 'px-3 py-1 text-xs font-semibold rounded-lg text-slate-600 hover:text-rose-700 transition';
+    }
+
+    if (btnDuolingo) {
+        btnDuolingo.className = currentGermanMode === 'duolingo'
+            ? 'px-3 py-1 text-xs font-bold rounded-lg bg-emerald-500 text-white shadow-sm transition flex items-center gap-1.5'
+            : 'px-3 py-1 text-xs font-bold rounded-lg text-emerald-800 bg-emerald-100/80 hover:bg-emerald-200 border border-emerald-300 transition flex items-center gap-1.5 shadow-sm';
+    }
+
+    if (statEl) {
+        if (currentGermanMode === 'flashcards') statEl.classList.remove('hidden');
+        else statEl.classList.add('hidden');
     }
 
     if (!allGermanCourseData) return;
 
-    if (currentGermanMode === 'lessons') {
-        renderGermanLessons();
+    if (currentGermanMode === 'duolingo') {
+        if (germanContent) germanContent.classList.add('hidden');
+        if (lingoContainer) {
+            lingoContainer.classList.remove('hidden');
+            if (window.lingoEngine) {
+                const currentLesson = (allGermanCourseData.lessons || []).find(l => l.level === currentGermanLevel) || allGermanCourseData.lessons[0];
+                lingoEngine.startLesson(currentLesson ? currentLesson.id : 1, allGermanCourseData.lessons);
+            }
+        }
     } else {
-        prepareFlashcards();
-        renderFlashcardsView();
+        if (lingoContainer) lingoContainer.classList.add('hidden');
+        if (germanContent) germanContent.classList.remove('hidden');
+        if (currentGermanMode === 'lessons') {
+            renderGermanLessons();
+        } else {
+            prepareFlashcards();
+            renderFlashcardsView();
+        }
     }
 }
 
@@ -893,9 +928,15 @@ function renderGermanLessons() {
                         <span class="px-2 py-0.5 bg-rose-500 text-white rounded text-[10px] font-bold">${lesson.level}</span>
                         <h3 class="font-bold text-sm sm:text-base text-slate-800">${escapeHtml(lesson.title)}</h3>
                     </div>
-                    <button onclick="startFlashcardsForLesson('${lesson.id}', '${lesson.level}')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-[11px] font-bold shrink-0 transition flex items-center gap-1 shadow-sm">
-                        📇 Карточки (${vocabCount})
-                    </button>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button onclick="startLingoLesson(${lesson.id})" class="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-white border-b-2 border-emerald-600 active:border-b-0 rounded-lg text-[11px] font-extrabold transition flex items-center gap-1 shadow-sm" title="Пройти урок в Duolingo">
+                            <img src="/static/duolingo/mascot.svg" class="w-3.5 h-3.5" alt="Owl">
+                            🎮 Duolingo
+                        </button>
+                        <button onclick="startFlashcardsForLesson('${lesson.id}', '${lesson.level}')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-[11px] font-bold transition flex items-center gap-1 shadow-sm">
+                            📇 Карточки (${vocabCount})
+                        </button>
+                    </div>
                 </div>
                 <p class="text-xs text-rose-700 font-medium mt-1.5 bg-rose-50/70 p-2 rounded-lg border border-rose-100">📖 Грамматика: ${escapeHtml(lesson.grammar)}</p>
                 ${lesson.rule_explanation ? `<p class="text-[11px] text-slate-600 mt-1 italic pl-1">💡 ${escapeHtml(lesson.rule_explanation)}</p>` : ''}

@@ -72,6 +72,12 @@ class GermanCheckRequest(BaseModel):
     german_text: str
     user_translation: str
 
+class GermanProgressRequest(BaseModel):
+    xp: int = 0
+    hearts: int = 5
+    streak: int = 1
+    lesson_id: int = 1
+
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
     try:
@@ -125,6 +131,15 @@ async def api_german_check(req: GermanCheckRequest):
         "correct": True,
         "feedback": f"Отлично! Вы верно перевели фразу. Текст: '{req.german_text}'. Продолжайте в том же духе!"
     }
+
+@app.post("/api/german/progress")
+async def api_save_german_progress(req: GermanProgressRequest):
+    db_manager.save_german_progress(req.dict())
+    return {"status": "ok", "progress": req.dict()}
+
+@app.get("/api/german/progress")
+async def api_get_german_progress():
+    return db_manager.get_german_progress()
 
 @app.get("/api/library")
 async def api_library(q: str = None):

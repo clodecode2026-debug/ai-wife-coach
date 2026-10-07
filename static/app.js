@@ -192,6 +192,43 @@ async function playTTS(btn, text, voice = "ru-RU-SvetlanaNeural") {
 // GOOGLE LIVE VOICE РЕЖИМ
 let isAITalking = false;
 let currentLiveAudio = null;
+let liveSoundEnabled = localStorage.getItem('ai_coach_live_sound') === 'true'; // По умолчанию без звука по требованию
+
+function updateLiveSoundUI() {
+    const icon = document.getElementById('liveSoundIcon');
+    const text = document.getElementById('liveSoundText');
+    const btn = document.getElementById('liveSoundToggleBtn');
+    if (icon && text) {
+        if (liveSoundEnabled) {
+            icon.textContent = '🔊';
+            text.textContent = 'Звук: Включен (озвучка активна)';
+            if (btn) btn.classList.add('bg-rose-500/30', 'border-rose-400');
+            if (btn) btn.classList.remove('bg-white/10', 'border-white/20');
+        } else {
+            icon.textContent = '🔇';
+            text.textContent = 'Звук: Выключен (без звукового сопровождения)';
+            if (btn) btn.classList.remove('bg-rose-500/30', 'border-rose-400');
+            if (btn) btn.classList.add('bg-white/10', 'border-white/20');
+        }
+    }
+}
+
+function toggleLiveSound() {
+    liveSoundEnabled = !liveSoundEnabled;
+    localStorage.setItem('ai_coach_live_sound', liveSoundEnabled);
+    if (!liveSoundEnabled && currentLiveAudio) {
+        try { currentLiveAudio.pause(); } catch(e){}
+        currentLiveAudio = null;
+        isAITalking = false;
+        if (isLiveActive) startBrowserSpeechRecognition();
+    }
+    updateLiveSoundUI();
+}
+
+// Инициализируем UI переключателя звука при загрузке
+document.addEventListener('DOMContentLoaded', () => {
+    updateLiveSoundUI();
+});
 
 function toggleLiveVoiceState() {
     isLiveActive = !isLiveActive;
@@ -202,7 +239,7 @@ function toggleLiveVoiceState() {
 
     if (isLiveActive) {
         orb.classList.add('animate-pulse', 'scale-105', 'shadow-[0_0_80px_rgba(236,72,153,0.8)]');
-        statusText.textContent = 'ИИ слушает... Говорите после завершения речи коуча!';
+        statusText.textContent = 'ИИ слушает... Говорите!';
         btn.textContent = 'Остановить разговор';
         transcript.textContent = 'Я слушаю вас... Задайте короткий вопрос или поделитесь чувством.';
         isAITalking = false;
@@ -266,8 +303,17 @@ function startBrowserSpeechRecognition() {
                 const reply = data.reply || 'Любимая, я рядом с тобой.';
                 document.getElementById('liveTranscript').textContent = 'Коуч: ' + reply;
                 
-                // Озвучиваем ответ; микрофон включится ТОЛЬКО после окончания звука
-                await playLiveTTS(reply);
+                // Озвучиваем ответ, ТОЛЬКО если включен звук. Иначе сразу переходим к диалогу!
+                if (liveSoundEnabled) {
+                    await playLiveTTS(reply);
+                } else {
+                    // Без звукового сопровождения: пауза для комфортного чтения и мгновенный возврат к микрофону
+                    if (statusText) statusText.textContent = '💖 Ответ готов! Ваша очередь говорить...';
+                    setTimeout(() => {
+                        isAITalking = false;
+                        if (isLiveActive) startBrowserSpeechRecognition();
+                    }, 1200);
+                }
             } catch (e) {
                 document.getElementById('liveTranscript').textContent = 'Ошибка связи. Попробуйте снова.';
                 isAITalking = false;

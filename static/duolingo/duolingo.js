@@ -2,6 +2,24 @@
 // Использует оригинальные звуки (/static/duolingo/correct.wav, incorrect.wav, finish.mp3)
 // и ассеты совы (/static/duolingo/mascot.svg, heart.svg, points.svg)
 
+if (typeof window.escapeHtml !== 'function') {
+    window.escapeHtml = function(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    };
+}
+if (typeof window.escapeQuotes !== 'function') {
+    window.escapeQuotes = function(str) {
+        if (!str) return '';
+        return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    };
+}
+
 class LingoGameEngine {
     constructor() {
         this.hearts = parseInt(localStorage.getItem('lingo_hearts') || '5', 10);
@@ -18,9 +36,6 @@ class LingoGameEngine {
         this.audioCorrect = new Audio('/static/duolingo/correct.wav');
         this.audioIncorrect = new Audio('/static/duolingo/incorrect.wav');
         this.audioFinish = new Audio('/static/duolingo/finish.mp3');
-
-        // Обработка клика
-        this.audioClick = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU');
     }
 
     playSound(type) {
@@ -38,14 +53,33 @@ class LingoGameEngine {
         } catch(e) {}
     }
 
-    startLesson(lessonId, lessonsData) {
-        this.currentLessonId = lessonId;
+    async startLesson(lessonId, lessonsData) {
+        this.currentLessonId = lessonId || 1;
         this.selectedOptionIndex = null;
         this.status = 'none';
         this.currentChallengeIndex = 0;
 
-        const lesson = lessonsData.find(l => l.id == lessonId) || lessonsData[0];
-        if (!lesson) return;
+        if (!lessonsData || !lessonsData.length) {
+            try {
+                const res = await fetch('/api/german/course');
+                const data = await res.json();
+                lessonsData = data.lessons || [];
+            } catch(e) {
+                lessonsData = [];
+            }
+        }
+
+        const lesson = (lessonsData && lessonsData.length > 0) 
+            ? (lessonsData.find(l => l.id == this.currentLessonId) || lessonsData[0]) 
+            : null;
+
+        if (!lesson) {
+            const container = document.getElementById('lingoAppContainer');
+            if (container) {
+                container.innerHTML = '<div class="text-center p-8 text-rose-500 font-bold text-sm">Загрузка уроков Duolingo... Нажмите кнопку ещё раз через мгновение.</div>';
+            }
+            return;
+        }
 
         this.currentChallenges = this.generateChallenges(lesson, lessonsData);
         this.render();
@@ -399,7 +433,8 @@ class LingoGameEngine {
     }
 }
 
-const lingoEngine = new LingoGameEngine();
+window.lingoEngine = new LingoGameEngine();
+var lingoEngine = window.lingoEngine;
 
 function exitLingoModal() {
     if (confirm('Вы уверены, что хотите прервать урок? Прогресс урока не сохранится.')) {

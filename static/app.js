@@ -830,26 +830,31 @@ function renderGermanPlatform() {
         else statEl.classList.add('hidden');
     }
 
-    if (!allGermanCourseData) return;
-
     if (currentGermanMode === 'duolingo') {
         if (germanContent) germanContent.classList.add('hidden');
         if (lingoContainer) {
             lingoContainer.classList.remove('hidden');
-            if (window.lingoEngine) {
-                const currentLesson = (allGermanCourseData.lessons || []).find(l => l.level === currentGermanLevel) || allGermanCourseData.lessons[0];
-                lingoEngine.startLesson(currentLesson ? currentLesson.id : 1, allGermanCourseData.lessons);
+            const engine = window.lingoEngine || (typeof lingoEngine !== 'undefined' ? lingoEngine : null);
+            if (engine) {
+                const lessons = (allGermanCourseData && allGermanCourseData.lessons) ? allGermanCourseData.lessons : [];
+                const currentLesson = lessons.find(l => l.level === currentGermanLevel) || lessons[0];
+                engine.startLesson(currentLesson ? currentLesson.id : 1, lessons);
+            } else {
+                lingoContainer.innerHTML = '<div class="text-center p-8 text-rose-500 font-bold text-sm">Загрузка Duolingo... Нажмите кнопку ещё раз через секунду.</div>';
             }
         }
+        return;
+    }
+
+    if (!allGermanCourseData) return;
+
+    if (lingoContainer) lingoContainer.classList.add('hidden');
+    if (germanContent) germanContent.classList.remove('hidden');
+    if (currentGermanMode === 'lessons') {
+        renderGermanLessons();
     } else {
-        if (lingoContainer) lingoContainer.classList.add('hidden');
-        if (germanContent) germanContent.classList.remove('hidden');
-        if (currentGermanMode === 'lessons') {
-            renderGermanLessons();
-        } else {
-            prepareFlashcards();
-            renderFlashcardsView();
-        }
+        prepareFlashcards();
+        renderFlashcardsView();
     }
 }
 

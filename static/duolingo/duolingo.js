@@ -1282,6 +1282,48 @@ class LingoGameEngine {
         document.body.appendChild(modal);
     }
 
+    // =========================================================================
+    // 10. ВОССТАНОВЛЕНИЕ СЕРДЕЧЕК (HEART REFILL SYSTEM)
+    // =========================================================================
+    openHeartRefillModal() {
+        const modal = document.createElement('div');
+        modal.id = 'heartRefillModal';
+        modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in';
+        modal.innerHTML = `
+            <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-rose-100 text-center">
+                <div class="text-4xl mb-2 animate-bounce">❤️</div>
+                <h3 class="font-black text-lg text-slate-800">Сердечки Duolingo</h3>
+                <p class="text-xs text-slate-500 mt-1">У вас сейчас <strong>${this.hearts} из 5</strong> ❤️</p>
+                
+                <div class="bg-rose-50 border border-rose-100 rounded-2xl p-4 my-4 text-xs text-rose-900 leading-relaxed text-left">
+                    <p class="font-bold mb-1">Как пополнить жизни?</p>
+                    <p>Коуч верит в вас! Вы можете мгновенно восстановить все 5 сердечек за экспресс-разминку без томительного ожидания.</p>
+                </div>
+
+                <div class="space-y-2">
+                    <button onclick="lingoEngine.refillHeartsInstantly()" class="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-500 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md hover:opacity-95 transition">
+                        ⚡️ Восстановить все 5 ❤️
+                    </button>
+                    <button onclick="document.getElementById('heartRefillModal').remove()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl transition">
+                        Закрыть
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    refillHeartsInstantly() {
+        this.hearts = 5;
+        localStorage.setItem('lingo_hearts', 5);
+        const display = document.getElementById('courseHeartsDisplay');
+        if (display) display.textContent = '5';
+        this.syncProgressWithSupabase();
+        const m = document.getElementById('heartRefillModal');
+        if (m) m.remove();
+        alert('🎉 Ура! Все 5 сердечек восстановлены. Учитесь в удовольствие!');
+    }
+
     async syncProgressWithSupabase() {
         try {
             await fetch('/api/german/progress', {

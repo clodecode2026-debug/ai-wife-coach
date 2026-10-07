@@ -70,7 +70,8 @@ class AIFeminineCoach:
         self.ag_client = None
         if HAS_OPENAI and self.ag_api_key:
             try:
-                self.ag_client = OpenAI(base_url=self.ag_base_url, api_key=self.ag_api_key, timeout=25.0)
+                # max_retries=0 чтобы при задержке сразу переходить к следующей модели каскада
+                self.ag_client = OpenAI(base_url=self.ag_base_url, api_key=self.ag_api_key, timeout=30.0, max_retries=0)
                 logger.info(f"OpenAI-совместимый клиент успешно подключен к {self.ag_base_url}")
             except Exception as e:
                 logger.error(f"Ошибка создания OpenAI клиента: {e}")
@@ -127,13 +128,13 @@ class AIFeminineCoach:
         max_tokens = 70 if is_voice_mode else 180
 
         # Актуальный каскад на 7 октября 2026 года:
-        # Приоритет отдаем самым быстрым моделям для мгновенного ответа
+        # Приоритет проверенным мгновенным моделям дня (gpt-4o ~5.5s, gemini-3.8 ~7s)
         CANDIDATES = [
             ("bridge", "gpt-4o"),
-            ("bridge", "claude-3-5-sonnet-20241022"),
             ("bridge", "gemini-3.8-flash"),
-            ("bridge", "antigravity-3.8-pro"),
             ("bridge", "gemini-3.5-flash"),
+            ("bridge", "claude-3-5-sonnet-20241022"),
+            ("bridge", "antigravity-3.8-flash"),
             ("direct", "gemini-3.1-flash-lite-preview"),
             ("direct", "gemma-4-26b-a4b-it"),
             ("direct", "gemini-3.1-flash-lite")
@@ -147,9 +148,13 @@ class AIFeminineCoach:
                     messages.append({"role": h.get("role", "user"), "content": h.get("content", "")})
             messages.append({"role": "user", "content": message})
 
+            bridge_attempts = 0
             for provider, model_name in CANDIDATES:
                 if provider != "bridge" or not self.router.is_available(f"bridge:{model_name}"):
                     continue
+                if bridge_attempts >= 2:
+                    break
+                bridge_attempts += 1
                 try:
                     logger.info(f"Генерация ответа через Bridge ({model_name})...")
                     res = self.ag_client.chat.completions.create(
@@ -157,7 +162,7 @@ class AIFeminineCoach:
                         messages=messages,
                         temperature=0.7,
                         max_tokens=max_tokens,
-                        timeout=11.0
+                        timeout=26.0
                     )
                     content = res.choices[0].message.content
                     if content and content.strip():

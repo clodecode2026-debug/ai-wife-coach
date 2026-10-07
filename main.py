@@ -59,7 +59,7 @@ async def read_index():
         return HTMLResponse(content=f"<h1>AI Wife Coach</h1><p>Ошибка загрузки интерфейса: {e}</p>")
 
 @app.post("/api/chat")
-async def api_chat(req: ChatRequest):
+def api_chat(req: ChatRequest):
     try:
         history = db_manager.get_chat_history(req.session_id)
         dossier = db_manager.get_dossier()
@@ -135,7 +135,7 @@ async def api_tts(req: TTSRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/voice/save")
-async def api_voice_save(req: VoiceSaveRequest):
+def api_voice_save(req: VoiceSaveRequest):
     try:
         binary_data = base64.b64decode(req.audio_base64)
         file_url = s3_storage.upload_file_bytes(binary_data, req.filename)
@@ -156,17 +156,17 @@ class DossierUpdateRequest(BaseModel):
     notes: str = ""
 
 @app.get("/api/dossier")
-async def api_get_dossier():
+def api_get_dossier():
     return db_manager.get_dossier()
 
 @app.post("/api/dossier")
-async def api_save_dossier(req: DossierUpdateRequest):
+def api_save_dossier(req: DossierUpdateRequest):
     db_manager.save_dossier(req.name, req.notes)
     return {"status": "ok", "message": "Досье сохранено"}
 
 
 @app.get("/api/chat/history")
-async def api_chat_history(session_id: str = "default_wife"):
+def api_chat_history(session_id: str = "default_wife"):
     return db_manager.get_chat_history(session_id)
 
 if __name__ == "__main__":

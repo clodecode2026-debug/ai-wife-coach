@@ -119,10 +119,18 @@
                         Нажмите кнопку <strong class="text-white bg-white/20 px-1 py-0.5 rounded">«Поделиться» ⎋</strong> внизу Safari, затем выберите <strong class="text-white underline">«На экран "Домой"» ⊞</strong>
                     </div>
                 </div>
-            </div>
             <button onclick="localStorage.setItem('ios_pwa_dismissed', 'true'); document.getElementById('iosInstallBanner').classList.add('hidden');" class="text-white/80 hover:text-white text-xs font-bold px-2 py-1 bg-white/20 hover:bg-white/30 rounded-lg shrink-0">
                 Понятно ✕
             </button>
+        </div>
+
+        <!-- Баннер кратковременной потери связи (Offline / Bad network) -->
+        <div id="offlineNetworkBanner" class="hidden shrink-0 mb-2 p-2.5 bg-amber-500 text-white rounded-2xl shadow-md border border-amber-400 flex items-center justify-between gap-3 animate-fade-in">
+            <div class="flex items-center gap-2">
+                <span class="text-xl">📡</span>
+                <span class="text-xs font-bold leading-tight">Связь временно пропала. Ваш прогресс сохранён, ожидаем сеть...</span>
+            </div>
+            <span class="text-[11px] bg-white/20 px-2 py-0.5 rounded-lg shrink-0">Офлайн-режим</span>
         </div>
 
         <!-- ВКЛАДКА 1: ДИАЛОГ С КОУЧЕМ -->

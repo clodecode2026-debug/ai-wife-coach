@@ -48,6 +48,16 @@ document.addEventListener('DOMContentLoaded', () => {
     updateLiveSoundUI();
     updateLearnedCountUI();
     updateCourseProgressUI();
+
+    // Отслеживание онлайн/офлайн статуса сети
+    window.addEventListener('online', () => {
+        const b = document.getElementById('offlineNetworkBanner');
+        if (b) b.classList.add('hidden');
+    });
+    window.addEventListener('offline', () => {
+        const b = document.getElementById('offlineNetworkBanner');
+        if (b) b.classList.remove('hidden');
+    });
 });
 
 // ==========================================

@@ -1,11 +1,15 @@
-fastapi>=0.100.0
-uvicorn>=0.22.0
-pydantic>=2.0.0
-google-genai>=0.1.0
-supabase>=2.0.0
-edge-tts>=6.1.12
-pytest>=7.0.0
-requests>=2.28.0
-boto3>=1.28.0
-botocore>=1.31.0
-httpx>=0.24.0
+fastapi==0.115.6
+# Starlette ниже 0.42: в 0.42+ роутер убрал параметр on_startup,
+# на котором держится FastAPI 0.115.x. Без этого ограничения приложение
+# падает при старте с "unexpected keyword argument 'on_startup'".
+starlette>=0.41,<0.42
+uvicorn[standard]==0.34.0
+openai==1.59.6
+httpx==0.28.1
+supabase==2.15.0
+boto3==1.36.26
+python-dotenv==1.0.1
+python-multipart==0.0.20
+# Шифрование секретов в хранилище (Fernet). Без него агент не сможет
+# хранить API-ключи вне файлов проекта.
+cryptography==50.0.1

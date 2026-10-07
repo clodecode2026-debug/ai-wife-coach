@@ -1108,6 +1108,96 @@ class LingoGameEngine {
         document.body.appendChild(modal);
     }
 
+    // =========================================================================
+    // 7. ИНТЕРАКТИВНЫЕ 3D КАРТОЧКИ-ФЛИПЫ (FLASHCARDS)
+    // =========================================================================
+    openFlashcardsModal(lessonId) {
+        const lessons = (window.allGermanCourseData && window.allGermanCourseData.lessons) || [];
+        const lesson = lessons.find(l => (l.id == lessonId || l.day == lessonId)) || lessons[0];
+        if (!lesson || !lesson.vocabulary || !lesson.vocabulary.length) return;
+
+        const modal = document.createElement('div');
+        modal.id = 'lingoFlashcardsModal';
+        modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-900/60 backdrop-blur-sm animate-fade-in';
+
+        let currentIndex = 0;
+        const vocab = lesson.vocabulary;
+
+        const renderCard = () => {
+            const v = vocab[currentIndex];
+            let artClass = '';
+            if (v.article === 'der') artClass = 'art-der';
+            else if (v.article === 'die') artClass = 'art-die';
+            else if (v.article === 'das') artClass = 'art-das';
+
+            return `
+                <div class="bg-white rounded-3xl p-5 max-w-sm w-full shadow-2xl border border-rose-100 flex flex-col text-center">
+                    <div class="flex items-center justify-between mb-3 text-xs text-slate-400 font-bold">
+                        <span>🎴 Карточка ${currentIndex + 1} из ${vocab.length}</span>
+                        <button onclick="document.getElementById('lingoFlashcardsModal').remove()" class="text-slate-400 hover:text-slate-600 text-base">✕</button>
+                    </div>
+
+                    <!-- 3D Карточка -->
+                    <div id="flashcardBox" onclick="this.classList.toggle('rotate-y-180')" 
+                         class="h-52 bg-gradient-to-br from-rose-50 to-pink-50 rounded-2xl border-2 border-rose-200 flex flex-col items-center justify-center p-4 cursor-pointer transition-transform duration-500 perspective-1000 select-none shadow-inner mb-4 relative">
+                        <div class="text-2xl font-black text-slate-800 ${artClass}">
+                            ${escapeHtml(v.german)}
+                        </div>
+                        <div class="text-xs text-slate-400 mt-1">
+                            ${v.transcription ? escapeHtml(v.transcription) : ''}
+                        </div>
+                        <div class="text-sm font-bold text-rose-600 mt-3">
+                            ${escapeHtml(v.russian)}
+                        </div>
+                        <div class="text-[10px] text-slate-400 italic mt-2">
+                            ${v.example ? `«${escapeHtml(v.example)}»` : 'Нажмите, чтобы перевернуть'}
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button onclick="playTTS(this, '${escapeQuotes(v.german)}', '${v.voice_hint || 'de-DE-KatjaNeural'}')"
+                                class="flex-1 py-2.5 bg-rose-100 text-rose-700 font-bold rounded-xl text-xs hover:bg-rose-200 transition">
+                            🔊 Озвучить
+                        </button>
+                        <button id="fcNextBtn" class="flex-1 py-2.5 bg-rose-500 text-white font-bold rounded-xl text-xs hover:opacity-95 transition shadow-sm">
+                            ${currentIndex < vocab.length - 1 ? 'Дальше ➔' : 'Завершить 🎉'}
+                        </button>
+                    </div>
+                </div>
+            `;
+        };
+
+        modal.innerHTML = renderCard();
+        document.body.appendChild(modal);
+
+        modal.addEventListener('click', (e) => {
+            if (e.target && e.target.id === 'fcNextBtn') {
+                if (currentIndex < vocab.length - 1) {
+                    currentIndex++;
+                    modal.innerHTML = renderCard();
+                } else {
+                    modal.remove();
+                }
+            }
+        });
+    }
+
+    // =========================================================================
+    // 8. РАБОТА НАД ОШИБКАМИ (MISTAKES REVIEW)
+    // =========================================================================
+    saveMistake(german, russian) {
+        let mistakes = JSON.parse(localStorage.getItem('lingo_mistakes_queue') || '[]');
+        if (!mistakes.some(m => m.german === german)) {
+            mistakes.push({ german, russian, date: new Date().toISOString() });
+            localStorage.setItem('lingo_mistakes_queue', JSON.stringify(mistakes.slice(-30)));
+        }
+    }
+
+    getMistakesCount() {
+        const mistakes = JSON.parse(localStorage.getItem('lingo_mistakes_queue') || '[]');
+        return mistakes.length;
+    }
+
     async syncProgressWithSupabase() {
         try {
             await fetch('/api/german/progress', {

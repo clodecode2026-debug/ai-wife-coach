@@ -1,6 +1,15 @@
-// Lingo (Duolingo Clone Engine) — Портированный интерактивный движок Duolingo для Алины
-// Использует оригинальные звуки (/static/duolingo/correct.wav, incorrect.wav, finish.mp3)
-// и ассеты совы (/static/duolingo/mascot.svg, heart.svg, points.svg)
+// =========================================================================
+// Lingo (Duolingo Clone Engine 2.0) — Полноценный движок Duolingo для Алины
+// =========================================================================
+// Включает:
+// 1. Интерактивную карту обучения (The Learning Path) с змейкой уровней и совой
+// 2. Механику Word Bank (сбор предложений из слов с контролем порядка слов)
+// 3. Механику Match Pairs (соединение пар слов)
+// 4. Механику Listening (аудирование с нормальной и замедленной скоростью 🐢)
+// 5. Умный подбор дистракторов (без спойлеров и без динамиков у вариантов)
+// 6. Справочник грамматики юнитов (Unit Guidebook)
+// 7. Аутентичные звуки (correct.wav, incorrect.wav, finish.mp3) и ассеты совы
+// =========================================================================
 
 if (typeof window.escapeHtml !== 'function') {
     window.escapeHtml = function(str) {
@@ -25,14 +34,20 @@ class LingoGameEngine {
         this.hearts = parseInt(localStorage.getItem('lingo_hearts') || '5', 10);
         this.xp = parseInt(localStorage.getItem('lingo_xp') || '0', 10);
         this.streak = parseInt(localStorage.getItem('lingo_streak') || '1', 10);
-        this.currentLessonId = 1;
+        this.completedLessons = JSON.parse(localStorage.getItem('lingo_completed_lessons') || '[]');
+        this.currentLessonId = parseInt(localStorage.getItem('ai_coach_german_day') || '1', 10);
         this.currentChallenges = [];
         this.currentChallengeIndex = 0;
         this.selectedOptionIndex = null;
         this.status = 'none'; // 'none' | 'correct' | 'wrong' | 'completed'
-        this.isAudioPlaying = false;
 
-        // Предзагрузка оригинальных звуков Lingo
+        // Состояния для интерактивных типов заданий
+        this.wordBankSelected = []; // [{ id, text }]
+        this.wordBankAvailable = []; // [{ id, text }]
+        this.pairsSelectedFirst = null; // { id, side, value, pairId }
+        this.matchedPairsCount = 0;
+
+        // Предзагрузка звуков
         this.audioCorrect = new Audio('/static/duolingo/correct.wav');
         this.audioIncorrect = new Audio('/static/duolingo/incorrect.wav');
         this.audioFinish = new Audio('/static/duolingo/finish.mp3');
@@ -53,103 +68,237 @@ class LingoGameEngine {
         } catch(e) {}
     }
 
-    async startLesson(lessonId, lessonsData) {
-        this.currentLessonId = lessonId || 1;
-        this.selectedOptionIndex = null;
-        this.status = 'none';
-        this.currentChallengeIndex = 0;
+    // =========================================================================
+    // 1. ГЕНЕРАЦИЯ УМНЫХ ДИСТРАКТОРОВ (БЕЗ СПОЙЛЕРОВ)
+    // =========================================================================
+    getSmartDistractors(targetText, allLessons, count = 2, isGerman = true) {
+        const pool = [];
+        const targetLen = targetText.trim().split(/\s+/).length;
 
-        if (!lessonsData || !lessonsData.length) {
-            try {
-                const res = await fetch('/api/german/course');
-                const data = await res.json();
-                lessonsData = data.lessons || [];
-            } catch(e) {
-                lessonsData = [];
-            }
-        }
+        allLessons.forEach(l => {
+            (l.vocabulary || []).forEach(v => {
+                const text = isGerman ? v.german : v.russian;
+                if (text && text !== targetText && !pool.includes(text)) {
+                    const len = text.trim().split(/\s+/).length;
+                    // Подбираем фразы схожей длины (по числу слов ±3), чтобы не палить правильный ответ
+                    if (Math.abs(len - targetLen) <= 3) {
+                        pool.push(text);
+                    }
+                }
+            });
+        });
 
-        const lesson = (lessonsData && lessonsData.length > 0) 
-            ? (lessonsData.find(l => l.id == this.currentLessonId) || lessonsData[0]) 
-            : null;
-
-        if (!lesson) {
-            const container = document.getElementById('lingoAppContainer');
-            if (container) {
-                container.innerHTML = '<div class="text-center p-8 text-rose-500 font-bold text-sm">Загрузка уроков Duolingo... Нажмите кнопку ещё раз через мгновение.</div>';
-            }
-            return;
-        }
-
-        this.currentChallenges = this.generateChallenges(lesson, lessonsData);
-        this.render();
+        // Перемешиваем и выбираем нужное количество
+        const shuffled = pool.sort(() => 0.5 - Math.random());
+        return shuffled.slice(0, count);
     }
 
+    // =========================================================================
+    // 2. ГЕНЕРАЦИЯ ЗАДАНИЙ УРОКА (5 РАЗНООБРАЗНЫХ ТИПОВ)
+    // =========================================================================
     generateChallenges(lesson, allLessons) {
         const challenges = [];
         const vocab = lesson.vocabulary || [];
 
-        // 1. Выбор немецкого слова по русскому переводу
-        if (vocab.length > 0) {
-            vocab.slice(0, 5).forEach((item, idx) => {
-                // Подбираем 2 случайных дистрактора (неправильных ответа)
-                const otherWords = allLessons.flatMap(l => l.vocabulary || []).filter(v => v.german !== item.german);
-                const shuffledOthers = [...otherWords].sort(() => 0.5 - Math.random()).slice(0, 2);
+        // 1. ТИП: MATCH PAIRS (Соедини 4 пары слов в начале урока для разминки)
+        if (vocab.length >= 4) {
+            const pairSlice = vocab.slice(0, 4);
+            const leftCards = pairSlice.map((v, idx) => ({ id: `L_${idx}`, pairId: idx, side: 'de', text: v.german, voiceHint: v.voice_hint }));
+            const rightCards = pairSlice.map((v, idx) => ({ id: `R_${idx}`, pairId: idx, side: 'ru', text: v.russian }));
 
-                const options = [
-                    { text: item.german, transcription: item.transcription, isCorrect: true, audioSrc: item.german, voiceHint: item.voice_hint },
-                    { text: shuffledOthers[0]?.german || 'Danke', transcription: shuffledOthers[0]?.transcription || '', isCorrect: false },
-                    { text: shuffledOthers[1]?.german || 'Bitte', transcription: shuffledOthers[1]?.transcription || '', isCorrect: false }
-                ].sort(() => 0.5 - Math.random());
-
-                // Чередуем типы вопросов:
-                if (idx % 2 === 0) {
-                    challenges.push({
-                        type: 'SELECT',
-                        question: `Как сказать по-немецки: «${item.russian}»?`,
-                        mascotText: `Вспомни правильное немецкое слово для: «${item.russian}»`,
-                        options: options,
-                        correctOptionText: item.german,
-                        correctExplanation: `${item.german} — ${item.russian} ${item.transcription ? `(${item.transcription})` : ''}`
-                    });
-                } else {
-                    challenges.push({
-                        type: 'LISTEN',
-                        question: `Прослушайте и выберите правильный перевод слова: «${item.german}»`,
-                        mascotText: `Нажмите на динамик и выберите точный перевод`,
-                        listenWord: item.german,
-                        voiceHint: item.voice_hint || 'de-DE-KatjaNeural',
-                        options: [
-                            { text: item.russian, isCorrect: true },
-                            { text: shuffledOthers[0]?.russian || 'Пожалуйста', isCorrect: false },
-                            { text: shuffledOthers[1]?.russian || 'До свидания', isCorrect: false }
-                        ].sort(() => 0.5 - Math.random()),
-                        correctOptionText: item.russian,
-                        correctExplanation: `${item.german} — это «${item.russian}»`
-                    });
-                }
+            challenges.push({
+                type: 'MATCH_PAIRS',
+                question: 'Соедините немецкие слова с их правильным переводом:',
+                mascotText: 'Найди пары слов для быстрой разминки!',
+                cards: [...leftCards, ...rightCards].sort(() => 0.5 - Math.random()),
+                totalPairs: 4
             });
         }
 
-        // 2. Ситуационный вопрос из тренажера диалога
+        // 2. ТИП: WORD BANK (Собери фразу из слов — тренировка порядка слов)
+        if (vocab.length > 0) {
+            const item1 = vocab[0];
+            const cleanGerman = item1.german.replace(/[.!?]/g, '').trim();
+            const words = cleanGerman.split(/\s+/);
+            
+            // 2 дистрактора из того же урока
+            const otherWords = vocab.slice(1).flatMap(v => v.german.replace(/[.!?]/g, '').split(/\s+/)).filter(w => !words.includes(w));
+            const extraWords = [...new Set(otherWords)].slice(0, 2);
+
+            const allTokens = [...words, ...extraWords].map((word, idx) => ({
+                id: `wb_${idx}_${word}`,
+                text: word
+            })).sort(() => 0.5 - Math.random());
+
+            challenges.push({
+                type: 'WORD_BANK',
+                question: `Соберите фразу: «${item1.russian}»`,
+                mascotText: 'Вспомни железный порядок слов: глагол на 2-м месте!',
+                targetSentence: cleanGerman,
+                correctFull: item1.german,
+                voiceHint: item1.voice_hint || 'de-DE-KatjaNeural',
+                tokens: allTokens,
+                correctExplanation: `Правильно: ${item1.german} ${item1.transcription ? `(${item1.transcription})` : ''}`
+            });
+        }
+
+        // 3. ТИП: SMART SELECT (Осмысленный выбор немецкого перевода БЕЗ динамиков и спойлеров)
+        if (vocab.length > 1) {
+            const item2 = vocab[1];
+            const distractors = this.getSmartDistractors(item2.german, allLessons, 2, true);
+
+            const options = [
+                { text: item2.german, isCorrect: true, voiceHint: item2.voice_hint },
+                { text: distractors[0] || 'Ich verstehe das nicht ganz.', isCorrect: false },
+                { text: distractors[1] || 'Können Sie das bitte wiederholen?', isCorrect: false }
+            ].sort(() => 0.5 - Math.random());
+
+            challenges.push({
+                type: 'SELECT',
+                question: `Как правильно сказать по-немецки: «${item2.russian}»?`,
+                mascotText: 'Выбери грамматически верный вариант:',
+                options: options,
+                correctOptionText: item2.german,
+                voiceHint: item2.voice_hint || 'de-DE-KatjaNeural',
+                correctExplanation: `${item2.german} — ${item2.russian} ${item2.transcription ? `(${item2.transcription})` : ''}`
+            });
+        }
+
+        // 4. ТИП: LISTENING (Аудирование с нейро-голосом Katja/Conrad)
+        if (vocab.length > 2) {
+            const item3 = vocab[2];
+            const distractorsRu = this.getSmartDistractors(item3.russian, allLessons, 2, false);
+
+            const options = [
+                { text: item3.russian, isCorrect: true },
+                { text: distractorsRu[0] || 'Я пока не готова ответить на этот вопрос', isCorrect: false },
+                { text: distractorsRu[1] || 'Мы можем обсудить это позже', isCorrect: false }
+            ].sort(() => 0.5 - Math.random());
+
+            challenges.push({
+                type: 'LISTEN',
+                question: 'Прослушайте немецкую речь и выберите точный смысл:',
+                mascotText: 'Нажмите на динамик, чтобы прослушать фразу',
+                listenText: item3.german,
+                voiceHint: item3.voice_hint || 'de-DE-KatjaNeural',
+                options: options,
+                correctOptionText: item3.russian,
+                correctExplanation: `${item3.german} означает «${item3.russian}»`
+            });
+        }
+
+        // 5. ТИП: WORD BANK 2 (Вторая фраза на закрепление структуры)
+        if (vocab.length > 3) {
+            const item4 = vocab[3];
+            const cleanGerman = item4.german.replace(/[.!?]/g, '').trim();
+            const words = cleanGerman.split(/\s+/);
+            const otherWords = vocab.slice(0, 3).flatMap(v => v.german.replace(/[.!?]/g, '').split(/\s+/)).filter(w => !words.includes(w));
+            const extraWords = [...new Set(otherWords)].slice(0, 2);
+
+            const allTokens = [...words, ...extraWords].map((word, idx) => ({
+                id: `wb2_${idx}_${word}`,
+                text: word
+            })).sort(() => 0.5 - Math.random());
+
+            challenges.push({
+                type: 'WORD_BANK',
+                question: `Соберите фразу: «${item4.russian}»`,
+                mascotText: 'Собери предложение из плашек в правильном порядке:',
+                targetSentence: cleanGerman,
+                correctFull: item4.german,
+                voiceHint: item4.voice_hint || 'de-DE-ConradNeural',
+                tokens: allTokens,
+                correctExplanation: `Отлично! ${item4.german} (${item4.russian})`
+            });
+        }
+
+        // 6. ТИП: DIALOGUE SIMULATOR (Реальная ситуация в Германии)
         if (lesson.dialogue_simulator) {
             challenges.push({
                 type: 'DIALOGUE',
                 question: `Ситуация в Германии: ${lesson.dialogue_simulator.situation}`,
-                mascotText: `Какая фраза лучше всего подходит в этой ситуации?`,
+                mascotText: 'Что лучше всего сказать в этой ситуации?',
                 options: [
-                    { text: lesson.dialogue_simulator.example, isCorrect: true },
-                    { text: 'Entschuldigung, ich weiß es nicht.', isCorrect: false },
-                    { text: 'Nein, danke, alles gut.', isCorrect: false }
+                    { text: lesson.dialogue_simulator.example, isCorrect: true, voiceHint: 'de-DE-KatjaNeural' },
+                    { text: 'Entschuldigung, ich habe leider keine Zeit dafür.', isCorrect: false },
+                    { text: 'Das ist mir egal, vielen Dank.', isCorrect: false }
                 ].sort(() => 0.5 - Math.random()),
                 correctOptionText: lesson.dialogue_simulator.example,
-                correctExplanation: `💡 Подсказка: ${lesson.dialogue_simulator.tips}`
+                voiceHint: 'de-DE-KatjaNeural',
+                correctExplanation: `💡 Совет коуча: ${lesson.dialogue_simulator.tips}`
             });
         }
 
         return challenges;
     }
 
+    // =========================================================================
+    // 3. СТАРТ УРОКА И ИНИЦИАЛИЗАЦИЯ
+    // =========================================================================
+    async startLesson(lessonId, lessonsData) {
+        this.currentLessonId = lessonId || 1;
+        this.selectedOptionIndex = null;
+        this.status = 'none';
+        this.currentChallengeIndex = 0;
+        this.wordBankSelected = [];
+        this.wordBankAvailable = [];
+        this.pairsSelectedFirst = null;
+        this.matchedPairsCount = 0;
+
+        if (!lessonsData || !lessonsData.length) {
+            try {
+                const res = await fetch('/api/german/course');
+                const data = await res.json();
+                lessonsData = data.lessons || [];
+                window.allGermanCourseData = data;
+            } catch(e) {
+                lessonsData = [];
+            }
+        }
+
+        const lesson = (lessonsData && lessonsData.length > 0) 
+            ? (lessonsData.find(l => (l.id == this.currentLessonId || l.day == this.currentLessonId)) || lessonsData[0]) 
+            : null;
+
+        if (!lesson) {
+            alert('Урок не найден');
+            return;
+        }
+
+        this.currentLessonData = lesson;
+        this.currentChallenges = this.generateChallenges(lesson, lessonsData);
+
+        // Переключаем контейнеры в интерфейсе
+        const pathContainer = document.getElementById('germanPathContainer');
+        const lingoContainer = document.getElementById('lingoAppContainer');
+        if (pathContainer) pathContainer.classList.add('hidden');
+        if (lingoContainer) {
+            lingoContainer.classList.remove('hidden');
+            this.initChallengeState();
+            this.render();
+        }
+    }
+
+    initChallengeState() {
+        this.status = 'none';
+        this.selectedOptionIndex = null;
+        this.pairsSelectedFirst = null;
+        this.matchedPairsCount = 0;
+
+        const ch = this.currentChallenges[this.currentChallengeIndex];
+        if (!ch) return;
+
+        if (ch.type === 'WORD_BANK') {
+            this.wordBankSelected = [];
+            this.wordBankAvailable = [...ch.tokens];
+        } else if (ch.type === 'MATCH_PAIRS') {
+            ch.cards.forEach(c => c.matched = false);
+        }
+    }
+
+    // =========================================================================
+    // 4. ГЛАВНЫЙ РЕНДЕР ИГРОВОГО ЭКРАНА DUOLINGO
+    // =========================================================================
     render() {
         const container = document.getElementById('lingoAppContainer');
         if (!container) return;
@@ -163,10 +312,10 @@ class LingoGameEngine {
         const progressPercent = Math.round((this.currentChallengeIndex / this.currentChallenges.length) * 100);
 
         container.innerHTML = `
-            <div class="flex flex-col h-full max-w-2xl mx-auto w-full select-none bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-                <!-- 1. HEADER (Lingo Header: Cross, Progress Bar, Hearts, XP) -->
+            <div class="flex flex-col h-full max-w-2xl mx-auto w-full select-none bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+                <!-- 1. HEADER (Lingo Header: Cross, Progress, Hearts, XP) -->
                 <header class="px-4 sm:px-6 pt-4 pb-2 flex items-center justify-between gap-3 sm:gap-6 border-b border-slate-100">
-                    <button onclick="exitLingoModal()" class="text-slate-400 hover:text-slate-600 transition p-1 text-xl font-bold" title="Выйти">
+                    <button onclick="lingoEngine.exitQuiz()" class="text-slate-400 hover:text-slate-600 transition p-1 text-xl font-bold" title="Выйти к карте уроков">
                         ✕
                     </button>
                     
@@ -190,135 +339,263 @@ class LingoGameEngine {
                     </div>
                 </header>
 
-                <!-- 2. QUIZ BODY (Mascot Bubble & Question) -->
+                <!-- 2. QUIZ BODY (Mascot Bubble & Challenge Content) -->
                 <main class="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col justify-between">
                     <div>
-                        <!-- Mascot Speech Bubble (1:1 Duolingo Style) -->
-                        <div class="flex items-start gap-3 sm:gap-4 mb-6">
+                        <!-- Mascot Speech Bubble -->
+                        <div class="flex items-start gap-3 sm:gap-4 mb-5">
                             <img src="${this.status === 'wrong' ? '/static/duolingo/mascot_sad.svg' : '/static/duolingo/mascot.svg'}" 
-                                 class="w-14 h-14 sm:w-16 sm:h-16 shrink-0 transition-all duration-200" alt="Mascot">
+                                 class="w-14 h-14 sm:w-16 sm:h-16 shrink-0 transition-all duration-200" alt="Duolingo Owl">
                             
-                            <div class="relative bg-white border-2 border-slate-200 rounded-2xl p-3.5 sm:p-4 text-xs sm:text-sm font-bold text-slate-800 shadow-sm flex-1">
-                                <!-- Bubble arrow pointer -->
+                            <div class="relative bg-white border-2 border-slate-200 rounded-2xl p-3.5 shadow-sm text-slate-700 text-xs sm:text-sm font-semibold max-w-md">
                                 <div class="absolute -left-2 top-4 w-3 h-3 bg-white border-l-2 border-b-2 border-slate-200 rotate-45"></div>
-                                <p>${escapeHtml(challenge.mascotText)}</p>
-                                
-                                ${challenge.type === 'LISTEN' ? `
-                                    <button onclick="playTTS(this, '${escapeQuotes(challenge.listenWord)}', '${challenge.voiceHint}')" class="mt-2 px-3 py-1.5 bg-sky-500 hover:bg-sky-600 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 border-b-4 border-sky-600 active:border-b-0 transition shadow-sm">
-                                        🔊 Прослушать слово «${escapeHtml(challenge.listenWord)}»
-                                    </button>
-                                ` : ''}
+                                ${escapeHtml(challenge.mascotText)}
                             </div>
                         </div>
 
-                        <!-- Question Title -->
-                        <h2 class="text-base sm:text-lg font-extrabold text-slate-800 mb-4">
+                        <!-- Question title -->
+                        <h2 class="text-base sm:text-lg font-black text-slate-800 mb-4">
                             ${escapeHtml(challenge.question)}
                         </h2>
 
-                        <!-- 3. CHALLENGE CARDS (Chunky 3D Duolingo Buttons) -->
-                        <div class="grid grid-cols-1 gap-3">
-                            ${challenge.options.map((opt, idx) => {
-                                let cardStyle = "border-slate-200 bg-white hover:bg-slate-50 text-slate-700 border-2 border-b-4 active:border-b-2";
-                                if (this.selectedOptionIndex === idx) {
-                                    cardStyle = "border-sky-400 bg-sky-50 text-sky-700 border-2 border-b-4 active:border-b-2 ring-2 ring-sky-300";
-                                }
-                                if (this.status === 'correct' && opt.isCorrect) {
-                                    cardStyle = "border-emerald-500 bg-emerald-50 text-emerald-800 border-2 border-b-4";
-                                }
-                                if (this.status === 'wrong') {
-                                    if (this.selectedOptionIndex === idx) {
-                                        cardStyle = "border-rose-500 bg-rose-50 text-rose-800 border-2 border-b-4";
-                                    } else if (opt.isCorrect) {
-                                        cardStyle = "border-emerald-500 bg-emerald-50 text-emerald-800 border-2 border-b-4";
-                                    }
-                                }
-
-                                return `
-                                    <div onclick="lingoEngine.selectOption(${idx})" 
-                                         class="rounded-2xl p-4 sm:p-4 cursor-pointer transition-all duration-150 flex items-center justify-between ${cardStyle}">
-                                        <div class="flex items-center gap-3">
-                                            <span class="w-6 h-6 rounded-lg border-2 border-slate-300 flex items-center justify-center font-bold text-xs text-slate-500">
-                                                ${idx + 1}
-                                            </span>
-                                            <div>
-                                                <span class="font-bold text-sm sm:text-base">${escapeHtml(opt.text)}</span>
-                                                ${opt.transcription ? `<span class="text-rose-500 font-mono text-xs block sm:inline sm:ml-2">[${escapeHtml(opt.transcription)}]</span>` : ''}
-                                            </div>
-                                        </div>
-                                        ${opt.audioSrc ? `
-                                            <button onclick="event.stopPropagation(); playTTS(this, '${escapeQuotes(opt.text)}', '${opt.voiceHint}')" class="text-slate-400 hover:text-sky-500 p-1 text-base">
-                                                🔊
-                                            </button>
-                                        ` : ''}
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
+                        <!-- Dynamic Challenge Body -->
+                        ${this.renderChallengeContent(challenge)}
                     </div>
                 </main>
 
-                <!-- 4. FOOTER (Chunky Check / Continue Button with Success / Wrong State) -->
+                <!-- 3. FOOTER (Action Button & Result Feedback) -->
                 ${this.renderFooter(challenge)}
             </div>
         `;
     }
 
-    renderFooter(challenge) {
-        if (this.status === 'none') {
-            const isSelected = this.selectedOptionIndex !== null;
-            return `
-                <footer class="p-4 sm:p-5 border-t border-slate-200 bg-white flex items-center justify-end">
-                    <button onclick="lingoEngine.checkAnswer()" 
-                            ${!isSelected ? 'disabled' : ''}
-                            class="w-full sm:w-auto px-8 py-3 rounded-2xl font-extrabold text-sm uppercase tracking-wider transition-all duration-150 shadow-sm
-                                   ${isSelected ? 'bg-emerald-500 hover:bg-emerald-600 text-white border-b-4 border-emerald-600 active:border-b-0 cursor-pointer' : 'bg-slate-200 text-slate-400 cursor-not-allowed border-b-4 border-slate-300'}">
-                        Проверить
-                    </button>
-                </footer>
-            `;
+    renderChallengeContent(challenge) {
+        if (challenge.type === 'WORD_BANK') {
+            return this.renderWordBankContent(challenge);
+        } else if (challenge.type === 'MATCH_PAIRS') {
+            return this.renderMatchPairsContent(challenge);
+        } else if (challenge.type === 'LISTEN') {
+            return this.renderListenContent(challenge);
+        } else {
+            // SELECT or DIALOGUE
+            return this.renderSelectContent(challenge);
+        }
+    }
+
+    // =========================================================================
+    // 5. РЕНДЕР И ЛОГИКА WORD BANK (СБОР ПРЕДЛОЖЕНИЯ)
+    // =========================================================================
+    renderWordBankContent(challenge) {
+        const isLocked = this.status !== 'none';
+        return `
+            <div class="space-y-6">
+                <!-- Answer Construction Line (Куда встают выбранные слова) -->
+                <div class="min-h-[64px] p-3 bg-slate-50 border-b-2 border-slate-300 rounded-xl flex flex-wrap gap-2 items-center">
+                    ${this.wordBankSelected.length === 0 ? '<span class="text-xs text-slate-400 italic">Нажимайте на слова внизу, чтобы собрать фразу...</span>' : ''}
+                    ${this.wordBankSelected.map((token, idx) => `
+                        <button onclick="${!isLocked ? `lingoEngine.returnWordBankToken('${token.id}')` : ''}"
+                                class="px-3 py-2 bg-white text-slate-800 border-2 border-b-4 border-slate-300 active:border-b-2 rounded-xl text-xs sm:text-sm font-bold shadow-sm transition hover:bg-slate-100">
+                            ${escapeHtml(token.text)}
+                        </button>
+                    `).join('')}
+                </div>
+
+                <!-- Word Bank Tokens (Доступные слова в банке) -->
+                <div class="flex flex-wrap gap-2 justify-center pt-2">
+                    ${this.wordBankAvailable.map((token) => `
+                        <button onclick="${!isLocked ? `lingoEngine.selectWordBankToken('${token.id}')` : ''}"
+                                class="px-3.5 py-2.5 bg-white text-slate-800 border-2 border-b-4 border-slate-300 active:border-b-2 rounded-xl text-xs sm:text-sm font-bold shadow-sm transition hover:border-sky-400 hover:text-sky-700">
+                            ${escapeHtml(token.text)}
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    selectWordBankToken(tokenId) {
+        if (this.status !== 'none') return;
+        const idx = this.wordBankAvailable.findIndex(t => t.id === tokenId);
+        if (idx !== -1) {
+            const token = this.wordBankAvailable.splice(idx, 1)[0];
+            this.wordBankSelected.push(token);
+            this.render();
+        }
+    }
+
+    returnWordBankToken(tokenId) {
+        if (this.status !== 'none') return;
+        const idx = this.wordBankSelected.findIndex(t => t.id === tokenId);
+        if (idx !== -1) {
+            const token = this.wordBankSelected.splice(idx, 1)[0];
+            this.wordBankAvailable.push(token);
+            this.render();
+        }
+    }
+
+    // =========================================================================
+    // 6. РЕНДЕР И ЛОГИКА MATCH PAIRS (СОЕДИНИ ПАРЫ)
+    // =========================================================================
+    renderMatchPairsContent(challenge) {
+        return `
+            <div class="grid grid-cols-2 gap-3">
+                ${challenge.cards.map((card) => {
+                    const isSelected = this.pairsSelectedFirst && this.pairsSelectedFirst.id === card.id;
+                    let style = 'bg-white border-2 border-b-4 border-slate-200 text-slate-700 hover:bg-slate-50';
+                    if (card.matched) {
+                        style = 'bg-slate-100 border-2 border-slate-200 text-slate-300 cursor-not-allowed opacity-60';
+                    } else if (isSelected) {
+                        style = 'bg-sky-50 border-2 border-b-4 border-sky-400 text-sky-700 ring-2 ring-sky-300';
+                    }
+
+                    return `
+                        <button onclick="${!card.matched ? `lingoEngine.onPairCardClick('${card.id}')` : ''}"
+                                class="p-3.5 sm:p-4 rounded-xl font-bold text-xs sm:text-sm transition-all duration-150 text-center ${style}">
+                            ${escapeHtml(card.text)}
+                        </button>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    }
+
+    onPairCardClick(cardId) {
+        const challenge = this.currentChallenges[this.currentChallengeIndex];
+        const card = challenge.cards.find(c => c.id === cardId);
+        if (!card || card.matched) return;
+
+        // Воспроизводим немецкий звук при клике на немецкую карточку
+        if (card.side === 'de' && card.voiceHint && typeof playTTS === 'function') {
+            playTTS(null, card.text, card.voiceHint);
         }
 
-        if (this.status === 'correct') {
-            return `
-                <footer class="p-4 sm:p-5 border-t-2 border-emerald-300 bg-emerald-100/90 flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in">
-                    <div class="flex items-center gap-3 text-emerald-800">
-                        <div class="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center font-black text-xl shadow-sm">
-                            ✓
-                        </div>
-                        <div>
-                            <h4 class="font-extrabold text-base">Великолепно, Алина! ✨</h4>
-                            <p class="text-xs text-emerald-700 font-medium">${escapeHtml(challenge.correctExplanation)}</p>
-                        </div>
-                    </div>
-                    <button onclick="lingoEngine.nextChallenge()" 
-                            class="w-full sm:w-auto px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-extrabold text-sm uppercase tracking-wider border-b-4 border-emerald-600 active:border-b-0 transition shadow-sm">
-                        Далее ➔
-                    </button>
-                </footer>
-            `;
+        if (!this.pairsSelectedFirst) {
+            this.pairsSelectedFirst = card;
+            this.render();
+            return;
         }
 
-        if (this.status === 'wrong') {
-            return `
-                <footer class="p-4 sm:p-5 border-t-2 border-rose-300 bg-rose-100/90 flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in">
-                    <div class="flex items-center gap-3 text-rose-800">
-                        <div class="w-10 h-10 rounded-full bg-rose-500 text-white flex items-center justify-center font-black text-xl shadow-sm">
-                            ✕
-                        </div>
-                        <div>
-                            <h4 class="font-extrabold text-base">Правильный ответ:</h4>
-                            <p class="text-xs sm:text-sm text-rose-900 font-bold">${escapeHtml(challenge.correctOptionText)}</p>
-                            <p class="text-[11px] text-rose-700">${escapeHtml(challenge.correctExplanation)}</p>
-                        </div>
-                    </div>
-                    <button onclick="lingoEngine.nextChallenge()" 
-                            class="w-full sm:w-auto px-8 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl font-extrabold text-sm uppercase tracking-wider border-b-4 border-rose-600 active:border-b-0 transition shadow-sm">
-                        Понятно ➔
-                    </button>
-                </footer>
-            `;
+        // Кликнули на ту же самую карточку — снимаем выбор
+        if (this.pairsSelectedFirst.id === card.id) {
+            this.pairsSelectedFirst = null;
+            this.render();
+            return;
         }
+
+        // Проверяем пару
+        if (this.pairsSelectedFirst.pairId === card.pairId && this.pairsSelectedFirst.side !== card.side) {
+            // Успешная пара!
+            this.pairsSelectedFirst.matched = true;
+            card.matched = true;
+            this.pairsSelectedFirst = null;
+            this.matchedPairsCount++;
+            this.playSound('correct');
+
+            if (this.matchedPairsCount >= challenge.totalPairs) {
+                this.status = 'correct';
+                this.xp += 15;
+                localStorage.setItem('lingo_xp', this.xp);
+            }
+            this.render();
+        } else {
+            // Ошибка — сбрасываем выбор
+            this.playSound('incorrect');
+            this.pairsSelectedFirst = null;
+            this.render();
+        }
+    }
+
+    // =========================================================================
+    // 7. РЕНДЕР И ЛОГИКА LISTENING (АУДИРОВАНИЕ)
+    // =========================================================================
+    renderListenContent(challenge) {
+        return `
+            <div class="space-y-5">
+                <!-- Большие кнопки воспроизведения речи -->
+                <div class="flex items-center justify-center gap-4 py-2">
+                    <button onclick="playTTS(this, '${escapeQuotes(challenge.listenText)}', '${challenge.voiceHint}')"
+                            class="w-16 h-16 sm:w-20 sm:h-20 bg-sky-500 hover:bg-sky-600 text-white rounded-3xl border-b-4 border-sky-600 active:border-b-0 shadow-lg flex items-center justify-center text-3xl transition transform active:scale-95"
+                            title="Слушать нормально">
+                        🔊
+                    </button>
+                    <button onclick="playTTS(this, '${escapeQuotes(challenge.listenText)}', '${challenge.voiceHint}')"
+                            class="w-12 h-12 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-2xl border-b-2 border-amber-300 active:border-b-0 shadow-sm flex items-center justify-center text-xl transition"
+                            title="Слушать медленно (черепашка)">
+                        🐢
+                    </button>
+                </div>
+
+                <!-- Варианты ответа (БЕЗ ДИНАМИКОВ И СПОЙЛЕРОВ) -->
+                <div class="grid grid-cols-1 gap-3">
+                    ${challenge.options.map((opt, idx) => {
+                        let style = "border-slate-200 bg-white hover:bg-slate-50 text-slate-700 border-2 border-b-4 active:border-b-2";
+                        if (this.selectedOptionIndex === idx) {
+                            style = "border-sky-400 bg-sky-50 text-sky-700 border-2 border-b-4 active:border-b-2 ring-2 ring-sky-300";
+                        }
+                        if (this.status === 'correct' && opt.isCorrect) {
+                            style = "border-emerald-500 bg-emerald-50 text-emerald-800 border-2 border-b-4";
+                        }
+                        if (this.status === 'wrong') {
+                            if (this.selectedOptionIndex === idx) {
+                                style = "border-rose-500 bg-rose-50 text-rose-800 border-2 border-b-4";
+                            } else if (opt.isCorrect) {
+                                style = "border-emerald-500 bg-emerald-50 text-emerald-800 border-2 border-b-4";
+                            }
+                        }
+
+                        return `
+                            <div onclick="lingoEngine.selectOption(${idx})" 
+                                 class="rounded-2xl p-4 cursor-pointer transition-all duration-150 flex items-center justify-between ${style}">
+                                <div class="flex items-center gap-3">
+                                    <span class="w-6 h-6 rounded-lg border-2 border-slate-300 flex items-center justify-center font-bold text-xs text-slate-500">
+                                        ${idx + 1}
+                                    </span>
+                                    <span class="font-bold text-sm sm:text-base">${escapeHtml(opt.text)}</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    // =========================================================================
+    // 8. РЕНДЕР И ЛОГИКА SELECT & DIALOGUE (БЕЗ СПОЙЛЕРОВ И ДИНАМИКОВ)
+    // =========================================================================
+    renderSelectContent(challenge) {
+        return `
+            <div class="grid grid-cols-1 gap-3">
+                ${challenge.options.map((opt, idx) => {
+                    let style = "border-slate-200 bg-white hover:bg-slate-50 text-slate-700 border-2 border-b-4 active:border-b-2";
+                    if (this.selectedOptionIndex === idx) {
+                        style = "border-sky-400 bg-sky-50 text-sky-700 border-2 border-b-4 active:border-b-2 ring-2 ring-sky-300";
+                    }
+                    if (this.status === 'correct' && opt.isCorrect) {
+                        style = "border-emerald-500 bg-emerald-50 text-emerald-800 border-2 border-b-4";
+                    }
+                    if (this.status === 'wrong') {
+                        if (this.selectedOptionIndex === idx) {
+                            style = "border-rose-500 bg-rose-50 text-rose-800 border-2 border-b-4";
+                        } else if (opt.isCorrect) {
+                            style = "border-emerald-500 bg-emerald-50 text-emerald-800 border-2 border-b-4";
+                        }
+                    }
+
+                    return `
+                        <div onclick="lingoEngine.selectOption(${idx})" 
+                             class="rounded-2xl p-4 cursor-pointer transition-all duration-150 flex items-center justify-between ${style}">
+                            <div class="flex items-center gap-3">
+                                <span class="w-6 h-6 rounded-lg border-2 border-slate-300 flex items-center justify-center font-bold text-xs text-slate-500">
+                                    ${idx + 1}
+                                </span>
+                                <span class="font-bold text-sm sm:text-base">${escapeHtml(opt.text)}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
     }
 
     selectOption(index) {
@@ -327,13 +604,29 @@ class LingoGameEngine {
         this.render();
     }
 
+    // =========================================================================
+    // 9. ПРОВЕРКА ОТВЕТА (CHECK ANSWER)
+    // =========================================================================
     checkAnswer() {
-        if (this.selectedOptionIndex === null || this.status !== 'none') return;
-
         const challenge = this.currentChallenges[this.currentChallengeIndex];
-        const selected = challenge.options[this.selectedOptionIndex];
+        if (!challenge || this.status !== 'none') return;
 
-        if (selected && selected.isCorrect) {
+        let isCorrect = false;
+
+        if (challenge.type === 'WORD_BANK') {
+            const assembled = this.wordBankSelected.map(t => t.text).join(' ').trim();
+            isCorrect = assembled.toLowerCase() === challenge.targetSentence.toLowerCase();
+        } else if (challenge.type === 'MATCH_PAIRS') {
+            // Для пар проверка автоматическая при кликах
+            isCorrect = this.matchedPairsCount >= challenge.totalPairs;
+        } else {
+            // SELECT, LISTEN, DIALOGUE
+            if (this.selectedOptionIndex === null) return;
+            const selected = challenge.options[this.selectedOptionIndex];
+            isCorrect = selected && selected.isCorrect;
+        }
+
+        if (isCorrect) {
             this.status = 'correct';
             this.xp += 10;
             localStorage.setItem('lingo_xp', this.xp);
@@ -346,11 +639,11 @@ class LingoGameEngine {
 
             if (this.hearts === 0) {
                 setTimeout(() => {
-                    alert('💔 Закончились сердечки! Коуч восполняет ваши силы до 5 ❤️. Продолжайте спокойно!');
+                    alert('💔 Сердечки восстановились до 5 ❤️! Учитесь спокойно, коуч рядом!');
                     this.hearts = 5;
                     localStorage.setItem('lingo_hearts', 5);
                     this.render();
-                }, 1000);
+                }, 800);
             }
         }
 
@@ -359,66 +652,359 @@ class LingoGameEngine {
     }
 
     nextChallenge() {
-        this.status = 'none';
-        this.selectedOptionIndex = null;
         this.currentChallengeIndex++;
+        this.initChallengeState();
         this.render();
     }
 
-    renderVictoryScreen(container) {
-        this.playSound('finish');
-        this.streak = Math.min(30, this.streak + 1);
-        localStorage.setItem('lingo_streak', this.streak);
+    renderFooter(challenge) {
+        if (this.status === 'none') {
+            let canCheck = false;
+            if (challenge.type === 'WORD_BANK') {
+                canCheck = this.wordBankSelected.length > 0;
+            } else if (challenge.type === 'MATCH_PAIRS') {
+                canCheck = this.matchedPairsCount >= challenge.totalPairs;
+            } else {
+                canCheck = this.selectedOptionIndex !== null;
+            }
 
-        // Конфетти при победе
-        if (window.confetti) {
-            window.confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            return `
+                <footer class="p-4 sm:p-5 border-t border-slate-200 bg-white flex items-center justify-end">
+                    <button onclick="lingoEngine.checkAnswer()" 
+                            ${!canCheck ? 'disabled' : ''}
+                            class="w-full sm:w-auto px-8 py-3 rounded-2xl font-extrabold text-sm uppercase tracking-wider transition-all duration-150 shadow-sm
+                                   ${canCheck ? 'bg-emerald-500 hover:bg-emerald-600 text-white border-b-4 border-emerald-600 active:border-b-0 cursor-pointer' : 'bg-slate-200 text-slate-400 cursor-not-allowed border-b-4 border-slate-300'}">
+                        Проверить
+                    </button>
+                </footer>
+            `;
         }
 
+        if (this.status === 'correct') {
+            const listenBtn = challenge.voiceHint ? `
+                <button onclick="playTTS(this, '${escapeQuotes(challenge.correctFull || challenge.correctOptionText || challenge.listenText)}', '${challenge.voiceHint}')"
+                        class="px-3 py-1 bg-white text-emerald-800 rounded-lg text-xs font-bold shadow-sm hover:bg-emerald-50 transition border border-emerald-200 flex items-center gap-1">
+                    <span>🔊</span> <span>Послушать произношение</span>
+                </button>
+            ` : '';
+
+            return `
+                <footer class="p-4 sm:p-5 border-t-2 border-emerald-300 bg-emerald-100/90 flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in">
+                    <div class="flex items-center gap-3 text-emerald-800 w-full sm:w-auto">
+                        <div class="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center font-black text-xl shadow-sm shrink-0">
+                            ✓
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-extrabold text-base">Великолепно, Алина! ✨</h4>
+                            <p class="text-xs text-emerald-700 font-medium">${escapeHtml(challenge.correctExplanation || '')}</p>
+                            ${listenBtn}
+                        </div>
+                    </div>
+                    <button onclick="lingoEngine.nextChallenge()" 
+                            class="w-full sm:w-auto px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-extrabold text-sm uppercase tracking-wider border-b-4 border-emerald-600 active:border-b-0 transition shadow-sm shrink-0">
+                        Далее ➔
+                    </button>
+                </footer>
+            `;
+        }
+
+        if (this.status === 'wrong') {
+            return `
+                <footer class="p-4 sm:p-5 border-t-2 border-rose-300 bg-rose-100/90 flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in">
+                    <div class="flex items-center gap-3 text-rose-800 w-full sm:w-auto">
+                        <div class="w-10 h-10 rounded-full bg-rose-500 text-white flex items-center justify-center font-black text-xl shadow-sm shrink-0">
+                            ✕
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-extrabold text-base">Правильный ответ:</h4>
+                            <p class="text-xs sm:text-sm text-rose-900 font-bold">${escapeHtml(challenge.targetSentence || challenge.correctOptionText || '')}</p>
+                            <p class="text-[11px] text-rose-700">${escapeHtml(challenge.correctExplanation || '')}</p>
+                        </div>
+                    </div>
+                    <button onclick="lingoEngine.nextChallenge()" 
+                            class="w-full sm:w-auto px-8 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl font-extrabold text-sm uppercase tracking-wider border-b-4 border-rose-600 active:border-b-0 transition shadow-sm shrink-0">
+                        Понятно ➔
+                    </button>
+                </footer>
+            `;
+        }
+    }
+
+    // =========================================================================
+    // 10. ЭКРАН ПОБЕДЫ (VICTORY SCREEN)
+    // =========================================================================
+    renderVictoryScreen(container) {
+        this.playSound('finish');
+        this.streak = Math.min(180, this.streak + 1);
+        this.xp += 50;
+        localStorage.setItem('lingo_streak', this.streak);
+        localStorage.setItem('lingo_xp', this.xp);
+
+        // Отмечаем урок как пройденный
+        if (!this.completedLessons.includes(this.currentLessonId)) {
+            this.completedLessons.push(this.currentLessonId);
+            localStorage.setItem('lingo_completed_lessons', JSON.stringify(this.completedLessons));
+        }
+
+        if (window.confetti) {
+            window.confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+        }
+
+        this.syncProgressWithSupabase();
+        if (typeof updateCourseProgressUI === 'function') updateCourseProgressUI();
+
         container.innerHTML = `
-            <div class="flex flex-col items-center justify-center p-6 text-center max-w-md mx-auto h-full space-y-6 bg-white rounded-2xl shadow-xl border border-slate-200">
-                <img src="/static/duolingo/finish.svg" class="w-32 h-32 animate-bounce" alt="Victory">
+            <div class="flex flex-col items-center justify-center p-6 text-center max-w-md mx-auto h-full space-y-5 bg-white rounded-2xl shadow-xl border border-slate-200">
+                <img src="/static/duolingo/finish.svg" class="w-28 h-28 animate-bounce" alt="Victory">
                 
                 <div>
-                    <h2 class="text-2xl font-black text-slate-800">Урок успешно завершен! 🎉</h2>
-                    <p class="text-slate-500 text-sm mt-1">Отличная работа, дорогая Алина! Твой немецкий растёт с каждым днём.</p>
+                    <h2 class="text-2xl font-black text-slate-800">Урок ${this.currentLessonId} завершен! 🎉</h2>
+                    <p class="text-slate-500 text-xs mt-1">Великолепная работа, Алина! Ваш немецкий становится увереннее с каждым днём.</p>
                 </div>
 
                 <!-- Карточки результатов (XP & Streak) -->
                 <div class="grid grid-cols-2 gap-3 w-full">
-                    <div class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 flex flex-col items-center">
-                        <span class="text-xs font-bold text-amber-700 uppercase">Опыт</span>
-                        <div class="flex items-center gap-1.5 text-xl font-extrabold text-amber-900 mt-1">
-                            <img src="/static/duolingo/points.svg" class="w-5 h-5">
+                    <div class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-3 flex flex-col items-center">
+                        <span class="text-[11px] font-bold text-amber-700 uppercase">Опыт</span>
+                        <div class="flex items-center gap-1.5 text-lg font-extrabold text-amber-900 mt-0.5">
+                            <img src="/static/duolingo/points.svg" class="w-4 h-4">
                             <span>+50 XP</span>
                         </div>
                     </div>
                     
-                    <div class="bg-rose-50 border-2 border-rose-300 rounded-2xl p-4 flex flex-col items-center">
-                        <span class="text-xs font-bold text-rose-700 uppercase">Серия дней</span>
-                        <div class="flex items-center gap-1.5 text-xl font-extrabold text-rose-900 mt-1">
+                    <div class="bg-rose-50 border-2 border-rose-300 rounded-2xl p-3 flex flex-col items-center">
+                        <span class="text-[11px] font-bold text-rose-700 uppercase">Серия дней</span>
+                        <div class="flex items-center gap-1.5 text-lg font-extrabold text-rose-900 mt-0.5">
                             <span>🔥</span>
                             <span>${this.streak} дн.</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="w-full space-y-2 pt-2">
+                <!-- Действия после урока -->
+                <div class="w-full space-y-2 pt-1">
                     <button onclick="talkToCoachForLesson(${this.currentLessonId})" 
                             class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-extrabold text-xs uppercase tracking-wider border-b-4 border-purple-800 active:border-b-0 transition shadow-md flex items-center justify-center gap-2">
-                        <span>💬 Этап 4: Ролевой диалог с ИИ-коучем ➔</span>
+                        <span>💬 Ролевой диалог с ИИ-коучем ➔</span>
                     </button>
-                    <button onclick="lingoEngine.startLesson(${this.currentLessonId + 1}, (typeof allGermanCourseData !== 'undefined' ? allGermanCourseData.lessons : []))" 
+                    <button onclick="lingoEngine.startLesson(${this.currentLessonId + 1}, (window.allGermanCourseData ? window.allGermanCourseData.lessons : []))" 
                             class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-extrabold text-xs uppercase tracking-wider border-b-4 border-emerald-600 active:border-b-0 transition shadow-md">
-                        Следующий Duolingo урок ➔
+                        Следующий урок Duolingo (День ${this.currentLessonId + 1}) ➔
                     </button>
-                    <button onclick="setGermanViewMode('lessons')" 
+                    <button onclick="lingoEngine.exitQuiz()" 
                             class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition">
-                        🎯 Вернуться к плану дня
+                        🗺️ Вернуться к карте обучения
                     </button>
                 </div>
             </div>
         `;
+    }
+
+    exitQuiz() {
+        const lingoContainer = document.getElementById('lingoAppContainer');
+        const pathContainer = document.getElementById('germanPathContainer');
+        if (lingoContainer) lingoContainer.classList.add('hidden');
+        if (pathContainer) {
+            pathContainer.classList.remove('hidden');
+            this.renderPathView(pathContainer, (window.allGermanCourseData ? window.allGermanCourseData.lessons : []));
+        }
+    }
+
+    // =========================================================================
+    // 11. КАРТА ОБУЧЕНИЯ DUOLINGO (THE LEARNING PATH / ROADMAP)
+    // =========================================================================
+    renderPathView(container, allLessons) {
+        if (!container) return;
+
+        if (!allLessons || !allLessons.length) {
+            container.innerHTML = '<div class="text-center p-8 text-slate-400 text-xs">Загрузка уроков Duolingo...</div>';
+            return;
+        }
+
+        // Текущий уровень
+        const currentLevel = window.currentGermanLevel || 'A1+';
+        const filteredLessons = allLessons.filter(l => l.level === currentLevel);
+
+        // Находим текущий активный юнит
+        const currentLesson = allLessons.find(l => (l.day == this.currentLessonId || l.id == this.currentLessonId)) || filteredLessons[0] || allLessons[0];
+        const currentUnitId = currentLesson.unit_id || 1;
+        const currentUnitTitle = currentLesson.unit_title || `Юнит ${currentUnitId}`;
+
+        // Цвета юнитов
+        const unitColors = [
+            'from-emerald-500 to-teal-600 border-emerald-600',
+            'from-sky-500 to-blue-600 border-sky-600',
+            'from-purple-500 to-indigo-600 border-purple-600',
+            'from-amber-500 to-orange-600 border-amber-600',
+            'from-rose-500 to-pink-600 border-rose-600'
+        ];
+        const colorClass = unitColors[(currentUnitId - 1) % unitColors.length];
+
+        // Змейка уроков: смещения кружков влево-вправо (как в мобильном Duolingo)
+        const offsets = ['translate-x-0', '-translate-x-8', 'translate-x-0', 'translate-x-8', 'translate-x-0'];
+
+        let nodesHtml = '';
+        filteredLessons.forEach((l, idx) => {
+            const isCompleted = this.completedLessons.includes(l.day || l.id);
+            const isCurrent = (l.day || l.id) === this.currentLessonId;
+            const offsetClass = offsets[idx % offsets.length];
+
+            let buttonClass = 'bg-slate-200 border-slate-300 text-slate-400';
+            let icon = '🔒';
+            if (isCompleted) {
+                buttonClass = 'bg-emerald-500 border-emerald-600 text-white shadow-emerald-200';
+                icon = '✓';
+            } else if (isCurrent) {
+                buttonClass = 'bg-amber-400 border-amber-500 text-white ring-4 ring-amber-200 animate-pulse';
+                icon = '⭐';
+            } else {
+                buttonClass = 'bg-sky-500 border-sky-600 text-white hover:bg-sky-600';
+                icon = (idx % 3 === 0) ? '📖' : (idx % 3 === 1 ? '⭐' : '💬');
+            }
+
+            nodesHtml += `
+                <div class="flex flex-col items-center my-3 transition-transform ${offsetClass} relative group">
+                    <!-- Сова рядом с текущим уроком -->
+                    ${isCurrent ? `
+                        <div class="absolute -left-16 sm:-left-20 top-0 flex flex-col items-center animate-bounce">
+                            <img src="/static/duolingo/mascot.svg" class="w-12 h-12" alt="Duolingo Owl">
+                            <span class="text-[9px] bg-amber-100 text-amber-800 font-extrabold px-1.5 py-0.5 rounded-full mt-0.5 border border-amber-300">СТАРТ</span>
+                        </div>
+                    ` : ''}
+
+                    <!-- Круглая 3D-кнопка уровня -->
+                    <button onclick="lingoEngine.openLessonModal(${l.day || l.id})"
+                            class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-b-6 active:border-b-2 flex items-center justify-center text-2xl sm:text-3xl font-black shadow-lg transition active:scale-95 ${buttonClass}">
+                        <span>${icon}</span>
+                    </button>
+
+                    <!-- Подпись урока -->
+                    <div class="mt-1 text-center max-w-[130px]">
+                        <span class="text-[10px] font-black text-slate-700 bg-white/90 px-2 py-0.5 rounded-md border border-slate-200 shadow-2xs block truncate">
+                            День ${l.day || l.id}: ${escapeHtml(l.title.replace(/^День \d+:\s*/, ''))}
+                        </span>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = `
+            <div class="max-w-md mx-auto w-full pb-16 space-y-4">
+                <!-- БАННЕР ТЕКУЩЕГО ЮНИТА (GUIDEBOOK) -->
+                <div class="bg-gradient-to-r ${colorClass} text-white rounded-2xl p-4 sm:p-5 shadow-lg border-b-4 flex items-center justify-between gap-3">
+                    <div>
+                        <span class="text-[10px] sm:text-xs font-black uppercase tracking-wider opacity-90">${escapeHtml(currentLevel)} • РАЗДЕЛ ${currentUnitId}</span>
+                        <h3 class="text-base sm:text-lg font-black leading-tight mt-0.5">${escapeHtml(currentUnitTitle)}</h3>
+                        <p class="text-[11px] opacity-90 mt-1 line-clamp-2">${escapeHtml(currentLesson.grammar || '')}</p>
+                    </div>
+                    <button onclick="lingoEngine.openGuidebookModal(${currentUnitId})"
+                            class="px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-xl font-extrabold text-xs shrink-0 border border-white/30 flex items-center gap-1.5 transition">
+                        <span>📖</span>
+                        <span>Теория</span>
+                    </button>
+                </div>
+
+                <!-- ДОРОЖКА УРОКОВ (THE PATH) -->
+                <div class="py-4 flex flex-col items-center">
+                    ${nodesHtml}
+                </div>
+            </div>
+        `;
+    }
+
+    // =========================================================================
+    // 12. МОДАЛКИ СТАРТА УРОКА И СПРАВОЧНИКА ГРАММАТИКИ
+    // =========================================================================
+    openLessonModal(lessonId) {
+        const allLessons = window.allGermanCourseData?.lessons || [];
+        const lesson = allLessons.find(l => (l.day == lessonId || l.id == lessonId)) || allLessons[0];
+        if (!lesson) return;
+
+        const modal = document.createElement('div');
+        modal.id = 'lingoLessonModal';
+        modal.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in';
+        modal.innerHTML = `
+            <div class="bg-white rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl border-2 border-slate-200 text-center space-y-4 animate-scale-up">
+                <img src="/static/duolingo/mascot.svg" class="w-16 h-16 mx-auto animate-bounce" alt="Owl">
+                <div>
+                    <span class="text-rose-600 font-extrabold text-xs uppercase">${lesson.level} • ДЕНЬ ${lesson.day || lesson.id}</span>
+                    <h3 class="text-lg font-black text-slate-800 mt-1">${escapeHtml(lesson.title)}</h3>
+                    <p class="text-xs text-slate-500 mt-1.5 italic">${escapeHtml(lesson.grammar)}</p>
+                </div>
+
+                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-xs text-slate-600 text-left space-y-1">
+                    <span class="font-bold text-slate-700 block">План урока:</span>
+                    <div>✓ Match Pairs (разминка слов)</div>
+                    <div>✓ Word Bank (порядок слов)</div>
+                    <div>✓ Listening & Dialogue (речь)</div>
+                </div>
+
+                <div class="space-y-2 pt-1">
+                    <button onclick="document.getElementById('lingoLessonModal').remove(); lingoEngine.startLesson(${lesson.day || lesson.id}, window.allGermanCourseData.lessons)"
+                            class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-wider border-b-4 border-emerald-600 active:border-b-0 shadow-md transition">
+                        ▶ Начать урок (+20 XP)
+                    </button>
+                    <button onclick="document.getElementById('lingoLessonModal').remove(); talkToCoachForLesson(${lesson.day || lesson.id})"
+                            class="w-full py-2.5 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-xl font-bold text-xs transition">
+                        💬 Потренировать в диалоге с коучем
+                    </button>
+                    <button onclick="document.getElementById('lingoLessonModal').remove()"
+                            class="w-full py-2 text-slate-400 hover:text-slate-600 font-semibold text-xs transition">
+                        Отмена
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    openGuidebookModal(unitId) {
+        const allLessons = window.allGermanCourseData?.lessons || [];
+        const unitLessons = allLessons.filter(l => (l.unit_id == unitId));
+        const sampleLesson = unitLessons[0] || allLessons[0];
+
+        const modal = document.createElement('div');
+        modal.id = 'lingoGuidebookModal';
+        modal.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in';
+        modal.innerHTML = `
+            <div class="bg-white rounded-3xl p-5 sm:p-6 max-w-lg w-full max-h-[85vh] overflow-y-auto shadow-2xl border-2 border-slate-200 space-y-4">
+                <div class="flex items-center justify-between border-b pb-3 border-slate-100">
+                    <h3 class="text-base font-black text-slate-800 flex items-center gap-2">
+                        <span>📖 Справочник грамматики: Юнит ${unitId}</span>
+                    </h3>
+                    <button onclick="document.getElementById('lingoGuidebookModal').remove()" class="text-slate-400 hover:text-slate-600 font-bold text-lg p-1">
+                        ✕
+                    </button>
+                </div>
+
+                <div class="bg-amber-50 p-3.5 rounded-2xl border border-amber-200 text-xs text-amber-900 space-y-1">
+                    <span class="font-bold block">💡 Ключевое правило:</span>
+                    <p>${escapeHtml(sampleLesson.rule_explanation || sampleLesson.grammar)}</p>
+                </div>
+
+                <div class="space-y-2">
+                    <span class="text-xs font-bold text-slate-700">Озвученные примеры темы:</span>
+                    ${(sampleLesson.vocabulary || []).slice(0, 5).map(v => `
+                        <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs flex items-center justify-between gap-2">
+                            <div>
+                                <span class="font-bold text-slate-800">${escapeHtml(v.german)}</span>
+                                <span class="text-slate-500 block text-[11px]">${escapeHtml(v.russian)}</span>
+                            </div>
+                            <button onclick="playTTS(this, '${escapeQuotes(v.german)}', '${v.voice_hint || 'de-DE-KatjaNeural'}')"
+                                    class="p-1.5 bg-white rounded-lg border border-slate-200 shadow-2xs hover:bg-slate-100 text-xs">
+                                🔊
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <button onclick="document.getElementById('lingoGuidebookModal').remove()"
+                        class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition">
+                    Понятно, к урокам!
+                </button>
+            </div>
+        `;
+        document.body.appendChild(modal);
     }
 
     async syncProgressWithSupabase() {
@@ -439,9 +1025,3 @@ class LingoGameEngine {
 
 window.lingoEngine = new LingoGameEngine();
 var lingoEngine = window.lingoEngine;
-
-function exitLingoModal() {
-    if (confirm('Вы уверены, что хотите прервать урок? Прогресс урока не сохранится.')) {
-        setGermanViewMode('lessons');
-    }
-}

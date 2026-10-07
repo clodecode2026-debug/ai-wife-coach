@@ -125,14 +125,14 @@ class AIFeminineCoach:
         system_prompt = self._get_system_prompt(dossier, is_voice_mode)
         max_tokens = 80 if is_voice_mode else 350
 
-        # Актуальный каскад на 7 октября 2026 года
-        # Сначала ультрабыстрые и стабильные модели с моста
+        # Актуальный каскад на 7 октября 2026 года:
+        # Приоритет отдаем самым быстрым моделям для мгновенного ответа
         CANDIDATES = [
-            ("bridge", "gemini-3.8-flash"),
-            ("bridge", "claude-3-5-sonnet-20241022"),
             ("bridge", "gpt-4o"),
-            ("bridge", "gemini-3.5-flash"),
+            ("bridge", "claude-3-5-sonnet-20241022"),
+            ("bridge", "gemini-3.8-flash"),
             ("bridge", "antigravity-3.8-pro"),
+            ("bridge", "gemini-3.5-flash"),
             ("direct", "gemini-3.1-flash-lite-preview"),
             ("direct", "gemma-4-26b-a4b-it"),
             ("direct", "gemini-3.1-flash-lite")
@@ -156,7 +156,7 @@ class AIFeminineCoach:
                         messages=messages,
                         temperature=0.7,
                         max_tokens=max_tokens,
-                        timeout=14.0
+                        timeout=11.0
                     )
                     content = res.choices[0].message.content
                     if content and content.strip():

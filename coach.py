@@ -66,7 +66,7 @@ class AIFeminineCoach:
         if not self.client:
             return self._fallback_response(message, is_voice_mode)
 
-        MODELS_CASCADE = ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.8-flash']
+        MODELS_CASCADE = ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-2.5-flash']
         system_prompt = self._get_system_prompt(dossier, is_voice_mode)
         
         contents = []
@@ -87,7 +87,7 @@ class AIFeminineCoach:
         config = types.GenerateContentConfig(
             system_instruction=system_prompt,
             temperature=0.7,
-            max_output_tokens=90 if is_voice_mode else 1200,
+            max_output_tokens=80 if is_voice_mode else 600,
         )
 
         last_error = None

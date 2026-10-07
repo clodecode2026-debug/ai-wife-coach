@@ -853,6 +853,12 @@ class LingoGameEngine {
     }
 
     exitQuiz() {
+        if (this.currentChallengeIndex > 0 && this.status !== 'completed') {
+            const remaining = this.currentChallenges.length - this.currentChallengeIndex;
+            const confirmQuit = confirm(`Алина, осталось всего ${remaining} задания! Точно хотите прервать урок? Прогресс урока не сохранится.`);
+            if (!confirmQuit) return;
+        }
+
         const lingoContainer = document.getElementById('lingoAppContainer');
         const pathContainer = document.getElementById('germanPathContainer');
         if (lingoContainer) lingoContainer.classList.add('hidden');

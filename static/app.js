@@ -17,14 +17,28 @@ let animationFrameId = null;
 let isAITalking = false;
 let currentLiveAudio = null;
 let liveSoundEnabled = localStorage.getItem('ai_coach_live_sound') === 'true';
+let liveAccumulatedText = '';
+let speechSilenceTimer = null;
+const LIVE_SILENCE_DELAY_MS = 2500; // 2.5 секунды тишины перед отправкой, чтобы Алина могла подумать и продолжить мысль
+
+// Платформа немецкого языка (уроки и flashcards)
+let currentGermanLevel = 'A1';
+let currentGermanMode = 'lessons'; // 'lessons' или 'flashcards'
+let allGermanCourseData = null;
+let currentFlashcardLessonId = 'all';
+let currentFlashcards = [];
+let currentCardIdx = 0;
+let isCardFlipped = false;
+let learnedWords = JSON.parse(localStorage.getItem('ai_coach_learned_words') || '[]');
 
 document.addEventListener('DOMContentLoaded', () => {
     loadSessionsList();
     loadChatHistory();
-    loadGermanCourse('A1');
+    loadGermanCourseData();
     loadLibraryBooks();
     loadDossier();
     updateLiveSoundUI();
+    updateLearnedCountUI();
 });
 
 // ==========================================
@@ -410,11 +424,19 @@ function stopLiveVoice() {
     const btn = document.getElementById('liveMainBtn');
     const overlay = document.getElementById('liveListeningOverlay');
     const halo = document.getElementById('liveAvatarHalo');
+    const pauseIndicator = document.getElementById('livePauseIndicator');
 
     statusText.textContent = 'Разговор завершен. Нажмите на фото, чтобы продолжить.';
     btn.textContent = 'Начать говорить';
     if (overlay) overlay.classList.add('opacity-0');
     if (halo) halo.style.transform = 'scale(1)';
+    if (pauseIndicator) pauseIndicator.classList.add('hidden');
+
+    if (speechSilenceTimer) {
+        clearTimeout(speechSilenceTimer);
+        speechSilenceTimer = null;
+    }
+    liveAccumulatedText = '';
 
     stopAudioVisualizer();
 
@@ -519,41 +541,94 @@ function startBrowserSpeechRecognition() {
 
     liveRecognition = new SpeechRecognition();
     liveRecognition.lang = 'ru-RU';
-    liveRecognition.continuous = false;
+    liveRecognition.continuous = true;
     liveRecognition.interimResults = true;
 
     liveRecognition.onresult = (event) => {
         let interim = '';
-        let final = '';
+        let newlyFinal = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) final += event.results[i][0].transcript;
-            else interim += event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+                newlyFinal += event.results[i][0].transcript + ' ';
+            } else {
+                interim += event.results[i][0].transcript;
+            }
         }
 
-        const transcript = document.getElementById('liveTranscript');
-        if (transcript) transcript.textContent = final || interim || 'Слушаю вас...';
+        if (newlyFinal) {
+            liveAccumulatedText += newlyFinal;
+        }
 
-        if (final && final.trim().length > 1) {
-            liveRecognition.stop();
-            handleLiveUserSpeech(final.trim());
+        const fullSpokenText = (liveAccumulatedText + interim).trim();
+        const transcript = document.getElementById('liveTranscript');
+        const pauseIndicator = document.getElementById('livePauseIndicator');
+        const pauseText = document.getElementById('livePauseText');
+
+        if (fullSpokenText.length > 0) {
+            if (transcript) transcript.textContent = `Вы: «${fullSpokenText}»`;
+            if (pauseIndicator) pauseIndicator.classList.remove('hidden');
+            if (pauseText) pauseText.textContent = `⏳ Слушаю паузу (2.5 сек)... Можете продолжить мысль`;
+
+            // Сбрасываем старый таймер тишины и запускаем новый на 2.5 секунды
+            if (speechSilenceTimer) clearTimeout(speechSilenceTimer);
+            speechSilenceTimer = setTimeout(() => {
+                const textToSend = (liveAccumulatedText + interim).trim();
+                if (textToSend.length >= 2 && isLiveActive && !isAITalking) {
+                    commitLiveSpeech(textToSend);
+                }
+            }, LIVE_SILENCE_DELAY_MS);
         }
     };
 
     liveRecognition.onerror = (e) => {
-        if (isLiveActive && !isAITalking) {
+        if (isLiveActive && !isAITalking && !speechSilenceTimer) {
             setTimeout(() => startBrowserSpeechRecognition(), 600);
         }
     };
 
     liveRecognition.onend = () => {
         if (isLiveActive && !isAITalking) {
-            setTimeout(() => startBrowserSpeechRecognition(), 400);
+            setTimeout(() => {
+                if (isLiveActive && !isAITalking) {
+                    try { liveRecognition.start(); } catch(e){}
+                }
+            }, 300);
         }
     };
 
     try {
         liveRecognition.start();
     } catch(e){}
+}
+
+function commitLiveSpeechImmediately() {
+    if (speechSilenceTimer) {
+        clearTimeout(speechSilenceTimer);
+        speechSilenceTimer = null;
+    }
+    const transcript = document.getElementById('liveTranscript');
+    let text = liveAccumulatedText.trim();
+    if (!text && transcript) {
+        text = transcript.textContent.replace(/^Вы:\s*«?/, '').replace(/»?$/, '').trim();
+    }
+    if (text && text.length >= 2) {
+        commitLiveSpeech(text);
+    }
+}
+
+function commitLiveSpeech(text) {
+    if (speechSilenceTimer) {
+        clearTimeout(speechSilenceTimer);
+        speechSilenceTimer = null;
+    }
+    const pauseIndicator = document.getElementById('livePauseIndicator');
+    if (pauseIndicator) pauseIndicator.classList.add('hidden');
+    liveAccumulatedText = '';
+
+    if (liveRecognition) {
+        try { liveRecognition.stop(); } catch(e){}
+    }
+    handleLiveUserSpeech(text);
 }
 
 async function handleLiveUserSpeech(text) {
@@ -588,7 +663,7 @@ async function handleLiveUserSpeech(text) {
                     if (statusText) statusText.textContent = '🎙️ Слушаю вас, Алина... Говорите!';
                     startBrowserSpeechRecognition();
                 }
-            }, 1800);
+            }, 2000);
         }
     } catch(e) {
         if (statusText) statusText.textContent = 'Заминка связи. Слушаю снова...';
@@ -664,13 +739,51 @@ function toggleRecordVoice() {
 }
 
 // ==========================================
-// 6. КУРС НЕМЕЦКОГО ЯЗЫКА ДЛЯ АЛИНЫ
+// 6. ПЛАТФОРМА ИЗУЧЕНИЯ НЕМЕЦКОГО ЯЗЫКА ДЛЯ АЛИНЫ
 // ==========================================
-async function loadGermanCourse(level) {
+async function loadGermanCourseData() {
+    const container = document.getElementById('germanContent');
+    if (!container) return;
+    container.innerHTML = '<div class="text-center py-6 text-slate-400 text-xs">Загрузка курса и карточек немецкого языка...</div>';
+
+    try {
+        const res = await fetch('/api/german/course');
+        allGermanCourseData = await res.json();
+        renderGermanPlatform();
+    } catch (e) {
+        container.innerHTML = '<div class="text-center py-6 text-rose-500 text-xs">Ошибка загрузки немецкого курса. Пожалуйста, обновите страницу.</div>';
+    }
+}
+
+function updateLearnedCountUI() {
+    const el = document.getElementById('learnedCount');
+    if (el) el.textContent = learnedWords.length;
+}
+
+function setGermanLevel(level) {
+    currentGermanLevel = level;
+    currentFlashcardLessonId = 'all';
+    renderGermanPlatform();
+}
+
+function setGermanViewMode(mode) {
+    currentGermanMode = mode;
+    renderGermanPlatform();
+}
+
+function startFlashcardsForLesson(lessonId, level) {
+    currentGermanLevel = level;
+    currentFlashcardLessonId = lessonId;
+    currentGermanMode = 'flashcards';
+    renderGermanPlatform();
+}
+
+function renderGermanPlatform() {
+    // 1. Обновляем кнопки уровней (A1 / A2 / B1)
     ['a1', 'a2', 'b1'].forEach(l => {
         const btn = document.getElementById('german-btn-' + l);
         if (btn) {
-            if (l === level.toLowerCase()) {
+            if (l === currentGermanLevel.toLowerCase()) {
                 btn.className = 'px-3 py-1.5 text-xs font-bold rounded-lg bg-rose-500 text-white shadow';
             } else {
                 btn.className = 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-100 text-rose-700 hover:bg-rose-200 transition';
@@ -678,85 +791,335 @@ async function loadGermanCourse(level) {
         }
     });
 
+    // 2. Обновляем кнопки переключения режимов
+    const btnLessons = document.getElementById('german-mode-lessons');
+    const btnCards = document.getElementById('german-mode-flashcards');
+    const statEl = document.getElementById('flashcardsStat');
+
+    if (btnLessons && btnCards) {
+        if (currentGermanMode === 'lessons') {
+            btnLessons.className = 'px-3 py-1 text-xs font-bold rounded-lg bg-white text-rose-700 shadow-sm transition';
+            btnCards.className = 'px-3 py-1 text-xs font-semibold rounded-lg text-slate-600 hover:text-rose-700 transition';
+            if (statEl) statEl.classList.add('hidden');
+        } else {
+            btnLessons.className = 'px-3 py-1 text-xs font-semibold rounded-lg text-slate-600 hover:text-rose-700 transition';
+            btnCards.className = 'px-3 py-1 text-xs font-bold rounded-lg bg-white text-rose-700 shadow-sm transition';
+            if (statEl) statEl.classList.remove('hidden');
+        }
+    }
+
+    if (!allGermanCourseData) return;
+
+    if (currentGermanMode === 'lessons') {
+        renderGermanLessons();
+    } else {
+        prepareFlashcards();
+        renderFlashcardsView();
+    }
+}
+
+function renderGermanLessons() {
     const container = document.getElementById('germanContent');
-    if (!container) return;
-    container.innerHTML = '<div class="text-center py-6 text-slate-400 text-xs">Загрузка уроков немецкого...</div>';
+    if (!container || !allGermanCourseData) return;
+    container.innerHTML = '';
 
-    try {
-        const res = await fetch('/api/german/course');
-        const data = await res.json();
-        container.innerHTML = '';
+    // План обучения
+    if (allGermanCourseData.study_plan) {
+        const planItem = allGermanCourseData.study_plan.find(p => p.stage.startsWith(currentGermanLevel)) || allGermanCourseData.study_plan[0];
+        const planCard = document.createElement('div');
+        planCard.className = 'bg-gradient-to-r from-amber-50 to-rose-50 border border-amber-200/70 rounded-xl p-3.5 shadow-sm text-xs space-y-1 mb-2';
+        planCard.innerHTML = `
+            <div class="flex items-center justify-between">
+                <span class="font-bold text-amber-900 flex items-center gap-1.5">🎯 ${escapeHtml(planItem.stage)}</span>
+                <span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-semibold text-[10px]">Срок: ${escapeHtml(planItem.duration)}</span>
+            </div>
+            <p class="text-slate-600">${escapeHtml(planItem.goal)}</p>
+        `;
+        container.appendChild(planCard);
+    }
 
-        if (data.study_plan) {
-            const planItem = data.study_plan.find(p => p.stage.startsWith(level)) || data.study_plan[0];
-            const planCard = document.createElement('div');
-            planCard.className = 'bg-gradient-to-r from-amber-50 to-rose-50 border border-amber-200/70 rounded-xl p-3.5 shadow-sm text-xs space-y-1 mb-2';
-            planCard.innerHTML = `
-                <div class="flex items-center justify-between">
-                    <span class="font-bold text-amber-900 flex items-center gap-1.5">🎯 ${escapeHtml(planItem.stage)}</span>
-                    <span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-semibold text-[10px]">Срок: ${escapeHtml(planItem.duration)}</span>
-                </div>
-                <p class="text-slate-600">${escapeHtml(planItem.goal)}</p>
-            `;
-            container.appendChild(planCard);
-        }
+    const lessons = (allGermanCourseData.lessons || []).filter(l => l.level === currentGermanLevel);
+    if (lessons.length === 0) {
+        container.innerHTML += '<p class="text-xs text-slate-500 text-center py-4">Уроков для этого уровня пока нет.</p>';
+        return;
+    }
 
-        const lessons = (data.lessons || []).filter(l => l.level === level);
-        if (lessons.length === 0) {
-            container.innerHTML += '<p class="text-xs text-slate-500 text-center py-4">Уроков для этого уровня пока нет.</p>';
-            return;
-        }
+    lessons.forEach(lesson => {
+        const card = document.createElement('div');
+        card.className = 'bg-white border border-rose-100 rounded-xl p-4 space-y-3 shadow-sm';
+        
+        let vocabHtml = '<div class="space-y-2 mt-2">';
+        (lesson.vocabulary || []).forEach(v => {
+            const voiceHint = v.voice_hint || 'de-DE-KatjaNeural';
+            const speakerName = voiceHint.includes('Conrad') ? 'Conrad 👨' : 'Katja 👩';
+            const transcriptionHtml = v.transcription ? `<span class="text-rose-500 font-mono text-[11px] block sm:inline sm:ml-1">${escapeHtml(v.transcription)}</span>` : '';
+            const exampleHtml = v.example ? `<div class="text-[11px] text-slate-500 mt-1 pl-1 border-l-2 border-rose-200">Пример: <i>${escapeHtml(v.example)}</i> ${v.example_translation ? `— ${escapeHtml(v.example_translation)}` : ''}</div>` : '';
 
-        lessons.forEach(lesson => {
-            const card = document.createElement('div');
-            card.className = 'bg-white border border-rose-100 rounded-xl p-4 space-y-3 shadow-sm';
-            
-            let vocabHtml = '<div class="space-y-2 mt-2">';
-            (lesson.vocabulary || []).forEach(v => {
-                const voiceHint = v.voice_hint || 'de-DE-KatjaNeural';
-                const speakerName = voiceHint.includes('Conrad') ? 'Conrad 👨' : 'Katja 👩';
-                vocabHtml += `
-                    <div class="flex items-center justify-between bg-rose-50/40 p-2.5 rounded-lg border border-rose-100/60 text-xs gap-2">
+            vocabHtml += `
+                <div class="bg-rose-50/40 p-2.5 rounded-lg border border-rose-100/60 text-xs">
+                    <div class="flex items-center justify-between gap-2">
                         <div class="flex-1">
-                            <span class="font-bold text-rose-900">${escapeHtml(v.german)}</span>
-                            <span class="text-slate-600 block sm:inline sm:ml-2">(${escapeHtml(v.russian)})</span>
+                            <span class="font-bold text-rose-900 text-sm">${escapeHtml(v.german)}</span>
+                            ${transcriptionHtml}
+                            <span class="text-slate-700 block sm:inline sm:ml-2 font-medium">(${escapeHtml(v.russian)})</span>
                         </div>
                         <button onclick="playTTS(this, '${escapeQuotes(v.german)}', '${voiceHint}')" class="px-2.5 py-1.5 bg-white text-rose-700 font-semibold rounded-lg shadow-sm border border-rose-200 hover:bg-rose-100 transition shrink-0 flex items-center gap-1 text-[11px]" title="Озвучить диктором">
                             <span>🔊</span> <span>${speakerName}</span>
                         </button>
                     </div>
-                `;
-            });
-            vocabHtml += '</div>';
+                    ${exampleHtml}
+                </div>
+            `;
+        });
+        vocabHtml += '</div>';
 
-            let dialogueHtml = '';
-            if (lesson.dialogue_simulator) {
-                dialogueHtml = `
-                    <div class="mt-3 bg-purple-50/60 border border-purple-100 rounded-lg p-3 text-xs space-y-1">
-                        <div class="font-bold text-purple-900 flex items-center gap-1">💬 Тренажер диалога: ${escapeHtml(lesson.dialogue_simulator.situation)}</div>
-                        <div class="text-purple-700 italic">Пример: «${escapeHtml(lesson.dialogue_simulator.example)}»</div>
-                        <div class="text-slate-500 text-[11px]">💡 Подсказка: ${escapeHtml(lesson.dialogue_simulator.tips)}</div>
-                    </div>
-                `;
-            }
+        let dialogueHtml = '';
+        if (lesson.dialogue_simulator) {
+            dialogueHtml = `
+                <div class="mt-3 bg-purple-50/60 border border-purple-100 rounded-lg p-3 text-xs space-y-1">
+                    <div class="font-bold text-purple-900 flex items-center gap-1">💬 Тренажер диалога: ${escapeHtml(lesson.dialogue_simulator.situation)}</div>
+                    <div class="text-purple-700 italic">Пример: «${escapeHtml(lesson.dialogue_simulator.example)}»</div>
+                    <div class="text-slate-500 text-[11px]">💡 Подсказка: ${escapeHtml(lesson.dialogue_simulator.tips)}</div>
+                </div>
+            `;
+        }
 
-            card.innerHTML = `
-                <div>
+        const vocabCount = (lesson.vocabulary || []).length;
+
+        card.innerHTML = `
+            <div>
+                <div class="flex items-start justify-between gap-2">
                     <div class="flex items-center gap-2">
                         <span class="px-2 py-0.5 bg-rose-500 text-white rounded text-[10px] font-bold">${lesson.level}</span>
-                        <h3 class="font-bold text-sm text-slate-800">${escapeHtml(lesson.title)}</h3>
+                        <h3 class="font-bold text-sm sm:text-base text-slate-800">${escapeHtml(lesson.title)}</h3>
                     </div>
-                    <p class="text-xs text-rose-700 font-medium mt-1.5 bg-rose-50/70 p-2 rounded-lg border border-rose-100">📖 Грамматика: ${escapeHtml(lesson.grammar)}</p>
-                    ${lesson.rule_explanation ? `<p class="text-[11px] text-slate-600 mt-1 italic pl-1">💡 ${escapeHtml(lesson.rule_explanation)}</p>` : ''}
+                    <button onclick="startFlashcardsForLesson('${lesson.id}', '${lesson.level}')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-[11px] font-bold shrink-0 transition flex items-center gap-1 shadow-sm">
+                        📇 Карточки (${vocabCount})
+                    </button>
                 </div>
-                ${vocabHtml}
-                ${dialogueHtml}
-            `;
-            container.appendChild(card);
+                <p class="text-xs text-rose-700 font-medium mt-1.5 bg-rose-50/70 p-2 rounded-lg border border-rose-100">📖 Грамматика: ${escapeHtml(lesson.grammar)}</p>
+                ${lesson.rule_explanation ? `<p class="text-[11px] text-slate-600 mt-1 italic pl-1">💡 ${escapeHtml(lesson.rule_explanation)}</p>` : ''}
+            </div>
+            ${vocabHtml}
+            ${dialogueHtml}
+        `;
+        container.appendChild(card);
+    });
+}
+
+function prepareFlashcards() {
+    if (!allGermanCourseData) return;
+    currentFlashcards = [];
+
+    const lessons = allGermanCourseData.lessons || [];
+    lessons.forEach(lesson => {
+        if (lesson.level !== currentGermanLevel) return;
+        if (currentFlashcardLessonId !== 'all' && lesson.id !== currentFlashcardLessonId) return;
+
+        (lesson.vocabulary || []).forEach((v, idx) => {
+            currentFlashcards.push({
+                id: `${lesson.id}_${idx}_${v.german}`,
+                german: v.german,
+                transcription: v.transcription || '',
+                russian: v.russian,
+                example: v.example || '',
+                example_translation: v.example_translation || '',
+                voice_hint: v.voice_hint || 'de-DE-KatjaNeural',
+                lesson_id: lesson.id,
+                lesson_title: lesson.title,
+                level: lesson.level
+            });
         });
-    } catch (e) {
-        container.innerHTML = '<div class="text-center py-6 text-rose-500 text-xs">Ошибка загрузки немецкого курса.</div>';
+    });
+
+    currentCardIdx = 0;
+    isCardFlipped = false;
+}
+
+function renderFlashcardsView() {
+    const container = document.getElementById('germanContent');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const lessons = (allGermanCourseData.lessons || []).filter(l => l.level === currentGermanLevel);
+
+    // Панель фильтра уроков
+    const filterPanel = document.createElement('div');
+    filterPanel.className = 'flex flex-wrap items-center justify-between gap-2 bg-rose-50/50 p-2.5 rounded-xl border border-rose-100 text-xs mb-3';
+    
+    let lessonOptions = `<option value="all" ${currentFlashcardLessonId === 'all' ? 'selected' : ''}>🌟 Все слова уровня ${currentGermanLevel} (${currentFlashcards.length} шт)</option>`;
+    lessons.forEach(l => {
+        const count = (l.vocabulary || []).length;
+        lessonOptions += `<option value="${l.id}" ${currentFlashcardLessonId === l.id ? 'selected' : ''}>Урок ${l.id}: ${escapeHtml(l.title)} (${count} слов)</option>`;
+    });
+
+    filterPanel.innerHTML = `
+        <div class="flex items-center gap-2 flex-1 min-w-[200px]">
+            <span class="font-bold text-slate-700 shrink-0">Выбор урока:</span>
+            <select id="flashcardLessonSelect" onchange="onFlashcardLessonChange(this.value)" class="w-full bg-white border border-rose-200 rounded-lg px-2.5 py-1 text-xs text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-rose-400">
+                ${lessonOptions}
+            </select>
+        </div>
+        <button onclick="shuffleFlashcards()" class="px-2.5 py-1 bg-white border border-rose-200 text-rose-700 hover:bg-rose-100 rounded-lg font-semibold text-xs transition flex items-center gap-1 shadow-sm">
+            🔀 Перемешать
+        </button>
+    `;
+    container.appendChild(filterPanel);
+
+    if (currentFlashcards.length === 0) {
+        container.innerHTML += '<div class="text-center py-10 text-slate-400 text-xs">Нет карточек для выбранного фильтра.</div>';
+        return;
     }
+
+    const card = currentFlashcards[currentCardIdx];
+    const isLearned = learnedWords.includes(card.id);
+    const speakerName = card.voice_hint.includes('Conrad') ? 'Conrad 👨' : 'Katja 👩';
+
+    const cardContainer = document.createElement('div');
+    cardContainer.className = 'max-w-md mx-auto w-full space-y-4';
+
+    // Верхняя шкала прогресса
+    cardContainer.innerHTML = `
+        <div class="flex items-center justify-between text-xs text-slate-500 font-medium px-1">
+            <span>Карточка <b class="text-rose-600">${currentCardIdx + 1}</b> из <b>${currentFlashcards.length}</b></span>
+            <span>Урок: <b class="text-slate-700">${escapeHtml(card.lesson_title)}</b></span>
+        </div>
+        <div class="w-full bg-rose-100 rounded-full h-1.5 overflow-hidden">
+            <div class="bg-rose-500 h-1.5 rounded-full transition-all duration-300" style="width: ${((currentCardIdx + 1) / currentFlashcards.length) * 100}%"></div>
+        </div>
+    `;
+
+    // Сама интерактивная карточка
+    const flashcardEl = document.createElement('div');
+    flashcardEl.className = 'bg-white border-2 border-rose-200 hover:border-rose-300 rounded-2xl p-6 shadow-md min-h-[220px] flex flex-col justify-between cursor-pointer transition-all duration-200 select-none relative group';
+    flashcardEl.onclick = (e) => {
+        // Если кликнули на кнопку озвучки — не переворачиваем
+        if (e.target.closest('button')) return;
+        toggleFlashcardFlip();
+    };
+
+    if (!isCardFlipped) {
+        // ПЕРЕДНЯЯ СТОРОНА КАРТОЧКИ (НЕМЕЦКИЙ)
+        flashcardEl.innerHTML = `
+            <div class="flex items-center justify-between text-[11px] text-slate-400">
+                <span class="bg-rose-50 text-rose-600 px-2 py-0.5 rounded font-bold uppercase tracking-wider">${card.level} • НЕМЕЦКИЙ</span>
+                ${isLearned ? '<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold text-[10px]">✅ Выучено</span>' : '<span class="text-slate-400">Нажмите, чтобы перевернуть</span>'}
+            </div>
+            <div class="text-center my-4 space-y-2">
+                <h3 class="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">${escapeHtml(card.german)}</h3>
+                ${card.transcription ? `<p class="text-rose-500 font-mono text-xs sm:text-sm font-semibold">${escapeHtml(card.transcription)}</p>` : ''}
+            </div>
+            <div class="flex items-center justify-between pt-2 border-t border-rose-50">
+                <button onclick="playTTS(this, '${escapeQuotes(card.german)}', '${card.voice_hint}')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl border border-rose-200 text-xs transition flex items-center gap-1.5 shadow-sm">
+                    <span>🔊</span> <span>Озвучить (${speakerName})</span>
+                </button>
+                <span class="text-[11px] text-rose-400 font-medium">Показать перевод ➔</span>
+            </div>
+        `;
+    } else {
+        // ЗАДНЯЯ СТОРОНА КАРТОЧКИ (РУССКИЙ ПЕРЕВОД + ПРИМЕР)
+        flashcardEl.innerHTML = `
+            <div class="flex items-center justify-between text-[11px] text-slate-400">
+                <span class="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded font-bold uppercase tracking-wider">${card.level} • ПЕРЕВОД</span>
+                ${isLearned ? '<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold text-[10px]">✅ Выучено</span>' : '<span class="text-slate-400">Нажмите, чтобы скрыть</span>'}
+            </div>
+            <div class="text-center my-3 space-y-2">
+                <p class="text-xs text-rose-600 font-bold">${escapeHtml(card.german)} ${card.transcription ? `<span class="font-mono font-normal">(${escapeHtml(card.transcription)})</span>` : ''}</p>
+                <h3 class="text-xl sm:text-2xl font-extrabold text-emerald-800">${escapeHtml(card.russian)}</h3>
+                ${card.example ? `
+                    <div class="mt-3 p-2.5 bg-emerald-50/70 rounded-xl border border-emerald-100 text-xs text-left">
+                        <div class="flex items-center justify-between gap-1">
+                            <span class="font-bold text-slate-800">Пример: <i>${escapeHtml(card.example)}</i></span>
+                            <button onclick="playTTS(this, '${escapeQuotes(card.example)}', '${card.voice_hint}')" class="text-emerald-700 hover:text-emerald-900 p-0.5" title="Озвучить пример">🔊</button>
+                        </div>
+                        ${card.example_translation ? `<p class="text-slate-600 text-[11px] mt-0.5">${escapeHtml(card.example_translation)}</p>` : ''}
+                    </div>
+                ` : ''}
+            </div>
+            <div class="flex items-center justify-between pt-2 border-t border-rose-50">
+                <button onclick="playTTS(this, '${escapeQuotes(card.german)}', '${card.voice_hint}')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl border border-rose-200 text-xs transition flex items-center gap-1.5 shadow-sm">
+                    <span>🔊</span> <span>${card.german}</span>
+                </button>
+                <span class="text-[11px] text-emerald-600 font-medium">Вернуть слово ↺</span>
+            </div>
+        `;
+    }
+
+    cardContainer.appendChild(flashcardEl);
+
+    // Панель управления навигацией
+    const navPanel = document.createElement('div');
+    navPanel.className = 'flex items-center justify-between gap-2 pt-1';
+    navPanel.innerHTML = `
+        <button onclick="prevFlashcard()" class="flex-1 py-2.5 px-3 bg-white border border-rose-200 hover:bg-rose-50 text-slate-700 font-bold rounded-xl text-xs shadow-sm transition flex items-center justify-center gap-1 ${currentCardIdx === 0 ? 'opacity-50 cursor-not-allowed' : ''}">
+            ⬅️ Назад
+        </button>
+        <button onclick="toggleFlashcardFlip()" class="flex-1 py-2.5 px-3 bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold rounded-xl text-xs transition flex items-center justify-center gap-1">
+            🔄 Перевернуть
+        </button>
+        <button onclick="nextFlashcard()" class="flex-1 py-2.5 px-3 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl text-xs shadow-sm transition flex items-center justify-center gap-1 ${currentCardIdx === currentFlashcards.length - 1 ? 'opacity-50 cursor-not-allowed' : ''}">
+            Вперёд ➡️
+        </button>
+    `;
+    cardContainer.appendChild(navPanel);
+
+    // Кнопка отметки «Выучено»
+    const learnBtn = document.createElement('button');
+    learnBtn.className = `w-full py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-sm ${isLearned ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : 'bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-200'}`;
+    learnBtn.innerHTML = isLearned ? '✅ Слово выучено! (Нажмите для отмены)' : '⭐ Отметить как выученное';
+    learnBtn.onclick = () => toggleLearnedWord(card.id);
+    cardContainer.appendChild(learnBtn);
+
+    container.appendChild(cardContainer);
+}
+
+function onFlashcardLessonChange(val) {
+    currentFlashcardLessonId = val;
+    prepareFlashcards();
+    renderFlashcardsView();
+}
+
+function toggleFlashcardFlip() {
+    isCardFlipped = !isCardFlipped;
+    renderFlashcardsView();
+}
+
+function nextFlashcard() {
+    if (currentCardIdx < currentFlashcards.length - 1) {
+        currentCardIdx++;
+        isCardFlipped = false;
+        renderFlashcardsView();
+    }
+}
+
+function prevFlashcard() {
+    if (currentCardIdx > 0) {
+        currentCardIdx--;
+        isCardFlipped = false;
+        renderFlashcardsView();
+    }
+}
+
+function shuffleFlashcards() {
+    for (let i = currentFlashcards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [currentFlashcards[i], currentFlashcards[j]] = [currentFlashcards[j], currentFlashcards[i]];
+    }
+    currentCardIdx = 0;
+    isCardFlipped = false;
+    renderFlashcardsView();
+}
+
+function toggleLearnedWord(id) {
+    const idx = learnedWords.indexOf(id);
+    if (idx > -1) {
+        learnedWords.splice(idx, 1);
+    } else {
+        learnedWords.push(id);
+    }
+    localStorage.setItem('ai_coach_learned_words', JSON.stringify(learnedWords));
+    updateLearnedCountUI();
+    renderFlashcardsView();
 }
 
 // ==========================================

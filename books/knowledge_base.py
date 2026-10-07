@@ -77,7 +77,7 @@ KNOWLEDGE_BASE_PILLARS = {
 }
 
 def get_knowledge_base_prompt() -> str:
-    lines = ["ФУНДАМЕНТАЛЬНАЯ БАЗА ЗНАНИЙ И ПСИХОЛОГИЧЕСКИЙ МЕТОД (80% ТВОИХ ОТВЕТОВ ДОЛЖНЫ ОПИРАТЬСЯ НА ЭТИ ПРИНЦИПЫ):"]
+    lines = ["МЕТОДИЧЕСКАЯ ОСНОВА (50% ТВОИХ ЗНАНИЙ И ОПОРЫ — ПСИХОЛОГИЯ ИЗ ЭТИХ КНИГ, А 50% — ЖИВОЕ ЧЕЛОВЕЧЕСКОЕ ОБЩЕНИЕ, ИМПРОВИЗАЦИЯ И ТЕПЛО):"]
     for k, v in KNOWLEDGE_BASE_PILLARS.items():
         lines.append(f"\n[{v['title']} (Источник: {v['source']})]")
         lines.append(f"Методика: {v['methodology']}")

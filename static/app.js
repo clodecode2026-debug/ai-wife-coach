@@ -566,75 +566,85 @@ function startBrowserSpeechRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
         const tr = document.getElementById('liveTranscript');
-        if (tr) tr.textContent = 'Распознавание речи не поддерживается данным браузером. Используйте текстовый диалог.';
+        if (tr) tr.textContent = 'Распознавание речи не поддерживается браузером. Используйте текст.';
         return;
     }
 
+    // Если распознавание уже активно, не перезапускаем повторно (избегаем браузерного звука "тилилинь")
     if (liveRecognition) {
-        try { liveRecognition.abort(); } catch(e){}
+        return;
     }
 
-    liveRecognition = new SpeechRecognition();
-    liveRecognition.lang = 'ru-RU';
-    liveRecognition.continuous = true;
-    liveRecognition.interimResults = true;
-
-    liveRecognition.onresult = (event) => {
-        let interim = '';
-        let newlyFinal = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-                newlyFinal += event.results[i][0].transcript + ' ';
-            } else {
-                interim += event.results[i][0].transcript;
-            }
-        }
-
-        if (newlyFinal) {
-            liveAccumulatedText += newlyFinal;
-        }
-
-        const fullSpokenText = (liveAccumulatedText + interim).trim();
-        const transcript = document.getElementById('liveTranscript');
-        const pauseIndicator = document.getElementById('livePauseIndicator');
-        const pauseText = document.getElementById('livePauseText');
-
-        if (fullSpokenText.length > 0) {
-            if (transcript) transcript.textContent = `Вы: «${fullSpokenText}»`;
-            if (pauseIndicator) pauseIndicator.classList.remove('hidden');
-            const pauseSec = (LIVE_SILENCE_DELAY_MS / 1000).toFixed(1);
-            if (pauseText) pauseText.textContent = `⏳ Слушаю паузу (${pauseSec} сек)... Можно не торопиться`;
-
-            // Сбрасываем старый таймер тишины и запускаем новый
-            if (speechSilenceTimer) clearTimeout(speechSilenceTimer);
-            speechSilenceTimer = setTimeout(() => {
-                const textToSend = (liveAccumulatedText + interim).trim();
-                if (textToSend.length >= 2 && isLiveActive && !isAITalking) {
-                    commitLiveSpeech(textToSend);
-                }
-            }, LIVE_SILENCE_DELAY_MS);
-        }
-    };
-
-    liveRecognition.onerror = (e) => {
-        if (isLiveActive && !isAITalking && !speechSilenceTimer) {
-            setTimeout(() => startBrowserSpeechRecognition(), 600);
-        }
-    };
-
-    liveRecognition.onend = () => {
-        if (isLiveActive && !isAITalking) {
-            setTimeout(() => {
-                if (isLiveActive && !isAITalking) {
-                    try { liveRecognition.start(); } catch(e){}
-                }
-            }, 300);
-        }
-    };
-
     try {
+        liveRecognition = new SpeechRecognition();
+        liveRecognition.lang = (liveCoachMode === 'german') ? 'de-DE' : 'ru-RU';
+        liveRecognition.continuous = true;
+        liveRecognition.interimResults = true;
+
+        liveRecognition.onresult = (event) => {
+            let interim = '';
+            let newlyFinal = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    newlyFinal += event.results[i][0].transcript + ' ';
+                } else {
+                    interim += event.results[i][0].transcript;
+                }
+            }
+
+            if (newlyFinal) {
+                liveAccumulatedText += newlyFinal;
+            }
+
+            const fullSpokenText = (liveAccumulatedText + interim).trim();
+            const transcript = document.getElementById('liveTranscript');
+            const pauseIndicator = document.getElementById('livePauseIndicator');
+            const pauseText = document.getElementById('livePauseText');
+
+            if (fullSpokenText.length > 0) {
+                if (transcript) transcript.textContent = `Вы: «${fullSpokenText}»`;
+                if (pauseIndicator) pauseIndicator.classList.remove('hidden');
+                const pauseSec = (LIVE_SILENCE_DELAY_MS / 1000).toFixed(1);
+                if (pauseText) pauseText.textContent = `⏳ Слушаю паузу (${pauseSec} сек)... Не торопитесь`;
+
+                // Сбрасываем старый таймер тишины и запускаем новый
+                if (speechSilenceTimer) clearTimeout(speechSilenceTimer);
+                speechSilenceTimer = setTimeout(() => {
+                    const textToSend = (liveAccumulatedText + interim).trim();
+                    if (textToSend.length >= 2 && isLiveActive && !isAITalking) {
+                        commitLiveSpeech(textToSend);
+                    }
+                }, LIVE_SILENCE_DELAY_MS);
+            }
+        };
+
+        liveRecognition.onerror = (e) => {
+            console.warn('SpeechRecognition error:', e.error);
+            // При ошибке 'no-speech' не спамим перезапусками
+            if (e.error === 'not-allowed') {
+                const tr = document.getElementById('liveTranscript');
+                if (tr) tr.textContent = 'Доступ к микрофону заблокирован. Разрешите микрофон в браузере.';
+            }
+        };
+
+        liveRecognition.onend = () => {
+            // Очищаем ссылку на объект
+            liveRecognition = null;
+            // Перезапуск делаем ТОЛЬКО если пользователь все еще в живом режиме и AI НЕ говорит, с аккуратной задержкой
+            if (isLiveActive && !isAITalking) {
+                setTimeout(() => {
+                    if (isLiveActive && !isAITalking && !liveRecognition) {
+                        startBrowserSpeechRecognition();
+                    }
+                }, 800);
+            }
+        };
+
         liveRecognition.start();
-    } catch(e){}
+    } catch(e) {
+        liveRecognition = null;
+        console.warn('SpeechRecognition start error:', e);
+    }
 }
 
 function commitLiveSpeechImmediately() {
@@ -1355,3 +1365,25 @@ function escapeQuotes(str) {
     if (!str) return '';
     return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;');
 }
+
+// Регистрация Service Worker для PWA (установка на телефон / iPhone)
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/static/sw.js')
+            .then(reg => console.log('PWA Service Worker registered:', reg.scope))
+            .catch(err => console.log('PWA Service Worker registration failed:', err));
+    });
+}
+
+// Проверка запуска на iOS в режиме браузера (предложение установить на экран «Домой»)
+function checkIosInstallPrompt() {
+    const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+    const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+    if (isIos && !isStandalone) {
+        const iosBanner = document.getElementById('iosInstallBanner');
+        if (iosBanner && !localStorage.getItem('ios_pwa_dismissed')) {
+            iosBanner.classList.remove('hidden');
+        }
+    }
+}
+setTimeout(checkIosInstallPrompt, 1500);

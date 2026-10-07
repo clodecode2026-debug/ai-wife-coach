@@ -5,7 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AI Coach">
+    <meta name="application-name" content="AI Coach для Алины">
     <meta name="theme-color" content="#fff1f2">
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/static/icons/icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/static/icons/icon-512.png">
     <title>AI Coach для Алины — Психолог & Немецкий B1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -102,6 +108,22 @@
 
     <!-- Основной контейнер содержимого -->
     <main class="max-w-6xl mx-auto px-3 py-3 flex-1 w-full flex flex-col overflow-hidden pb-20 md:pb-3">
+
+        <!-- Баннер установки PWA на iPhone в 1 клик -->
+        <div id="iosInstallBanner" class="hidden shrink-0 mb-2 p-3 bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 text-white rounded-2xl shadow-lg border border-rose-300 flex items-center justify-between gap-3 animate-fade-in">
+            <div class="flex items-center gap-2.5">
+                <span class="text-2xl">📱</span>
+                <div>
+                    <div class="text-xs font-bold leading-tight">Установить AI Coach на iPhone:</div>
+                    <div class="text-[11px] text-rose-100 leading-tight mt-0.5">
+                        Нажмите кнопку <strong class="text-white bg-white/20 px-1 py-0.5 rounded">«Поделиться» ⎋</strong> внизу Safari, затем выберите <strong class="text-white underline">«На экран "Домой"» ⊞</strong>
+                    </div>
+                </div>
+            </div>
+            <button onclick="localStorage.setItem('ios_pwa_dismissed', 'true'); document.getElementById('iosInstallBanner').classList.add('hidden');" class="text-white/80 hover:text-white text-xs font-bold px-2 py-1 bg-white/20 hover:bg-white/30 rounded-lg shrink-0">
+                Понятно ✕
+            </button>
+        </div>
 
         <!-- ВКЛАДКА 1: ДИАЛОГ С КОУЧЕМ -->
         <section id="tab-chat" class="tab-content flex-1 flex flex-col bg-white/95 backdrop-blur rounded-2xl shadow-xl border border-rose-100 overflow-hidden h-full">

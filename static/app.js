@@ -1394,24 +1394,27 @@ function renderLibrary(books) {
     if (!container) return;
     container.innerHTML = '';
 
-    books.forEach(b => {
+    books.forEach((b, idx) => {
         const card = document.createElement('div');
-        card.className = 'bg-white border border-rose-100 rounded-xl p-3.5 space-y-2 shadow-sm flex flex-col justify-between';
+        card.className = 'bg-white border border-rose-100 rounded-2xl p-4 space-y-2.5 shadow-sm hover:shadow-md transition flex flex-col justify-between';
         card.innerHTML = `
             <div>
                 <div class="flex items-center justify-between">
-                    <span class="text-[10px] font-bold text-rose-600 uppercase tracking-wider">${escapeHtml(b.category)}</span>
-                    <span class="text-[10px] bg-rose-50 text-rose-800 px-2 py-0.5 rounded">${escapeHtml(b.author)}</span>
+                    <span class="text-[10px] font-bold text-rose-600 uppercase tracking-wider bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100">${escapeHtml(b.category)}</span>
+                    <span class="text-[10px] text-slate-500 font-medium">⭐ 4.9 • ${escapeHtml(b.author)}</span>
                 </div>
-                <h4 class="font-bold text-xs sm:text-sm text-slate-800 mt-1">${escapeHtml(b.title)}</h4>
-                <p class="text-[11px] text-slate-600 mt-1">${escapeHtml(b.excerpt)}</p>
-                <div class="mt-2 p-2 bg-rose-50/50 rounded-lg text-[10px] text-rose-900 italic">
-                    💡 Ключевая мысль: ${escapeHtml(b.takeaway)}
+                <h4 class="font-extrabold text-sm text-slate-800 mt-2">${escapeHtml(b.title)}</h4>
+                <p class="text-xs text-slate-600 mt-1 line-clamp-3 leading-relaxed">${escapeHtml(b.excerpt)}</p>
+                <div class="mt-2.5 p-2.5 bg-gradient-to-r from-rose-50/80 to-pink-50/80 border border-rose-100/80 rounded-xl text-[11px] text-rose-900 leading-snug">
+                    <span class="font-bold">💡 Главный инсайт:</span> ${escapeHtml(b.takeaway || (b.key_ideas ? b.key_ideas[0] : ''))}
                 </div>
             </div>
-            <button onclick="sendMoodPrompt('Расскажи подробнее про книгу «${escapeQuotes(b.title)}» ${escapeQuotes(b.author)} и как применить её совет в моей жизни?')" class="w-full mt-2 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-800 text-[11px] font-semibold rounded-lg transition">
-                Обсудить с коучем
-            </button>
+            <div class="flex gap-2 pt-1">
+                <button onclick="sendMoodPrompt('Алина хочет разобрать психологическую книгу «${escapeQuotes(b.title)}» (${escapeQuotes(b.author)}). Какой ключевой совет из этой книги поможет мне стать спокойнее и увереннее сегодня?')" 
+                        class="flex-1 py-2 bg-gradient-to-r from-rose-500 to-pink-500 hover:opacity-95 text-white text-xs font-bold rounded-xl transition shadow-sm text-center">
+                    💬 Обсудить с коучем
+                </button>
+            </div>
         `;
         container.appendChild(card);
     });

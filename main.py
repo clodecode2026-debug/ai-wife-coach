@@ -58,6 +58,8 @@ class ChatRequest(BaseModel):
     message: str
     session_id: str = "default_session"
     is_voice_mode: bool = False
+    mode: Optional[str] = "coach"  # "coach" | "german"
+    german_lesson_id: Optional[int] = None
 
 class TTSRequest(BaseModel):
     text: str
@@ -89,17 +91,42 @@ async def read_index():
 @app.post("/api/chat")
 def api_chat(req: ChatRequest):
     try:
-        history = db_manager.get_chat_history(req.session_id)
+        session_id = req.session_id
+        german_context = None
+
+        # РЕЖИМ СПЕЦИАЛИЗИРОВАННОГО НЕМЕЦКОГО РЕЧЕВОГО КОУЧА
+        if req.mode == "german":
+            # Изолируем историю немецкого языка, чтобы НЕ сбивать психологическую память и настройки Алины!
+            session_id = f"german_live_{req.session_id}"
+            lessons = GERMAN_COURSE_DATA.get("lessons", [])
+            lesson_id = req.german_lesson_id or 1
+            german_lesson = next((l for l in lessons if (l.get("id") == lesson_id or l.get("day") == lesson_id)), lessons[0] if lessons else None)
+            if german_lesson:
+                german_context = {
+                    "title": german_lesson.get("title", ""),
+                    "level": german_lesson.get("level", "A1+"),
+                    "grammar": german_lesson.get("grammar", ""),
+                    "situation": german_lesson.get("dialogue_simulator", {}).get("situation", ""),
+                    "vocabulary": german_lesson.get("vocabulary", [])
+                }
+
+        history = db_manager.get_chat_history(session_id)
         dossier = db_manager.get_dossier()
 
         # Сохраняем входящее сообщение
-        db_manager.save_message(req.session_id, "user", req.message)
+        db_manager.save_message(session_id, "user", req.message)
 
         # Генерация живого ответа через каскадный роутер
-        reply = coach.generate_response(req.message, history=history, dossier=dossier, is_voice_mode=req.is_voice_mode)
+        reply = coach.generate_response(
+            req.message,
+            history=history,
+            dossier=dossier,
+            is_voice_mode=req.is_voice_mode,
+            german_context=german_context
+        )
 
         # Сохраняем ответ ассистента
-        db_manager.save_message(req.session_id, "assistant", reply)
+        db_manager.save_message(session_id, "assistant", reply)
 
         return {"reply": reply}
     except Exception as e:

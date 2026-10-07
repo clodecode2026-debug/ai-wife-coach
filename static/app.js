@@ -19,7 +19,9 @@ let currentLiveAudio = null;
 let liveSoundEnabled = localStorage.getItem('ai_coach_live_sound') === 'true';
 let liveAccumulatedText = '';
 let speechSilenceTimer = null;
-const LIVE_SILENCE_DELAY_MS = 2500; // 2.5 секунды тишины перед отправкой, чтобы Алина могла подумать и продолжить мысль
+let LIVE_SILENCE_DELAY_MS = 2500; // По умолчанию 2.5 сек, для немецкого 4.5 сек
+let liveCoachMode = 'coach'; // 'coach' | 'german'
+let currentLiveGermanLessonId = 1;
 
 // Платформа немецкого языка (180 дней • A1+ ➔ B1 для Алины)
 let currentGermanLevel = localStorage.getItem('ai_coach_german_level') || 'A1+';
@@ -574,9 +576,10 @@ function startBrowserSpeechRecognition() {
         if (fullSpokenText.length > 0) {
             if (transcript) transcript.textContent = `Вы: «${fullSpokenText}»`;
             if (pauseIndicator) pauseIndicator.classList.remove('hidden');
-            if (pauseText) pauseText.textContent = `⏳ Слушаю паузу (2.5 сек)... Можете продолжить мысль`;
+            const pauseSec = (LIVE_SILENCE_DELAY_MS / 1000).toFixed(1);
+            if (pauseText) pauseText.textContent = `⏳ Слушаю паузу (${pauseSec} сек)... Можно не торопиться`;
 
-            // Сбрасываем старый таймер тишины и запускаем новый на 2.5 секунды
+            // Сбрасываем старый таймер тишины и запускаем новый
             if (speechSilenceTimer) clearTimeout(speechSilenceTimer);
             speechSilenceTimer = setTimeout(() => {
                 const textToSend = (liveAccumulatedText + interim).trim();
@@ -645,14 +648,20 @@ async function handleLiveUserSpeech(text) {
     const statusText = document.getElementById('liveStatusText');
     const transcript = document.getElementById('liveTranscript');
 
-    if (statusText) statusText.textContent = '🤔 Анализирую ваш вопрос...';
+    if (statusText) statusText.textContent = '🤔 Обдумываю ответ...';
     if (transcript) transcript.textContent = `Вы: «${text}»`;
 
     try {
         const res = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: text, session_id: sessionId, is_voice_mode: true })
+            body: JSON.stringify({
+                message: text,
+                session_id: sessionId,
+                is_voice_mode: true,
+                mode: liveCoachMode,
+                german_lesson_id: currentLiveGermanLessonId
+            })
         });
         const data = await res.json();
         const reply = data.reply || 'Алина, я рядом и слышу каждое твоё слово.';
@@ -845,26 +854,71 @@ function startFlashcardsForLesson(lessonId, level) {
     renderGermanPlatform();
 }
 
-// 4-й этап: Ролевой диалог с ИИ-коучем по теме урока
+// 4-й этап: Живой голосовой Live Voice диалог с немецким речевым коучем
 function talkToCoachForLesson(lessonId) {
-    if (!allGermanCourseData || !allGermanCourseData.lessons) return;
-    const lesson = allGermanCourseData.lessons.find(l => (l.id == lessonId || l.day == lessonId)) || allGermanCourseData.lessons[0];
-    if (!lesson) return;
+    startLiveGermanCoach(lessonId);
+}
 
-    const situation = lesson.dialogue_simulator?.situation || lesson.title;
-    const promptText = `Привет, мой заботливый коуч! Давай проведем 5-минутную разговорную практику по теме Урока ${lesson.day || lesson.id}: "${lesson.title}". Ситуация: ${situation}. Задай мне первый вопрос на немецком языке (в скобках обязательно добавь подсказку и перевод на русский), а я отвечу тебе!`;
+function startLiveGermanCoach(lessonId) {
+    currentLiveGermanLessonId = lessonId || 1;
+    liveCoachMode = 'german';
+    LIVE_SILENCE_DELAY_MS = 4500; // 4.5 секунды тишины: время на размышление без спешки!
 
     // Закрываем модалки, если открыты
     const m1 = document.getElementById('lingoLessonModal');
     if (m1) m1.remove();
 
-    // Переключаем на вкладку чата
-    switchTab('chat');
+    // Переключаем на Live Voice
+    switchTab('live');
+    updateLiveCoachModeUI();
 
-    const input = document.getElementById('chatInput');
-    if (input) {
-        input.value = promptText;
-        sendMessage();
+    // Включаем озвучку ответов коуча, если была выключена
+    if (!liveSoundEnabled) {
+        toggleLiveSound();
+    }
+
+    // Запускаем распознавание речи, если ещё не активно
+    if (!isLiveActive) {
+        toggleLiveVoiceState();
+    }
+
+    const allLessons = window.allGermanCourseData?.lessons || [];
+    const lesson = allLessons.find(l => (l.day == lessonId || l.id == lessonId)) || allLessons[0];
+    const situation = lesson?.dialogue_simulator?.situation || lesson?.title || 'Практика немецкого языка';
+
+    // Вступительная реплика для начала тренировки
+    const prompt = `Hallo! Ich lerne Deutsch und möchte die Situation üben: "${situation}". Bitte stellen Sie mir die erste Frage auf Deutsch mit Übersetzung auf Russisch!`;
+    handleLiveUserSpeech(prompt);
+}
+
+function switchToCoachLiveMode() {
+    liveCoachMode = 'coach';
+    LIVE_SILENCE_DELAY_MS = 2500;
+    updateLiveCoachModeUI();
+    const transcript = document.getElementById('liveTranscript');
+    if (transcript) transcript.textContent = 'Здравствуй, дорогая Алина! Я снова рядом в роли твоего психолога и личного коуча. О чём ты думаешь?';
+}
+
+function updateLiveCoachModeUI() {
+    const badge = document.getElementById('liveModeBadge');
+    const title = document.getElementById('liveTitleText');
+    const sub = document.getElementById('liveSubtitleText');
+    const switchBtn = document.getElementById('liveSwitchToCoachBtn');
+
+    if (liveCoachMode === 'german') {
+        const allLessons = window.allGermanCourseData?.lessons || [];
+        const lesson = allLessons.find(l => (l.day == currentLiveGermanLessonId || l.id == currentLiveGermanLessonId)) || allLessons[0];
+        const lessonTitle = lesson ? lesson.title : `Урок ${currentLiveGermanLessonId}`;
+
+        if (badge) badge.textContent = `🇩🇪 Немецкий речевой коуч • День ${currentLiveGermanLessonId}`;
+        if (title) title.textContent = `Разговорная практика: ${lessonTitle}`;
+        if (sub) sub.textContent = `Коуч говорит на немецком с переводом, ждёт ваших ответов (пауза 4.5 сек) и бережно исправляет ошибки.`;
+        if (switchBtn) switchBtn.classList.remove('hidden');
+    } else {
+        if (badge) badge.textContent = 'Google Live Voice • Алина & Коуч';
+        if (title) title.textContent = 'Живой разговор';
+        if (sub) sub.textContent = 'Коуч слушает ваш голос в реальном времени и отвечает емко, глубоко и бережно';
+        if (switchBtn) switchBtn.classList.add('hidden');
     }
 }
 

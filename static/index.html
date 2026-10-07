@@ -166,9 +166,14 @@
             <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(236,72,153,0.18),transparent_70%)] pointer-events-none"></div>
             
             <div class="text-center z-10 pt-2">
-                <span class="px-3 py-1 bg-rose-500/20 text-rose-300 rounded-full text-xs font-semibold border border-rose-500/30">Google Live Voice • Алина & Коуч</span>
-                <h2 class="text-2xl font-bold mt-2 bg-gradient-to-r from-rose-300 via-pink-300 to-amber-200 bg-clip-text text-transparent">Живой разговор</h2>
-                <p class="text-xs text-slate-300 mt-1 max-w-md mx-auto">Коуч слушает ваш голос в реальном времени и отвечает емко, глубоко и бережно</p>
+                <span id="liveModeBadge" class="px-3 py-1 bg-rose-500/20 text-rose-300 rounded-full text-xs font-semibold border border-rose-500/30">Google Live Voice • Алина & Коуч</span>
+                <h2 id="liveTitleText" class="text-xl sm:text-2xl font-bold mt-2 bg-gradient-to-r from-rose-300 via-pink-300 to-amber-200 bg-clip-text text-transparent">Живой разговор</h2>
+                <p id="liveSubtitleText" class="text-xs text-slate-300 mt-1 max-w-md mx-auto">Коуч слушает ваш голос в реальном времени и отвечает емко, глубоко и бережно</p>
+                <div id="liveSwitchToCoachBtn" class="hidden mt-2">
+                    <button onclick="switchToCoachLiveMode()" class="text-xs px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-amber-200 transition">
+                        🔄 Вернуться к коучу-психологу
+                    </button>
+                </div>
             </div>
 
             <!-- ИНТЕРАКТИВНЫЙ АВАТАР КОУЧА С АУДИО-ВИЗУАЛИЗАТОРОМ -->

@@ -783,9 +783,9 @@ class LingoGameEngine {
 
                 <!-- Действия после урока -->
                 <div class="w-full space-y-2 pt-1">
-                    <button onclick="talkToCoachForLesson(${this.currentLessonId})" 
-                            class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-extrabold text-xs uppercase tracking-wider border-b-4 border-purple-800 active:border-b-0 transition shadow-md flex items-center justify-center gap-2">
-                        <span>💬 Ролевой диалог с ИИ-коучем ➔</span>
+                    <button onclick="startLiveGermanCoach(${this.currentLessonId})" 
+                            class="w-full py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-95 text-white rounded-2xl font-black text-xs uppercase tracking-wider border-b-4 border-purple-800 active:border-b-0 transition shadow-md flex items-center justify-center gap-2">
+                        <span>🎙️ Этап 4: Live Voice диалог с коучем ➔</span>
                     </button>
                     <button onclick="lingoEngine.startLesson(${this.currentLessonId + 1}, (window.allGermanCourseData ? window.allGermanCourseData.lessons : []))" 
                             class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-extrabold text-xs uppercase tracking-wider border-b-4 border-emerald-600 active:border-b-0 transition shadow-md">
@@ -858,29 +858,44 @@ class LingoGameEngine {
                 buttonClass = 'bg-amber-400 border-amber-500 text-white ring-4 ring-amber-200 animate-pulse';
                 icon = '⭐';
             } else {
-                buttonClass = 'bg-sky-500 border-sky-600 text-white hover:bg-sky-600';
-                icon = (idx % 3 === 0) ? '📖' : (idx % 3 === 1 ? '⭐' : '💬');
+                // Разнообразие иконок Duolingo
+                if ((idx + 1) % 5 === 0) {
+                    buttonClass = 'bg-purple-500 border-purple-600 text-white hover:bg-purple-600';
+                    icon = '🎁';
+                } else if (idx % 3 === 0) {
+                    buttonClass = 'bg-sky-500 border-sky-600 text-white hover:bg-sky-600';
+                    icon = '📖';
+                } else if (idx % 3 === 1) {
+                    buttonClass = 'bg-amber-500 border-amber-600 text-white hover:bg-amber-600';
+                    icon = '⭐';
+                } else {
+                    buttonClass = 'bg-rose-500 border-rose-600 text-white hover:bg-rose-600';
+                    icon = '💬';
+                }
             }
 
             nodesHtml += `
-                <div class="flex flex-col items-center my-3 transition-transform ${offsetClass} relative group">
+                <!-- Соединительная пунктирная линия между кружками -->
+                ${idx > 0 ? `<div class="w-1.5 h-6 border-l-2 border-dashed border-slate-300 opacity-70"></div>` : ''}
+
+                <div class="flex flex-col items-center my-1 transition-transform ${offsetClass} relative group">
                     <!-- Сова рядом с текущим уроком -->
                     ${isCurrent ? `
-                        <div class="absolute -left-16 sm:-left-20 top-0 flex flex-col items-center animate-bounce">
+                        <div class="absolute -left-16 sm:-left-20 top-0 flex flex-col items-center animate-bounce z-20">
                             <img src="/static/duolingo/mascot.svg" class="w-12 h-12" alt="Duolingo Owl">
-                            <span class="text-[9px] bg-amber-100 text-amber-800 font-extrabold px-1.5 py-0.5 rounded-full mt-0.5 border border-amber-300">СТАРТ</span>
+                            <span class="text-[9px] bg-amber-100 text-amber-800 font-extrabold px-1.5 py-0.5 rounded-full mt-0.5 border border-amber-300 shadow-2xs">СТАРТ</span>
                         </div>
                     ` : ''}
 
-                    <!-- Круглая 3D-кнопка уровня -->
+                    <!-- Круглая 3D-кнопка уровня Duolingo -->
                     <button onclick="lingoEngine.openLessonModal(${l.day || l.id})"
-                            class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-b-6 active:border-b-2 flex items-center justify-center text-2xl sm:text-3xl font-black shadow-lg transition active:scale-95 ${buttonClass}">
+                            class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-b-6 active:border-b-2 flex items-center justify-center text-2xl sm:text-3xl font-black shadow-lg transition active:scale-95 cursor-pointer ${buttonClass}">
                         <span>${icon}</span>
                     </button>
 
                     <!-- Подпись урока -->
                     <div class="mt-1 text-center max-w-[130px]">
-                        <span class="text-[10px] font-black text-slate-700 bg-white/90 px-2 py-0.5 rounded-md border border-slate-200 shadow-2xs block truncate">
+                        <span class="text-[10px] font-black text-slate-700 bg-white/95 px-2 py-0.5 rounded-md border border-slate-200 shadow-2xs block truncate">
                             День ${l.day || l.id}: ${escapeHtml(l.title.replace(/^День \d+:\s*/, ''))}
                         </span>
                     </div>
@@ -905,7 +920,7 @@ class LingoGameEngine {
                 </div>
 
                 <!-- ДОРОЖКА УРОКОВ (THE PATH) -->
-                <div class="py-4 flex flex-col items-center">
+                <div class="py-2 flex flex-col items-center">
                     ${nodesHtml}
                 </div>
             </div>
@@ -941,12 +956,12 @@ class LingoGameEngine {
 
                 <div class="space-y-2 pt-1">
                     <button onclick="document.getElementById('lingoLessonModal').remove(); lingoEngine.startLesson(${lesson.day || lesson.id}, window.allGermanCourseData.lessons)"
-                            class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-wider border-b-4 border-emerald-600 active:border-b-0 shadow-md transition">
-                        ▶ Начать урок (+20 XP)
+                            class="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-wider border-b-4 border-emerald-600 active:border-b-0 shadow-md transition">
+                        ▶ Начать интерактивный урок (+20 XP)
                     </button>
-                    <button onclick="document.getElementById('lingoLessonModal').remove(); talkToCoachForLesson(${lesson.day || lesson.id})"
-                            class="w-full py-2.5 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-xl font-bold text-xs transition">
-                        💬 Потренировать в диалоге с коучем
+                    <button onclick="startLiveGermanCoach(${lesson.day || lesson.id})"
+                            class="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-95 text-white rounded-2xl font-black text-xs uppercase tracking-wider border-b-4 border-purple-800 active:border-b-0 shadow-md transition flex items-center justify-center gap-1.5">
+                        <span>🎙️ Live Voice диалог с коучем (4.5 сек пауза)</span>
                     </button>
                     <button onclick="document.getElementById('lingoLessonModal').remove()"
                             class="w-full py-2 text-slate-400 hover:text-slate-600 font-semibold text-xs transition">

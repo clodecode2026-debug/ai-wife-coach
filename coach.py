@@ -86,7 +86,33 @@ class AIFeminineCoach:
             except Exception as e:
                 logger.error(f"Ошибка инициализации GenAI Client: {e}")
 
-    def _get_system_prompt(self, dossier: Optional[Dict[str, Any]] = None, is_voice_mode: bool = False) -> str:
+    def _get_system_prompt(self, dossier: Optional[Dict[str, Any]] = None, is_voice_mode: bool = False, german_context: Optional[Dict[str, Any]] = None) -> str:
+        # СПЕЦИАЛЬНЫЙ РЕЖИМ: НЕМЕЦКИЙ ЯЗЫКОВОЙ РЕЧЕВОЙ КОУЧ (НЕ СБИВАЕТ ПСИХОЛОГА)
+        if german_context:
+            lesson_title = german_context.get("title", "")
+            lesson_level = german_context.get("level", "A1+")
+            lesson_grammar = german_context.get("grammar", "")
+            lesson_situation = german_context.get("situation", "")
+            vocab_list = [v.get("german", "") for v in german_context.get("vocabulary", [])[:6]]
+            vocab_sample = ", ".join(vocab_list)
+
+            return f"""Ты — персональный речевой тренажер немецкого языка (Sprachcoach) для Алины.
+Сейчас проходит 5-минутная разговорная тренировка Live Voice по конкретному уроку:
+УРОК: {lesson_title} (Уровень {lesson_level})
+СИТУАЦИЯ В ГЕРМАНИИ: {lesson_situation}
+ГРАММАТИЧЕСКИЙ ФОКУС: {lesson_grammar}
+КЛЮЧЕВЫЕ ФРАЗЫ: {vocab_sample}
+
+ПРАВИЛА ТВОЕГО ПОВЕДЕНИЯ:
+1. Забудь режим психолога! В этой сессии ты — доброжелательный немецкий собеседник (чиновник, врач, продавец, коллега или терпеливый наставник).
+2. Общайся на простом, естественном немецком языке уровня {lesson_level}.
+3. ОБЯЗАТЕЛЬНО: к каждой своей немецкой фразе сразу давай в скобках понятный перевод на русский язык и подсказку, как ответить.
+4. Отвечай кратко (1-2 короткие фразы на немецком + русский перевод в скобках + 1 вопрос), чтобы Алина не перегружалась и успевала отвечать.
+5. Если Алина делает паузы или запинается — дай ей время, не перебивай, подбодри: "Keine Panik! Du schaffst das!".
+6. Если Алина делает ошибку в порядке слов или падеже — мягко подскажи: "Отличная мысль! По-немецки правильнее сказать: [...] Повтори за мной!".
+7. Хвали за каждое сказанное слово: "Toll, Alina!", "Super gemacht!".
+"""
+
         dossier_data = dossier or {
             "name": "Алина",
             "age": 35,
@@ -135,10 +161,10 @@ class AIFeminineCoach:
 {kb_prompt}
 """
 
-    def generate_response(self, message: str, history: List[Dict[str, str]] = None, dossier: Optional[Dict[str, Any]] = None, is_voice_mode: bool = False) -> str:
-        system_prompt = self._get_system_prompt(dossier, is_voice_mode)
-        # Гибкий лимит токенов: для голоса до 180 токенов (гибкий живой ответ), для текста до 500 токенов (полноценный ответ)
-        max_tokens = 180 if is_voice_mode else 500
+    def generate_response(self, message: str, history: List[Dict[str, str]] = None, dossier: Optional[Dict[str, Any]] = None, is_voice_mode: bool = False, german_context: Optional[Dict[str, Any]] = None) -> str:
+        system_prompt = self._get_system_prompt(dossier, is_voice_mode, german_context)
+        # Гибкий лимит токенов: для немецкого 140 токенов (четкий живой ответ), для голоса 180, для текста 500
+        max_tokens = 140 if german_context else (180 if is_voice_mode else 500)
 
         # Актуальный каскад на 7 октября 2026 года:
         # Приоритет проверенным мгновенным моделям дня (gpt-4o ~5.5s, gemini-3.8 ~7s)

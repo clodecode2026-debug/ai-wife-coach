@@ -1219,6 +1219,69 @@ class LingoGameEngine {
         return mistakes.length;
     }
 
+    // =========================================================================
+    // 9. ТРЕНАЖЕР СПРЯЖЕНИЯ ГЛАГОЛОВ (VERB CONJUGATOR WIDGET)
+    // =========================================================================
+    showVerbConjugation(verb, russian) {
+        const cleanVerb = verb.toLowerCase().trim();
+        // Стандартные и неправильные формы немецких глаголов
+        const stem = cleanVerb.replace(/(en|n)$/, '');
+        let conjugations = {
+            'ich': stem + 'e',
+            'du': stem + 'st',
+            'er / sie / es': stem + 't',
+            'wir': cleanVerb,
+            'ihr': stem + 't',
+            'sie / Sie': cleanVerb
+        };
+
+        // Специальные частые глаголы уровня A1-B1
+        if (cleanVerb === 'sein') {
+            conjugations = { 'ich': 'bin', 'du': 'bist', 'er / sie / es': 'ist', 'wir': 'sind', 'ihr': 'seid', 'sie / Sie': 'sind' };
+        } else if (cleanVerb === 'haben') {
+            conjugations = { 'ich': 'habe', 'du': 'hast', 'er / sie / es': 'hat', 'wir': 'haben', 'ihr': 'habt', 'sie / Sie': 'haben' };
+        } else if (cleanVerb === 'sprechen') {
+            conjugations = { 'ich': 'spreche', 'du': 'sprichst', 'er / sie / es': 'spricht', 'wir': 'sprechen', 'ihr': 'sprecht', 'sie / Sie': 'sprechen' };
+        } else if (cleanVerb === 'sehen') {
+            conjugations = { 'ich': 'sehe', 'du': 'siehst', 'er / sie / es': 'sieht', 'wir': 'sehen', 'ihr': 'seht', 'sie / Sie': 'sehen' };
+        } else if (cleanVerb === 'wissen') {
+            conjugations = { 'ich': 'weiß', 'du': 'weißt', 'er / sie / es': 'weiß', 'wir': 'wissen', 'ihr': 'wisst', 'sie / Sie': 'wissen' };
+        }
+
+        const modal = document.createElement('div');
+        modal.id = 'verbConjugationModal';
+        modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in';
+        modal.innerHTML = `
+            <div class="bg-white rounded-3xl p-5 max-w-sm w-full shadow-2xl border border-rose-100">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                    <div>
+                        <span class="text-[10px] font-black uppercase tracking-wider text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">Глагол • Präsens</span>
+                        <h3 class="font-black text-lg text-slate-800 mt-1">${escapeHtml(verb)}</h3>
+                        <p class="text-xs text-slate-500">${escapeHtml(russian || '')}</p>
+                    </div>
+                    <button onclick="document.getElementById('verbConjugationModal').remove()" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+                </div>
+
+                <div class="space-y-1.5 py-1">
+                    ${Object.entries(conjugations).map(([pronoun, form]) => `
+                        <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                            <span class="font-bold text-slate-500">${pronoun}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="font-black text-slate-800 text-sm">${form}</span>
+                                <button onclick="playTTS(this, '${escapeQuotes(pronoun + ' ' + form)}', 'de-DE-KatjaNeural')" class="p-1 text-[11px] bg-white rounded border border-slate-200 shadow-2xs hover:bg-slate-100">🔊</button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <button onclick="document.getElementById('verbConjugationModal').remove()" class="w-full mt-4 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl text-xs transition shadow-sm">
+                    Понятно!
+                </button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
     async syncProgressWithSupabase() {
         try {
             await fetch('/api/german/progress', {

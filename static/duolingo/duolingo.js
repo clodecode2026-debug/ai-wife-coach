@@ -229,6 +229,43 @@ class LingoGameEngine {
             });
         }
 
+        // 7. ТИП: ARTICLE QUIZ (Определение рода и артикля der/die/das)
+        const nounsWithArticles = vocab.filter(v => v.article && ['der', 'die', 'das'].includes(v.article.toLowerCase()));
+        if (nounsWithArticles.length > 0) {
+            nounsWithArticles.slice(0, 2).forEach((noun, nIdx) => {
+                const cleanWord = noun.german.replace(/^(der|die|das)\s+/i, '').trim();
+                const correctArt = noun.article.toLowerCase();
+                challenges.push({
+                    type: 'SELECT',
+                    question: `Какой артикль у слова «${cleanWord}» (${noun.russian})?`,
+                    mascotText: 'В немецком род существительного нужно запоминать вместе со словом!',
+                    options: [
+                        { text: `der ${cleanWord} (мужской род)`, isCorrect: correctArt === 'der', voiceHint: 'de-DE-KatjaNeural' },
+                        { text: `die ${cleanWord} (женский род)`, isCorrect: correctArt === 'die', voiceHint: 'de-DE-KatjaNeural' },
+                        { text: `das ${cleanWord} (средний род)`, isCorrect: correctArt === 'das', voiceHint: 'de-DE-KatjaNeural' }
+                    ],
+                    correctOptionText: `${correctArt} ${cleanWord} (${correctArt === 'der' ? 'мужской' : correctArt === 'die' ? 'женский' : 'средний'} род)`,
+                    voiceHint: noun.voice_hint || 'de-DE-KatjaNeural',
+                    correctExplanation: `Верно! ${noun.article} ${cleanWord} — ${noun.russian}. ${noun.example ? `Пример: ${noun.example}` : ''}`
+                });
+            });
+        }
+
+        // 8. ТИП: SECOND MATCH PAIRS (Закрепление расширенного словарного запаса)
+        if (vocab.length >= 8) {
+            const pairSlice2 = vocab.slice(4, 8);
+            const leftCards2 = pairSlice2.map((v, idx) => ({ id: `L2_${idx}`, pairId: idx + 10, side: 'de', text: v.german, voiceHint: v.voice_hint }));
+            const rightCards2 = pairSlice2.map((v, idx) => ({ id: `R2_${idx}`, pairId: idx + 10, side: 'ru', text: v.russian }));
+
+            challenges.push({
+                type: 'MATCH_PAIRS',
+                question: 'Закрепление слов: соедините пары слов:',
+                mascotText: 'Отлично справляешься! Соедини оставшиеся слова урока:',
+                cards: [...leftCards2, ...rightCards2].sort(() => 0.5 - Math.random()),
+                totalPairs: 4
+            });
+        }
+
         return challenges;
     }
 
@@ -977,45 +1014,94 @@ class LingoGameEngine {
         const allLessons = window.allGermanCourseData?.lessons || [];
         const unitLessons = allLessons.filter(l => (l.unit_id == unitId));
         const sampleLesson = unitLessons[0] || allLessons[0];
+        const allUnits = window.allGermanCourseData?.units || [];
+        const unitMeta = allUnits.find(u => u.id == unitId);
+        const gb = sampleLesson.guidebook || (unitMeta ? unitMeta.guidebook : null);
 
         const modal = document.createElement('div');
         modal.id = 'lingoGuidebookModal';
         modal.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in';
         modal.innerHTML = `
-            <div class="bg-white rounded-3xl p-5 sm:p-6 max-w-lg w-full max-h-[85vh] overflow-y-auto shadow-2xl border-2 border-slate-200 space-y-4">
+            <div class="bg-white rounded-3xl p-5 sm:p-6 max-w-lg w-full max-h-[88vh] overflow-y-auto shadow-2xl border-2 border-slate-200 space-y-4">
                 <div class="flex items-center justify-between border-b pb-3 border-slate-100">
                     <h3 class="text-base font-black text-slate-800 flex items-center gap-2">
-                        <span>📖 Справочник грамматики: Юнит ${unitId}</span>
+                        <span>📖 ${escapeHtml(gb?.title || `Справочник: Юнит ${unitId}`)}</span>
                     </h3>
-                    <button onclick="document.getElementById('lingoGuidebookModal').remove()" class="text-slate-400 hover:text-slate-600 font-bold text-lg p-1">
+                    <button onclick="document.getElementById('lingoGuidebookModal').remove()" class="text-slate-400 hover:text-slate-600 font-bold text-lg p-1 cursor-pointer">
                         ✕
                     </button>
                 </div>
 
-                <div class="bg-amber-50 p-3.5 rounded-2xl border border-amber-200 text-xs text-amber-900 space-y-1">
-                    <span class="font-bold block">💡 Ключевое правило:</span>
-                    <p>${escapeHtml(sampleLesson.rule_explanation || sampleLesson.grammar)}</p>
+                <!-- Грамматическое объяснение -->
+                <div class="bg-amber-50/80 p-3.5 rounded-2xl border border-amber-200 text-xs text-amber-950 space-y-1.5 leading-relaxed">
+                    <div class="font-black flex items-center gap-1.5 text-amber-900">
+                        <span>📚</span>
+                        <span>Грамматическое правило:</span>
+                    </div>
+                    <p class="whitespace-pre-line">${escapeHtml(gb?.grammar_summary || sampleLesson.rule_explanation || sampleLesson.grammar)}</p>
                 </div>
 
-                <div class="space-y-2">
-                    <span class="text-xs font-bold text-slate-700">Озвученные примеры темы:</span>
-                    ${(sampleLesson.vocabulary || []).slice(0, 5).map(v => `
-                        <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs flex items-center justify-between gap-2">
-                            <div>
-                                <span class="font-bold text-slate-800">${escapeHtml(v.german)}</span>
-                                <span class="text-slate-500 block text-[11px]">${escapeHtml(v.russian)}</span>
-                            </div>
-                            <button onclick="playTTS(this, '${escapeQuotes(v.german)}', '${v.voice_hint || 'de-DE-KatjaNeural'}')"
-                                    class="p-1.5 bg-white rounded-lg border border-slate-200 shadow-2xs hover:bg-slate-100 text-xs">
-                                🔊
-                            </button>
+                <!-- Лайфхак для Германии -->
+                ${gb?.tips ? `
+                    <div class="bg-sky-50/80 p-3 rounded-2xl border border-sky-200 text-xs text-sky-950 space-y-1 leading-relaxed">
+                        <div class="font-black flex items-center gap-1.5 text-sky-900">
+                            <span>💡</span>
+                            <span>Лайфхак для жизни в Германии:</span>
                         </div>
-                    `).join('')}
+                        <p>${escapeHtml(gb.tips)}</p>
+                    </div>
+                ` : ''}
+
+                <!-- Ключевые фразы -->
+                ${gb?.key_phrases && gb.key_phrases.length ? `
+                    <div class="space-y-1.5">
+                        <span class="text-xs font-black text-slate-700 block">⭐ Ключевые конструкции раздела:</span>
+                        <div class="space-y-1">
+                            ${gb.key_phrases.map(kp => `
+                                <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs flex items-center justify-between gap-2">
+                                    <span class="font-medium text-slate-800">${escapeHtml(kp)}</span>
+                                    <button onclick="playTTS(this, '${escapeQuotes(kp.replace(/\s*\([^)]*\)/g, ''))}', 'de-DE-KatjaNeural')"
+                                            class="p-1 px-2 bg-white rounded-lg border border-slate-200 shadow-2xs hover:bg-slate-100 text-xs cursor-pointer">
+                                        🔊
+                                    </button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- Словарь юнита с цветовыми артиклями -->
+                <div class="space-y-2">
+                    <span class="text-xs font-black text-slate-700 block">🔤 Словарь раздела (с артиклями):</span>
+                    <div class="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                        ${(sampleLesson.vocabulary || []).map(v => {
+                            let badge = '';
+                            if (v.article === 'der') badge = '<span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-200 mr-1.5">der (м)</span>';
+                            else if (v.article === 'die') badge = '<span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200 mr-1.5">die (ж)</span>';
+                            else if (v.article === 'das') badge = '<span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 mr-1.5">das (ср)</span>';
+
+                            return `
+                                <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs flex items-center justify-between gap-2">
+                                    <div class="truncate">
+                                        <div class="flex items-center">
+                                            ${badge}
+                                            <span class="font-black text-slate-800">${escapeHtml(v.german)}</span>
+                                        </div>
+                                        <span class="text-slate-500 block text-[11px] truncate mt-0.5">${escapeHtml(v.russian)}</span>
+                                    </div>
+                                    <button onclick="playTTS(this, '${escapeQuotes(v.german)}', '${v.voice_hint || 'de-DE-KatjaNeural'}')"
+                                            class="p-1 px-2 bg-white rounded-lg border border-slate-200 shadow-2xs hover:bg-slate-100 text-xs shrink-0 cursor-pointer">
+                                        🔊
+                                    </button>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
                 </div>
 
                 <button onclick="document.getElementById('lingoGuidebookModal').remove()"
-                        class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition">
-                    Понятно, к урокам!
+                        class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition shadow-md cursor-pointer border-b-4 border-emerald-600 active:border-b-0">
+                    Всё понятно, перейти к практике!
                 </button>
             </div>
         `;

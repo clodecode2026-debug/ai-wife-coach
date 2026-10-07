@@ -343,19 +343,45 @@ function playElementTTS(elId) {
     if (el) playTTS(null, el.textContent);
 }
 
-async function playTTS(btn, text, voice = "ru-RU-SvetlanaNeural") {
+async function playTTS(btn, text, voice) {
     try {
+        const oldText = btn ? btn.textContent : '🔊';
         if (btn) btn.textContent = '⏳';
+
+        // Очищаем от Markdown, звёздочек и эмодзи перед озвучкой
+        let cleanText = (text || '')
+            .replace(/\*\*([^*]+)\*\*/g, '$1')
+            .replace(/\*([^*]+)\*/g, '$1')
+            .replace(/__([^_]+)__/g, '$1')
+            .replace(/_([^_]+)_/g, '$1')
+            .replace(/[*#`~]/g, '')
+            .replace(/[💡🇩🇪🎙️✨⭐🎁📖💬🔥❤️🐢🦉]/g, '')
+            .replace(/\s+/g, ' ').trim();
+
+        // Умный выбор голоса
+        let selectedVoice = voice;
+        if (!selectedVoice) {
+            const hasCyrillic = /[а-яА-ЯёЁ]/.test(cleanText);
+            const hasLatin = /[a-zA-ZäöüßÄÖÜ]/.test(cleanText);
+            if (hasLatin && !hasCyrillic) {
+                selectedVoice = "de-DE-KatjaNeural";
+            } else if (hasLatin && hasCyrillic) {
+                selectedVoice = "de-DE-SeraphinaMultilingualNeural";
+            } else {
+                selectedVoice = "ru-RU-SvetlanaNeural";
+            }
+        }
+
         const res = await fetch('/api/voice/tts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: text, voice: voice })
+            body: JSON.stringify({ text: cleanText, voice: selectedVoice })
         });
         if (!res.ok) throw new Error('TTS failed');
         const blob = await res.blob();
         const audio = new Audio(URL.createObjectURL(blob));
         audio.play();
-        if (btn) btn.textContent = '🔊';
+        if (btn) btn.textContent = oldText;
     } catch (e) {
         console.error(e);
         if (btn) {
@@ -694,10 +720,26 @@ async function playLiveTTS(text) {
             const statusText = document.getElementById('liveStatusText');
             if (statusText) statusText.textContent = '🔊 Коуч отвечает... Пожалуйста, слушайте.';
 
+            // Полная очистка от markdown, звездочек и эмодзи перед синтезом речи
+            let cleanText = (text || '')
+                .replace(/\*\*([^*]+)\*\*/g, '$1')
+                .replace(/\*([^*]+)\*/g, '$1')
+                .replace(/__([^_]+)__/g, '$1')
+                .replace(/_([^_]+)_/g, '$1')
+                .replace(/[*#`~]/g, '')
+                .replace(/«|»/g, '"')
+                .replace(/—|–/g, ' - ')
+                .replace(/[💡🇩🇪🎙️✨⭐🎁📖💬🔥❤️🐢🦉]/g, '')
+                .replace(/\s+/g, ' ').trim();
+
+            const voiceToUse = (liveCoachMode === 'german') 
+                ? "de-DE-SeraphinaMultilingualNeural" 
+                : "ru-RU-SvetlanaNeural";
+
             const res = await fetch('/api/voice/tts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: text, voice: "ru-RU-SvetlanaNeural" })
+                body: JSON.stringify({ text: cleanText, voice: voiceToUse })
             });
             if (!res.ok) {
                 isAITalking = false;
@@ -712,7 +754,11 @@ async function playLiveTTS(text) {
                 isAITalking = false;
                 currentLiveAudio = null;
                 const statusText = document.getElementById('liveStatusText');
-                if (statusText) statusText.textContent = '🎙️ Ваша очередь говорить... Я слушаю!';
+                if (statusText) {
+                    statusText.textContent = (liveCoachMode === 'german') 
+                        ? '🎙️ Ваша очередь говорить по-немецки... (4.5 сек пауза)' 
+                        : '🎙️ Ваша очередь говорить... Я слушаю!';
+                }
                 if (isLiveActive) setTimeout(() => startBrowserSpeechRecognition(), 400);
                 resolve();
             };

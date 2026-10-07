@@ -1,5 +1,6 @@
 import os
 import io
+import re
 import uuid
 import asyncio
 import logging
@@ -180,13 +181,36 @@ async def api_library(q: str = None):
 async def api_psychology_books():
     return get_psychology_books()
 
+def clean_speech_text(text: str) -> str:
+    """Очищает текст от Markdown разметки, звездочек и спецсимволов перед отправкой в TTS."""
+    if not text:
+        return ""
+    # Убираем жирный/курсивный markdown (**слово**, *слово*, __слово__, _слово_)
+    text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)
+    text = re.sub(r'\*([^*]+)\*', r'\1', text)
+    text = re.sub(r'__([^_]+)__', r'\1', text)
+    text = re.sub(r'_([^_]+)_', r'\1', text)
+    # Убираем оставшиеся звёздочки, решётки, тильды и обратные кавычки
+    text = text.replace('*', '').replace('#', '').replace('~', '').replace('`', '')
+    # Убираем эмодзи и спец-глифы
+    text = re.sub(r'[\U00010000-\U0010ffff]', '', text)
+    text = re.sub(r'[\u2600-\u26ff\u2700-\u27bf]', '', text)
+    # Нормализуем кавычки и тире
+    text = text.replace('«', '"').replace('»', '"').replace('—', ' - ').replace('–', ' - ')
+    return re.sub(r'\s+', ' ', text).strip()
+
 @app.post("/api/voice/tts")
 async def api_tts(req: TTSRequest):
     if not HAS_EDGE_TTS:
         raise HTTPException(status_code=500, detail="edge-tts не установлена")
     
     try:
-        communicate = edge_tts.Communicate(req.text, req.voice)
+        clean_text = clean_speech_text(req.text)
+        if not clean_text:
+            return Response(content=b"", media_type="audio/mpeg")
+            
+        voice = req.voice or "ru-RU-SvetlanaNeural"
+        communicate = edge_tts.Communicate(clean_text, voice)
         audio_stream = io.BytesIO()
         async for chunk in communicate.stream():
             if chunk["type"] == "audio":

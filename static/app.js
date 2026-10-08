@@ -238,6 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadGermanCourseData();
     loadLibraryBooks();
     loadDossier();
+    updateAlinaAvatarUI();
     updateLiveSoundUI();
     updateLearnedCountUI();
     updateCourseProgressUI();
@@ -711,11 +712,12 @@ function appendMessage(text, role, scroll = true) {
     
     if (role === 'user') {
         div.className = 'flex items-start justify-end gap-2.5';
+        const userAvatar = getAlinaAvatar();
         div.innerHTML = `
             <div class="bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-2xl p-3.5 max-w-xl text-xs sm:text-sm shadow-sm">
                 <p class="whitespace-pre-wrap">${escapeHtml(text)}</p>
             </div>
-            <div class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs shadow shrink-0">Я</div>
+            <img src="${userAvatar}" alt="Алина" class="alina-chat-avatar w-8 h-8 rounded-full object-cover border border-rose-300 shadow-sm shrink-0">
         `;
     } else {
         div.className = 'flex items-start gap-2.5';
@@ -2610,6 +2612,102 @@ async function saveDossierSettings() {
     } catch(e) {
         alert('Ошибка сохранения досье.');
     }
+}
+
+// ==========================================
+// 8.1 УПРАВЛЕНИЕ АВАТАРОМ И ФОТО АЛИНЫ
+// ==========================================
+function getAlinaAvatar() {
+    return localStorage.getItem('alina_active_avatar') || '/static/img/alina_avatar.jpg';
+}
+
+function setAlinaAvatar(src) {
+    localStorage.setItem('alina_active_avatar', src);
+    updateAlinaAvatarUI();
+    showToastNotification('✨ Аватар Алины успешно обновлен!');
+}
+
+function updateAlinaAvatarUI() {
+    const activeSrc = getAlinaAvatar();
+    const isStudio = activeSrc.includes('studio');
+    
+    // Обновляем все иконки аватара Алины
+    document.querySelectorAll('.alina-chat-avatar').forEach(img => img.src = activeSrc);
+    document.querySelectorAll('.alina-profile-avatar').forEach(img => img.src = activeSrc);
+    
+    const statusEl = document.getElementById('alinaAvatarStatus');
+    if (statusEl) {
+        statusEl.textContent = isStudio 
+            ? '✨ Активный аватар: Studio AI Арт-портрет' 
+            : '✨ Активный аватар: Реальное фото (Ретушь)';
+    }
+
+    const btnReal = document.getElementById('btnAvatarReal');
+    const btnStudio = document.getElementById('btnAvatarStudio');
+    if (btnReal && btnStudio) {
+        if (isStudio) {
+            btnStudio.classList.add('border-rose-400', 'bg-rose-50', 'text-rose-700');
+            btnReal.classList.remove('border-rose-400', 'bg-rose-50', 'text-rose-700');
+        } else {
+            btnReal.classList.add('border-rose-400', 'bg-rose-50', 'text-rose-700');
+            btnStudio.classList.remove('border-rose-400', 'bg-rose-50', 'text-rose-700');
+        }
+    }
+}
+
+let currentModalPortraitType = 'real';
+
+function openPortraitPreviewModal() {
+    const modal = document.getElementById('portraitPreviewModal');
+    if (!modal) return;
+    const isStudio = getAlinaAvatar().includes('studio');
+    switchModalPortrait(isStudio ? 'studio' : 'real');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closePortraitPreviewModal() {
+    const modal = document.getElementById('portraitPreviewModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+
+function switchModalPortrait(type) {
+    currentModalPortraitType = type;
+    const imgEl = document.getElementById('modalPortraitImg');
+    const titleEl = document.getElementById('modalPortraitTitle');
+    const btnReal = document.getElementById('btnModalReal');
+    const btnStudio = document.getElementById('btnModalStudio');
+    
+    if (type === 'studio') {
+        if (imgEl) imgEl.src = '/static/img/alina_studio_portrait.jpg';
+        if (titleEl) titleEl.textContent = 'Портрет Алины — Studio AI ✨';
+        if (btnReal) {
+            btnReal.className = 'flex-1 py-1.5 px-2 bg-slate-100 text-slate-700 font-semibold text-xs rounded-xl hover:bg-rose-50 transition';
+        }
+        if (btnStudio) {
+            btnStudio.className = 'flex-1 py-1.5 px-2 bg-rose-500 text-white font-semibold text-xs rounded-xl shadow-xs transition';
+        }
+    } else {
+        if (imgEl) imgEl.src = '/static/img/alina_portrait.jpg';
+        if (titleEl) titleEl.textContent = 'Портрет Алины — Реальное фото (Ретушь) 💖';
+        if (btnReal) {
+            btnReal.className = 'flex-1 py-1.5 px-2 bg-rose-500 text-white font-semibold text-xs rounded-xl shadow-xs transition';
+        }
+        if (btnStudio) {
+            btnStudio.className = 'flex-1 py-1.5 px-2 bg-slate-100 text-slate-700 font-semibold text-xs rounded-xl hover:bg-rose-50 transition';
+        }
+    }
+}
+
+function applyModalAvatar() {
+    const targetAvatar = currentModalPortraitType === 'studio' 
+        ? '/static/img/alina_studio_avatar.jpg' 
+        : '/static/img/alina_avatar.jpg';
+    setAlinaAvatar(targetAvatar);
+    closePortraitPreviewModal();
 }
 
 // ==========================================

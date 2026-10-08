@@ -155,10 +155,25 @@ class LingoGameEngine {
         if (vocab.length > 0) {
             const item1 = vocab[0];
             const cleanGerman = item1.german.replace(/[.!?]/g, '').trim();
-            const words = cleanGerman.split(/\s+/);
+            let words = cleanGerman.split(/\s+/);
+            let targetSentence = cleanGerman;
+            let questionRu = item1.russian;
+            let correctFull = item1.german;
+
+            // Если фраза короткая (< 3 слов) и есть хороший пример из 3-8 слов — тренируем полноценное предложение
+            if (words.length < 3 && item1.example) {
+                const exClean = item1.example.replace(/[.!?]/g, '').trim();
+                const exWords = exClean.split(/\s+/);
+                if (exWords.length >= 3 && exWords.length <= 8) {
+                    words = exWords;
+                    targetSentence = exClean;
+                    questionRu = item1.example_translation || item1.russian;
+                    correctFull = item1.example;
+                }
+            }
             
             // 2 дистрактора из того же урока
-            const otherWords = vocab.slice(1).flatMap(v => v.german.replace(/[.!?]/g, '').split(/\s+/)).filter(w => !words.includes(w));
+            const otherWords = vocab.slice(1).flatMap(v => (v.example || v.german).replace(/[.!?]/g, '').split(/\s+/)).filter(w => !words.includes(w));
             const extraWords = [...new Set(otherWords)].slice(0, 2);
 
             const allTokens = [...words, ...extraWords].map((word, idx) => ({
@@ -168,13 +183,13 @@ class LingoGameEngine {
 
             challenges.push({
                 type: 'WORD_BANK',
-                question: `Соберите фразу: «${item1.russian}»`,
-                mascotText: 'Вспомни железный порядок слов: глагол на 2-м месте!',
-                targetSentence: cleanGerman,
-                correctFull: item1.german,
+                question: `Соберите фразу: «${questionRu}»`,
+                mascotText: 'Вспомни железный порядок слов: глагол на 2-м месте в главном предложении!',
+                targetSentence: targetSentence,
+                correctFull: correctFull,
                 voiceHint: item1.voice_hint || 'de-DE-KatjaNeural',
                 tokens: allTokens,
-                correctExplanation: `Правильно: ${item1.german} ${item1.transcription ? `(${item1.transcription})` : ''}`
+                correctExplanation: `Правильно: ${correctFull} ${item1.transcription ? `(${item1.transcription})` : ''}`
             });
         }
 
@@ -227,8 +242,23 @@ class LingoGameEngine {
         if (vocab.length > 3) {
             const item4 = vocab[3];
             const cleanGerman = item4.german.replace(/[.!?]/g, '').trim();
-            const words = cleanGerman.split(/\s+/);
-            const otherWords = vocab.slice(0, 3).flatMap(v => v.german.replace(/[.!?]/g, '').split(/\s+/)).filter(w => !words.includes(w));
+            let words = cleanGerman.split(/\s+/);
+            let targetSentence = cleanGerman;
+            let questionRu = item4.russian;
+            let correctFull = item4.german;
+
+            if (words.length < 3 && item4.example) {
+                const exClean = item4.example.replace(/[.!?]/g, '').trim();
+                const exWords = exClean.split(/\s+/);
+                if (exWords.length >= 3 && exWords.length <= 8) {
+                    words = exWords;
+                    targetSentence = exClean;
+                    questionRu = item4.example_translation || item4.russian;
+                    correctFull = item4.example;
+                }
+            }
+
+            const otherWords = vocab.slice(0, 3).flatMap(v => (v.example || v.german).replace(/[.!?]/g, '').split(/\s+/)).filter(w => !words.includes(w));
             const extraWords = [...new Set(otherWords)].slice(0, 2);
 
             const allTokens = [...words, ...extraWords].map((word, idx) => ({
@@ -238,28 +268,37 @@ class LingoGameEngine {
 
             challenges.push({
                 type: 'WORD_BANK',
-                question: `Соберите фразу: «${item4.russian}»`,
+                question: `Соберите фразу: «${questionRu}»`,
                 mascotText: 'Собери предложение из плашек в правильном порядке:',
-                targetSentence: cleanGerman,
-                correctFull: item4.german,
+                targetSentence: targetSentence,
+                correctFull: correctFull,
                 voiceHint: item4.voice_hint || 'de-DE-ConradNeural',
                 tokens: allTokens,
-                correctExplanation: `Отлично! ${item4.german} (${item4.russian})`
+                correctExplanation: `Отлично! ${correctFull} (${questionRu})`
             });
         }
 
         // 6. ТИП: DIALOGUE SIMULATOR (Реальная ситуация в Германии)
         if (lesson.dialogue_simulator) {
+            const currentEx = lesson.dialogue_simulator.example;
+            const otherDialogueExamples = (allLessons || [])
+                .filter(l => l.dialogue_simulator && l.dialogue_simulator.example && l.dialogue_simulator.example !== currentEx)
+                .map(l => l.dialogue_simulator.example);
+            
+            const shuffledOther = [...new Set(otherDialogueExamples)].sort(() => 0.5 - Math.random());
+            const dist1 = shuffledOther[0] || 'Könnten Sie mir bitte später dabei behilflich sein?';
+            const dist2 = shuffledOther[1] || 'Entschuldigung, ich muss das kurz nachsehen.';
+
             challenges.push({
                 type: 'DIALOGUE',
                 question: `Ситуация в Германии: ${lesson.dialogue_simulator.situation}`,
                 mascotText: 'Что лучше всего сказать в этой ситуации?',
                 options: [
-                    { text: lesson.dialogue_simulator.example, isCorrect: true, voiceHint: 'de-DE-KatjaNeural' },
-                    { text: 'Entschuldigung, ich habe leider keine Zeit dafür.', isCorrect: false },
-                    { text: 'Das ist mir egal, vielen Dank.', isCorrect: false }
+                    { text: currentEx, isCorrect: true, voiceHint: 'de-DE-KatjaNeural' },
+                    { text: dist1, isCorrect: false },
+                    { text: dist2, isCorrect: false }
                 ].sort(() => 0.5 - Math.random()),
-                correctOptionText: lesson.dialogue_simulator.example,
+                correctOptionText: currentEx,
                 voiceHint: 'de-DE-KatjaNeural',
                 correctExplanation: `💡 Совет коуча: ${lesson.dialogue_simulator.tips}`
             });
@@ -687,7 +726,9 @@ class LingoGameEngine {
 
         if (challenge.type === 'WORD_BANK') {
             const assembled = this.wordBankSelected.map(t => t.text).join(' ').trim();
-            isCorrect = assembled.toLowerCase() === challenge.targetSentence.toLowerCase();
+            const cleanA = assembled.replace(/[,.!?]/g, '').trim().toLowerCase();
+            const cleanT = challenge.targetSentence.replace(/[,.!?]/g, '').trim().toLowerCase();
+            isCorrect = cleanA === cleanT;
         } else if (challenge.type === 'MATCH_PAIRS') {
             // Для пар проверка автоматическая при кликах
             isCorrect = this.matchedPairsCount >= challenge.totalPairs;
@@ -874,10 +915,16 @@ class LingoGameEngine {
                             class="w-full py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-95 text-white rounded-2xl font-black text-xs uppercase tracking-wider border-b-4 border-purple-800 active:border-b-0 transition shadow-md flex items-center justify-center gap-2">
                         <span>🎙️ Этап 4: Live Voice диалог с коучем ➔</span>
                     </button>
-                    <button onclick="lingoEngine.startLesson(${this.currentLessonId + 1}, (window.allGermanCourseData ? window.allGermanCourseData.lessons : []))" 
-                            class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-extrabold text-xs uppercase tracking-wider border-b-4 border-emerald-600 active:border-b-0 transition shadow-md">
-                        Следующий урок Duolingo (День ${this.currentLessonId + 1}) ➔
-                    </button>
+                    ${this.currentLessonId < 180 ? `
+                        <button onclick="lingoEngine.startLesson(${this.currentLessonId + 1}, (window.allGermanCourseData ? window.allGermanCourseData.lessons : []))" 
+                                class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-extrabold text-xs uppercase tracking-wider border-b-4 border-emerald-600 active:border-b-0 transition shadow-md">
+                            Следующий урок Duolingo (День ${this.currentLessonId + 1}) ➔
+                        </button>
+                    ` : `
+                        <div class="p-3 bg-emerald-100 text-emerald-800 rounded-2xl font-black text-xs">
+                            🏆 Вы успешно завершили весь 180-дневный курс немецкого B1! Гордимся вами!
+                        </div>
+                    `}
                     <button onclick="lingoEngine.exitQuiz()" 
                             class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition">
                         🗺️ Вернуться к карте обучения
@@ -919,11 +966,6 @@ class LingoGameEngine {
         const currentLevel = window.currentGermanLevel || localStorage.getItem('ai_coach_german_level') || 'A1+';
         const filteredLessons = allLessons.filter(l => l.level === currentLevel);
 
-        // Находим текущий активный юнит
-        const currentLesson = allLessons.find(l => (l.day == this.currentLessonId || l.id == this.currentLessonId)) || filteredLessons[0] || allLessons[0];
-        const currentUnitId = currentLesson.unit_id || 1;
-        const currentUnitTitle = currentLesson.unit_title || `Юнит ${currentUnitId}`;
-
         // Цвета юнитов
         const unitColors = [
             'from-emerald-500 to-teal-600 border-emerald-600',
@@ -932,91 +974,124 @@ class LingoGameEngine {
             'from-amber-500 to-orange-600 border-amber-600',
             'from-rose-500 to-pink-600 border-rose-600'
         ];
-        const colorClass = unitColors[(currentUnitId - 1) % unitColors.length];
 
         // Змейка уроков: смещения кружков влево-вправо (как в мобильном Duolingo)
         const offsets = ['translate-x-0', '-translate-x-8', 'translate-x-0', 'translate-x-8', 'translate-x-0'];
 
-        let nodesHtml = '';
-        filteredLessons.forEach((l, idx) => {
-            const isCompleted = this.completedLessons.includes(l.day || l.id);
-            const isCurrent = (l.day || l.id) === this.currentLessonId;
-            const offsetClass = offsets[idx % offsets.length];
+        // Группируем уроки текущего уровня по разделам (юнитам)
+        const unitsMap = new Map();
+        filteredLessons.forEach(l => {
+            const uId = l.unit_id || Math.ceil((l.day || l.id) / 5);
+            if (!unitsMap.has(uId)) {
+                unitsMap.set(uId, []);
+            }
+            unitsMap.get(uId).push(l);
+        });
 
-            let buttonClass = 'bg-slate-200 border-slate-300 text-slate-400';
-            let icon = '🔒';
-            if (isCompleted) {
-                buttonClass = 'bg-emerald-500 border-emerald-600 text-white shadow-emerald-200';
-                icon = '✓';
-            } else if (isCurrent) {
-                buttonClass = 'bg-amber-400 border-amber-500 text-white ring-4 ring-amber-200 animate-pulse';
-                icon = '⭐';
-            } else {
-                // Разнообразие иконок Duolingo
-                if ((idx + 1) % 5 === 0) {
-                    buttonClass = 'bg-purple-500 border-purple-600 text-white hover:bg-purple-600';
-                    icon = '🎁';
-                } else if (idx % 3 === 0) {
-                    buttonClass = 'bg-sky-500 border-sky-600 text-white hover:bg-sky-600';
-                    icon = '📖';
-                } else if (idx % 3 === 1) {
-                    buttonClass = 'bg-amber-500 border-amber-600 text-white hover:bg-amber-600';
+        // Быстрое переключение уровней прямо в Duolingo
+        const levelSwitcherHtml = `
+            <div class="flex items-center justify-center gap-1.5 p-1 bg-slate-100/90 rounded-2xl mb-4 max-w-sm mx-auto shadow-inner border border-slate-200">
+                <button onclick="if(typeof setGermanLevel==='function') setGermanLevel('A1+');" class="flex-1 py-1.5 px-2 text-xs font-black rounded-xl transition ${currentLevel === 'A1+' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}">
+                    A1+ Старт (30)
+                </button>
+                <button onclick="if(typeof setGermanLevel==='function') setGermanLevel('A2');" class="flex-1 py-1.5 px-2 text-xs font-black rounded-xl transition ${currentLevel === 'A2' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}">
+                    A2 Быт (60)
+                </button>
+                <button onclick="if(typeof setGermanLevel==='function') setGermanLevel('B1');" class="flex-1 py-1.5 px-2 text-xs font-black rounded-xl transition ${currentLevel === 'B1' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}">
+                    B1 Профи (90)
+                </button>
+            </div>
+        `;
+
+        let sectionsHtml = '';
+        unitsMap.forEach((uLessons, unitId) => {
+            const firstLesson = uLessons[0];
+            const unitTitle = firstLesson.unit_title || `Раздел ${unitId}`;
+            const colorClass = unitColors[(unitId - 1) % unitColors.length];
+
+            let nodesHtml = '';
+            uLessons.forEach((l, idx) => {
+                const isCompleted = this.completedLessons.includes(l.day || l.id);
+                const isCurrent = (l.day || l.id) === this.currentLessonId;
+                const offsetClass = offsets[idx % offsets.length];
+
+                let buttonClass = 'bg-slate-200 border-slate-300 text-slate-400';
+                let icon = '🔒';
+                if (isCompleted) {
+                    buttonClass = 'bg-emerald-500 border-emerald-600 text-white shadow-emerald-200';
+                    icon = '✓';
+                } else if (isCurrent) {
+                    buttonClass = 'bg-amber-400 border-amber-500 text-white ring-4 ring-amber-200 animate-pulse';
                     icon = '⭐';
                 } else {
-                    buttonClass = 'bg-rose-500 border-rose-600 text-white hover:bg-rose-600';
-                    icon = '💬';
+                    if ((idx + 1) % 5 === 0) {
+                        buttonClass = 'bg-purple-500 border-purple-600 text-white hover:bg-purple-600';
+                        icon = '🎁';
+                    } else if (idx % 3 === 0) {
+                        buttonClass = 'bg-sky-500 border-sky-600 text-white hover:bg-sky-600';
+                        icon = '📖';
+                    } else if (idx % 3 === 1) {
+                        buttonClass = 'bg-amber-500 border-amber-600 text-white hover:bg-amber-600';
+                        icon = '⭐';
+                    } else {
+                        buttonClass = 'bg-rose-500 border-rose-600 text-white hover:bg-rose-600';
+                        icon = '💬';
+                    }
                 }
-            }
 
-            nodesHtml += `
-                <!-- Соединительная пунктирная линия между кружками -->
-                ${idx > 0 ? `<div class="w-1.5 h-6 border-l-2 border-dashed border-slate-300 opacity-70"></div>` : ''}
+                nodesHtml += `
+                    ${idx > 0 ? `<div class="w-1.5 h-6 border-l-2 border-dashed border-slate-300 opacity-70"></div>` : ''}
 
-                <div class="flex flex-col items-center my-1 transition-transform ${offsetClass} relative group">
-                    <!-- Сова рядом с текущим уроком -->
-                    ${isCurrent ? `
-                        <div class="absolute -left-16 sm:-left-20 top-0 flex flex-col items-center animate-bounce z-20">
-                            <img src="/static/duolingo/mascot.svg" class="w-12 h-12" alt="Duolingo Owl">
-                            <span class="text-[9px] bg-amber-100 text-amber-800 font-extrabold px-1.5 py-0.5 rounded-full mt-0.5 border border-amber-300 shadow-2xs">СТАРТ</span>
+                    <div class="flex flex-col items-center my-1 transition-transform ${offsetClass} relative group">
+                        ${isCurrent ? `
+                            <div class="absolute -left-16 sm:-left-20 top-0 flex flex-col items-center animate-bounce z-20">
+                                <img src="/static/duolingo/mascot.svg" class="w-12 h-12" alt="Duolingo Owl">
+                                <span class="text-[9px] bg-amber-100 text-amber-800 font-extrabold px-1.5 py-0.5 rounded-full mt-0.5 border border-amber-300 shadow-2xs">СТАРТ</span>
+                            </div>
+                        ` : ''}
+
+                        <button onclick="lingoEngine.openLessonModal(${l.day || l.id})"
+                                class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-b-6 active:border-b-2 flex items-center justify-center text-2xl sm:text-3xl font-black shadow-lg transition active:scale-95 cursor-pointer ${buttonClass}">
+                            <span>${icon}</span>
+                        </button>
+
+                        <div class="mt-1 text-center max-w-[140px]">
+                            <span class="text-[10px] font-black text-slate-700 bg-white/95 px-2 py-0.5 rounded-md border border-slate-200 shadow-2xs block truncate">
+                                День ${l.day || l.id}: ${escapeHtml(l.title.replace(/^День \d+:\s*/, ''))}
+                            </span>
                         </div>
-                    ` : ''}
+                    </div>
+                `;
+            });
 
-                    <!-- Круглая 3D-кнопка уровня Duolingo -->
-                    <button onclick="lingoEngine.openLessonModal(${l.day || l.id})"
-                            class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-b-6 active:border-b-2 flex items-center justify-center text-2xl sm:text-3xl font-black shadow-lg transition active:scale-95 cursor-pointer ${buttonClass}">
-                        <span>${icon}</span>
-                    </button>
+            sectionsHtml += `
+                <div class="mb-8 space-y-4">
+                    <!-- БАННЕР РАЗДЕЛА (GUIDEBOOK) -->
+                    <div class="bg-gradient-to-r ${colorClass} text-white rounded-2xl px-4 py-2.5 shadow-md border-b-2 flex items-center justify-between gap-3">
+                        <div class="min-w-0 flex-1">
+                            <span class="text-[10px] font-black uppercase tracking-wider opacity-90">${escapeHtml(currentLevel)} • РАЗДЕЛ ${unitId}</span>
+                            <h3 class="text-sm sm:text-base font-black truncate leading-tight mt-0.5">${escapeHtml(unitTitle.replace(/^Unit \d+:\s*/, ''))}</h3>
+                            <p class="text-[10px] opacity-85 truncate mt-0.5">${escapeHtml(firstLesson.grammar || '')}</p>
+                        </div>
+                        <button onclick="lingoEngine.openGuidebookModal(${unitId})"
+                                class="px-2.5 py-1.5 bg-white/20 hover:bg-white/30 active:scale-95 backdrop-blur rounded-xl font-extrabold text-xs shrink-0 border border-white/30 flex items-center gap-1 transition cursor-pointer">
+                            <span>📖</span>
+                            <span>Теория</span>
+                        </button>
+                    </div>
 
-                    <!-- Подпись урока -->
-                    <div class="mt-1 text-center max-w-[130px]">
-                        <span class="text-[10px] font-black text-slate-700 bg-white/95 px-2 py-0.5 rounded-md border border-slate-200 shadow-2xs block truncate">
-                            День ${l.day || l.id}: ${escapeHtml(l.title.replace(/^День \d+:\s*/, ''))}
-                        </span>
+                    <!-- ДОРОЖКА УРОКОВ ЮНИТА -->
+                    <div class="py-2 flex flex-col items-center">
+                        ${nodesHtml}
                     </div>
                 </div>
             `;
         });
 
         container.innerHTML = `
-            <div class="max-w-md mx-auto w-full pb-16 space-y-4">
-                <!-- БАННЕР ТЕКУЩЕГО ЮНИТА (GUIDEBOOK) -->
-                <div class="bg-gradient-to-r ${colorClass} text-white rounded-2xl px-4 py-2.5 shadow-md border-b-2 flex items-center justify-between gap-3">
-                    <div class="min-w-0 flex-1">
-                        <span class="text-[10px] font-black uppercase tracking-wider opacity-90">${escapeHtml(currentLevel)} • РАЗДЕЛ ${currentUnitId}</span>
-                        <h3 class="text-sm sm:text-base font-black truncate leading-tight mt-0.5">${escapeHtml(currentUnitTitle)}</h3>
-                        <p class="text-[10px] opacity-85 truncate mt-0.5">${escapeHtml(currentLesson.grammar || '')}</p>
-                    </div>
-                    <button onclick="lingoEngine.openGuidebookModal(${currentUnitId})"
-                            class="px-2.5 py-1.5 bg-white/20 hover:bg-white/30 active:scale-95 backdrop-blur rounded-xl font-extrabold text-xs shrink-0 border border-white/30 flex items-center gap-1 transition">
-                        <span>📖</span>
-                        <span>Теория</span>
-                    </button>
-                </div>
-
-                <!-- ДОРОЖКА УРОКОВ (THE PATH) -->
-                <div class="py-2 flex flex-col items-center">
-                    ${nodesHtml}
-                </div>
+            <div class="max-w-md mx-auto w-full pb-16">
+                ${levelSwitcherHtml}
+                ${sectionsHtml}
             </div>
         `;
     }

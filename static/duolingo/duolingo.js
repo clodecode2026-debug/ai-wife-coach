@@ -988,20 +988,8 @@ class LingoGameEngine {
             unitsMap.get(uId).push(l);
         });
 
-        // Быстрое переключение уровней прямо в Duolingo
-        const levelSwitcherHtml = `
-            <div class="flex items-center justify-center gap-1.5 p-1 bg-slate-100/90 rounded-2xl mb-4 max-w-sm mx-auto shadow-inner border border-slate-200">
-                <button onclick="if(typeof setGermanLevel==='function') setGermanLevel('A1+');" class="flex-1 py-1.5 px-2 text-xs font-black rounded-xl transition ${currentLevel === 'A1+' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}">
-                    A1+ Старт (30)
-                </button>
-                <button onclick="if(typeof setGermanLevel==='function') setGermanLevel('A2');" class="flex-1 py-1.5 px-2 text-xs font-black rounded-xl transition ${currentLevel === 'A2' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}">
-                    A2 Быт (60)
-                </button>
-                <button onclick="if(typeof setGermanLevel==='function') setGermanLevel('B1');" class="flex-1 py-1.5 px-2 text-xs font-black rounded-xl transition ${currentLevel === 'B1' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}">
-                    B1 Профи (90)
-                </button>
-            </div>
-        `;
+        // Уровни переключаются в верхней панели — дублирующий блок удален для чистоты экрана
+        const levelSwitcherHtml = '';
 
         let sectionsHtml = '';
         unitsMap.forEach((uLessons, unitId) => {

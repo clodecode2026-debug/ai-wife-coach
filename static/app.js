@@ -639,7 +639,7 @@ function getQuickReplyChips(text, isBook) {
         return [
             { icon: '🌸', text: 'Помоги заземлиться и снять тревогу' },
             { icon: '💡', text: 'Какое правило КПТ здесь применить?' },
-            { icon: '❤️', text: 'Что бы мне сказал любящий Роман?' }
+            { icon: '🌱', text: 'В чём сейчас моя главная опора?' }
         ];
     } else if (lower.includes('немецк') || lower.includes('b1') || lower.includes('язык')) {
         return [
@@ -820,7 +820,7 @@ async function loadChatHistory() {
                     <img src="/static/img/coach_avatar.jpg" alt="Coach" class="w-8 h-8 rounded-full object-cover border border-rose-200 shrink-0">
                     <div class="bg-rose-50 border border-rose-100 rounded-2xl p-3.5 max-w-xl text-slate-700 text-xs sm:text-sm shadow-sm relative group">
                         <p class="font-semibold text-rose-900 mb-1">Здравствуй, дорогая Алина! ✨</p>
-                        <p id="initialWelcomeMsg">Я твой личный дипломированный психолог-коуч. Я помню всё о твоих целях, немецком языке (B1), ресурсе и поддержке твоего мужа Романа. Что сейчас у тебя на душе? Расскажи — я внимательно слушаю.</p>
+                        <p id="initialWelcomeMsg">Я твой личный дипломированный психолог-коуч. Я помню твои цели, немецкий язык (B1), помогаю находить опору, бережно справляться с выгоранием и раскрывать уверенность в себе. О чём ты хочешь поговорить сейчас? Я внимательно слушаю.</p>
                         <button onclick="playElementTTS('initialWelcomeMsg', this)" class="absolute top-2.5 right-2.5 opacity-60 hover:opacity-100 text-rose-600 p-1 rounded-lg hover:bg-rose-100 transition" title="Озвучить ответ">
                             🔊
                         </button>
@@ -834,8 +834,8 @@ async function loadChatHistory() {
                             <button onclick="sendQuickReply('Помоги разобрать синдром отличницы и перфекционизм.')" class="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-rose-100/90 active:scale-95 text-[10.5px] font-medium text-rose-800 rounded-full border border-rose-200 shadow-2xs transition">
                                 <span>✨</span><span>Самооценка</span>
                             </button>
-                            <button onclick="sendQuickReply('Хочу обсудить отношения и диалог с мужем Романом.')" class="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-rose-100/90 active:scale-95 text-[10.5px] font-medium text-rose-800 rounded-full border border-rose-200 shadow-2xs transition">
-                                <span>💍</span><span>Роман и семья</span>
+                            <button onclick="sendQuickReply('Помоги найти внутренний ресурс и восстановить силы.')" class="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-rose-100/90 active:scale-95 text-[10.5px] font-medium text-rose-800 rounded-full border border-rose-200 shadow-2xs transition">
+                                <span>🌱</span><span>Внутренний ресурс</span>
                             </button>
                         </div>
                     </div>
@@ -2148,9 +2148,9 @@ function renderGermanPlatform() {
         const btn = document.getElementById('german-btn-' + l);
         if (btn) {
             if (l === activeLevel) {
-                btn.className = 'px-2.5 py-1 text-xs font-black rounded-xl bg-emerald-500 text-white shadow-sm transition';
+                btn.className = 'px-2 py-0.5 text-[11px] font-black rounded-md bg-emerald-500 text-white shadow-2xs transition';
             } else {
-                btn.className = 'px-2.5 py-1 text-xs font-bold rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition';
+                btn.className = 'px-2 py-0.5 text-[11px] font-bold rounded-md text-slate-600 hover:text-slate-900 transition';
             }
         }
     });
@@ -2166,14 +2166,14 @@ function renderGermanPlatform() {
 
     if (btnPath) {
         btnPath.className = currentGermanMode === 'path'
-            ? 'px-3.5 py-1 text-xs font-black rounded-lg bg-white text-emerald-800 shadow-sm transition flex items-center gap-1.5'
-            : 'px-3 py-1 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-800 transition flex items-center gap-1.5';
+            ? 'py-1.5 text-xs font-black rounded-lg bg-white text-emerald-800 shadow-xs transition flex items-center justify-center gap-1.5 active:scale-95'
+            : 'py-1.5 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-800 transition flex items-center justify-center gap-1.5 active:scale-95';
     }
 
     if (btnCards) {
         btnCards.className = currentGermanMode === 'flashcards'
-            ? 'px-3.5 py-1 text-xs font-black rounded-lg bg-white text-emerald-800 shadow-sm transition flex items-center gap-1.5'
-            : 'px-3 py-1 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-800 transition flex items-center gap-1.5';
+            ? 'py-1.5 text-xs font-black rounded-lg bg-white text-emerald-800 shadow-xs transition flex items-center justify-center gap-1.5 active:scale-95'
+            : 'py-1.5 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-800 transition flex items-center justify-center gap-1.5 active:scale-95';
     }
 
     if (statEl) {

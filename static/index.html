@@ -19,7 +19,7 @@
     <title>Коуч 💖 — Личный психолог & Немецкий B1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=17">
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -85,7 +85,7 @@
                         <h1 class="font-bold text-sm bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">Коуч 💖</h1>
                         <span class="text-[10px] bg-rose-100 text-rose-700 font-semibold px-1.5 py-0.2 rounded">B1 & КПТ</span>
                     </div>
-                    <p class="text-[10px] text-slate-500 hidden sm:block">Профессиональный психолог, немецкий язык & поддержка любящего мужа Романа</p>
+                    <p class="text-[10px] text-slate-500 hidden sm:block">Личный AI-психолог, немецкий язык B1 & персональное развитие</p>
                 </div>
             </div>
             
@@ -193,12 +193,12 @@
         <!-- ВКЛАДКА 1: ДИАЛОГ С КОУЧЕМ -->
         <section id="tab-chat" class="tab-content flex-1 flex flex-col bg-white/95 backdrop-blur rounded-2xl shadow-xl border border-rose-100 overflow-hidden h-full">
             <!-- Верхняя панель чата -->
-            <div class="bg-gradient-to-r from-rose-500 to-pink-500 px-4 py-3 text-white flex items-center justify-between shadow-sm shrink-0">
-                <div class="flex items-center gap-2.5">
-                    <img src="/static/img/coach_avatar.jpg" alt="Coach" class="w-8 h-8 rounded-full object-cover border border-white/50">
+            <div class="bg-gradient-to-r from-rose-500 to-pink-500 px-3.5 py-2.5 text-white flex items-center justify-between shadow-sm shrink-0">
+                <div class="flex items-center gap-2">
+                    <img src="/static/img/coach_avatar.jpg" alt="Coach" class="w-8 h-8 rounded-full object-cover border border-white/50 shrink-0">
                     <div>
-                        <h2 class="font-bold text-sm">Профессиональный диалог</h2>
-                        <p class="text-[10px] text-rose-100">КПТ, Транзактный анализ, системная психология</p>
+                        <h2 class="font-bold text-xs sm:text-sm leading-tight">Психолог-коуч Алины</h2>
+                        <p class="text-[10px] text-rose-100 leading-tight">КПТ, Транзактный анализ, системная психология</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-1.5 sm:gap-2">
@@ -206,27 +206,13 @@
                         <span id="chatModeIcon">⚡️</span>
                         <span id="chatModeLabel" class="hidden sm:inline">Экспресс</span>
                     </button>
-                    <button onclick="createNewChatSession()" class="text-xs bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-lg transition font-medium flex items-center gap-1">
-                        <span>＋ Новый чат</span>
+                    <button onclick="createNewChatSession()" class="text-xs bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded-lg transition font-semibold flex items-center gap-1">
+                        <span>＋ Новый</span>
                     </button>
-                    <button onclick="toggleSessionsDrawer()" class="text-xs bg-white/20 hover:bg-white/30 text-white px-2 py-1 rounded-lg transition font-medium" title="Список диалогов">
+                    <button onclick="toggleSessionsDrawer()" class="text-xs bg-white/20 hover:bg-white/30 text-white p-1.5 rounded-lg transition font-medium" title="Список диалогов">
                         <span>🗂</span>
                     </button>
                 </div>
-            </div>
-
-            <!-- Экспресс-чипы настроения, любви Романа и немецкого -->
-            <div class="px-3 py-2 bg-rose-50/50 border-b border-rose-100 flex gap-2 overflow-x-auto text-xs shrink-0 no-scrollbar">
-                <button onclick="showRomanLoveNoteModal()" class="whitespace-nowrap bg-gradient-to-r from-rose-500 to-pink-500 text-white font-bold px-3 py-1 rounded-full shadow-sm hover:opacity-95 transition flex items-center gap-1">
-                    <span>💌 Записка от Романа</span>
-                </button>
-                <button onclick="startGermanPracticeInChat()" class="whitespace-nowrap bg-emerald-600 text-white font-semibold px-3 py-1 rounded-full shadow-sm hover:bg-emerald-700 transition flex items-center gap-1">
-                    <span>🇩🇪 Немецкий B1: Урок</span>
-                </button>
-                <button onclick="sendMoodPrompt('Я очень устала сегодня после работы, сил совсем нет...')" class="whitespace-nowrap bg-white hover:bg-rose-100 text-rose-700 border border-rose-200 px-3 py-1 rounded-full shadow-sm transition">☕️ Устала</button>
-                <button onclick="sendMoodPrompt('Мне тревожно и накатывает страх, помоги успокоиться методом КПТ.')" class="whitespace-nowrap bg-white hover:bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1 rounded-full shadow-sm transition">🌸 Тревожно</button>
-                <button onclick="sendMoodPrompt('Хочу обсудить отношения и диалог с мужем Романом.')" class="whitespace-nowrap bg-white hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1 rounded-full shadow-sm transition">💍 Роман и семья</button>
-                <button onclick="sendMoodPrompt('Помоги разобрать синдром отличницы и перфекционизм.')" class="whitespace-nowrap bg-white hover:bg-amber-100 text-amber-700 border border-amber-200 px-3 py-1 rounded-full shadow-sm transition">✨ Самооценка</button>
             </div>
 
             <!-- Область сообщений -->
@@ -235,7 +221,7 @@
                     <img src="/static/img/coach_avatar.jpg" alt="Coach" class="w-8 h-8 rounded-full object-cover border border-rose-200 shrink-0">
                     <div class="bg-rose-50 border border-rose-100 rounded-2xl p-3.5 max-w-xl text-slate-700 text-xs sm:text-sm shadow-sm relative group">
                         <p class="font-semibold text-rose-900 mb-1">Здравствуй, дорогая Алина! ✨</p>
-                        <p id="initialWelcomeMsg">Я твой личный дипломированный психолог-коуч. Я помню всё о твоих целях, немецком языке (B1), ресурсе и поддержке твоего мужа Романа. Что сейчас у тебя на душе? Расскажи — я здесь, чтобы бережно и глубоко тебя поддержать.</p>
+                        <p id="initialWelcomeMsg">Я твой личный дипломированный психолог-коуч. Я помню твои цели, немецкий язык (B1), помогаю находить опору, бережно справляться с выгоранием и раскрывать уверенность в себе. О чём ты хочешь поговорить сейчас? Я внимательно слушаю.</p>
                         <button onclick="playElementTTS('initialWelcomeMsg', this)" class="absolute top-2.5 right-2.5 opacity-60 hover:opacity-100 text-rose-600 p-1 rounded-lg hover:bg-rose-100 transition" title="Озвучить ответ">
                             🔊
                         </button>
@@ -346,63 +332,53 @@
 
         <!-- ВКЛАДКА 3: НЕМЕЦКИЙ ЯЗЫК (ДУОЛИНГО ДЛЯ АЛИНЫ: A1+ ➔ B1 НА 180 ДНЕЙ) -->
         <section id="tab-german" class="tab-content hidden flex-1 flex flex-col bg-white sm:bg-white/95 sm:backdrop-blur rounded-none sm:rounded-2xl sm:shadow-xl sm:border sm:border-rose-100 p-1 sm:p-4 overflow-hidden h-full">
-            <!-- Компактный статус-бар в стиле Duolingo (Строка 1: Логотип + Статистика) -->
-            <div class="flex items-center justify-between gap-2 pb-2 mb-1.5 border-b border-slate-100 shrink-0">
+            <!-- Компактный статус-бар German (Строка 1: Профиль Алины + Уровни A1+/A2/B1 + Счётчики) -->
+            <div class="flex items-center justify-between gap-1.5 pb-2 mb-1.5 border-b border-slate-100 shrink-0">
                 <div class="flex items-center gap-1.5 min-w-0">
-                    <img src="/static/img/alina_avatar.jpg" class="alina-profile-avatar w-7 h-7 rounded-full object-cover border border-emerald-400 shadow-2xs shrink-0 cursor-pointer" onclick="switchTab('dossier')" alt="Алина" title="Профиль Алины">
-                    <div class="flex items-center gap-1.5 min-w-0">
-                        <h2 class="text-xs sm:text-sm font-black text-slate-800 leading-none truncate">Duolingo Deutsch</h2>
-                        <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">180 дн.</span>
+                    <img src="/static/img/alina_avatar.jpg" class="alina-profile-avatar w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border-2 border-emerald-400 shadow-2xs shrink-0 cursor-pointer active:scale-95 transition" onclick="switchTab('dossier')" alt="Алина" title="Профиль Алины">
+                    <!-- Компактный переключатель уровней курса -->
+                    <div class="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                        <button onclick="setGermanLevel('A1+')" id="german-btn-a1" class="px-2 py-0.5 text-[11px] font-black rounded-md bg-emerald-500 text-white shadow-2xs transition">A1+</button>
+                        <button onclick="setGermanLevel('A2')" id="german-btn-a2" class="px-2 py-0.5 text-[11px] font-bold rounded-md text-slate-600 hover:text-slate-900 transition">A2</button>
+                        <button onclick="setGermanLevel('B1')" id="german-btn-b1" class="px-2 py-0.5 text-[11px] font-bold rounded-md text-slate-600 hover:text-slate-900 transition">B1</button>
                     </div>
                 </div>
 
                 <!-- Индикаторы: Серия, Опыт, Сердечки в одну строку -->
-                <div class="flex items-center gap-1.5 sm:gap-2.5 text-xs font-black shrink-0">
-                    <div class="flex items-center gap-1 text-amber-600 bg-amber-50 px-2 py-0.5 rounded-xl border border-amber-200" title="Серия дней">
+                <div class="flex items-center gap-1 sm:gap-2 text-[11px] sm:text-xs font-black shrink-0">
+                    <div class="flex items-center gap-1 text-amber-600 bg-amber-50 px-1.5 sm:px-2 py-0.5 rounded-lg border border-amber-200" title="Серия дней обучения">
                         <span>🔥</span>
                         <span id="courseStreakDisplay">1 дн.</span>
                     </div>
-                    <div class="flex items-center gap-1 text-sky-600 bg-sky-50 px-2 py-0.5 rounded-xl border border-sky-200" title="Очки опыта">
+                    <div class="flex items-center gap-1 text-sky-600 bg-sky-50 px-1.5 sm:px-2 py-0.5 rounded-lg border border-sky-200" title="Очки опыта XP">
                         <img src="/static/duolingo/points.svg" class="w-3.5 h-3.5" alt="XP">
                         <span id="courseXpDisplay">0 XP</span>
                     </div>
-                    <div onclick="lingoEngine.openHeartRefillModal()" class="flex items-center gap-1 text-rose-500 bg-rose-50 hover:bg-rose-100 px-2 py-0.5 rounded-xl border border-rose-200 cursor-pointer transition shadow-2xs" title="Восстановить сердечки">
+                    <div onclick="lingoEngine.openHeartRefillModal()" class="flex items-center gap-1 text-rose-500 bg-rose-50 hover:bg-rose-100 px-1.5 sm:px-2 py-0.5 rounded-lg border border-rose-200 cursor-pointer transition shadow-2xs" title="Восстановить сердечки">
                         <img src="/static/duolingo/heart.svg" class="w-3.5 h-3.5" alt="Hearts">
                         <span id="courseHeartsDisplay">5</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Компактное меню управления (Строка 2: Уровни A1+/A2/B1 + Режимы Дорожка/Карточки/Ошибки) -->
-            <div class="flex items-center justify-between gap-1.5 mb-2 bg-slate-100/90 p-1 rounded-xl border border-slate-200 shrink-0 overflow-x-auto no-scrollbar">
-                <!-- Уровни курса -->
-                <div class="flex items-center gap-1 shrink-0">
-                    <button onclick="setGermanLevel('A1+')" id="german-btn-a1" class="px-2.5 py-1 text-[11px] font-black rounded-lg bg-emerald-500 text-white shadow-xs transition">A1+</button>
-                    <button onclick="setGermanLevel('A2')" id="german-btn-a2" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/70 text-slate-600 hover:bg-white transition">A2</button>
-                    <button onclick="setGermanLevel('B1')" id="german-btn-b1" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/70 text-slate-600 hover:bg-white transition">B1</button>
-                </div>
+            <!-- Строка 2: Нативный сегментированный переключатель режимов (100% ширины, идеальный тач) -->
+            <div class="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl mb-2 shrink-0 border border-slate-200/80">
+                <button onclick="setGermanViewMode('path')" id="german-mode-path" class="py-1.5 text-xs font-black rounded-lg bg-white text-emerald-800 shadow-xs transition flex items-center justify-center gap-1.5 active:scale-95">
+                    <span>🗺️</span>
+                    <span>Дорожка</span>
+                </button>
+                <button onclick="setGermanViewMode('flashcards')" id="german-mode-flashcards" class="py-1.5 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-800 transition flex items-center justify-center gap-1.5 active:scale-95">
+                    <span>📇</span>
+                    <span>Карточки</span>
+                </button>
+                <button onclick="openMistakesModal()" id="german-mode-mistakes" class="py-1.5 text-xs font-bold rounded-lg text-rose-600 hover:bg-rose-50 transition flex items-center justify-center gap-1.5 active:scale-95">
+                    <span>🎯</span>
+                    <span>Ошибки (<span id="mistakesBadgeCount">0</span>)</span>
+                </button>
+            </div>
 
-                <div class="h-3.5 w-px bg-slate-300 shrink-0 mx-0.5"></div>
-
-                <!-- Режимы отображения -->
-                <div class="flex items-center gap-1 shrink-0">
-                    <button onclick="setGermanViewMode('path')" id="german-mode-path" class="px-2.5 py-1 text-[11px] font-black rounded-lg bg-white text-emerald-800 shadow-xs transition flex items-center gap-1">
-                        <span>🗺️</span>
-                        <span>Дорожка</span>
-                    </button>
-                    <button onclick="setGermanViewMode('flashcards')" id="german-mode-flashcards" class="px-2.5 py-1 text-[11px] font-bold rounded-lg text-slate-600 hover:text-slate-800 transition flex items-center gap-1">
-                        <span>📇</span>
-                        <span>Карточки</span>
-                    </button>
-                    <button onclick="openMistakesModal()" id="german-mode-mistakes" class="px-2.5 py-1 text-[11px] font-bold rounded-lg text-rose-600 hover:bg-rose-50 transition flex items-center gap-1">
-                        <span>🎯</span>
-                        <span>Ошибки (<span id="mistakesBadgeCount">0</span>)</span>
-                    </button>
-                </div>
-
-                <div id="flashcardsStat" class="hidden text-[10px] text-slate-500 pr-1 font-bold">
-                    Выучено: <span id="learnedCount" class="text-emerald-600">0</span>
-                </div>
+            <div id="flashcardsStat" class="hidden text-[11px] text-slate-500 mb-1.5 font-bold text-center">
+                Выучено слов: <span id="learnedCount" class="text-emerald-600">0</span>
             </div>
 
             <!-- КОНТЕЙНЕР 1: ДОРОЖКА УРОКОВ DUOLINGO (THE PATH) -->
@@ -453,7 +429,7 @@
                             <div>
                                 <div class="flex items-center justify-center sm:justify-start gap-2">
                                     <h3 class="font-bold text-slate-800 text-base">Алина</h3>
-                                    <span class="text-[11px] font-medium text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">Любимая жена Романа ✨</span>
+                                    <span class="text-[11px] font-medium text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">Личный профиль Алины ✨</span>
                                 </div>
                                 <p class="text-xs text-slate-500 mt-0.5">Личное фото профиля: отображается в диалогах чата, шапке и на карте Duolingo</p>
                             </div>
@@ -503,14 +479,14 @@
                             <input type="text" id="dossierOrigin" value="Украинка (родом из Украины)" class="w-full px-3 py-2 text-xs border border-rose-200 rounded-lg bg-white font-medium">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">Муж</label>
-                            <input type="text" id="dossierHusband" value="Роман (очень любит и заботится)" class="w-full px-3 py-2 text-xs border border-rose-200 rounded-lg bg-white font-medium">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Семья и окружение</label>
+                            <input type="text" id="dossierHusband" value="Муж Роман" class="w-full px-3 py-2 text-xs border border-rose-200 rounded-lg bg-white font-medium">
                         </div>
                     </div>
 
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Ключевые терапевтические ориентиры коуча</label>
-                        <textarea id="dossierNotes" rows="3" class="w-full px-3 py-2 text-xs border border-rose-200 rounded-lg bg-white">Алина — украинка, 35 лет. Муж Роман. Цель: освоение немецкого B1, преодоление усталости и перфекционизма. Профессиональный психологический подход (КПТ, Транзактный анализ, системная семейная терапия).</textarea>
+                        <textarea id="dossierNotes" rows="3" class="w-full px-3 py-2 text-xs border border-rose-200 rounded-lg bg-white">Алина — 35 лет. Цели: свободный немецкий язык B1, внутренняя опора, уверенность в себе, преодоление усталости и перфекционизма. Профессиональный психологический подход (КПТ, Транзактный анализ, системная психология).</textarea>
                     </div>
 
                     <button onclick="saveDossierSettings()" class="px-5 py-2.5 bg-gradient-to-r from-rose-500 to-pink-500 text-white font-bold rounded-xl text-xs shadow-md hover:opacity-95 transition">
@@ -588,7 +564,7 @@
     <audio id="liveGlobalAudioPlayer" preload="auto" playsinline webkit-playsinline class="hidden"></audio>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    <script src="/static/duolingo/duolingo.js?v=16"></script>
-    <script src="/static/app.js?v=16"></script>
+    <script src="/static/duolingo/duolingo.js?v=17"></script>
+    <script src="/static/app.js?v=17"></script>
 </body>
 </html>

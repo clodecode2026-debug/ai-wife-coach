@@ -1087,7 +1087,11 @@ async function handleLiveUserSpeech(text) {
         if (statusText) statusText.textContent = '🔊 Коуч отвечает... (микрофон выключен)';
 
         if (liveSoundEnabled) {
-            await playLiveTTS(reply);
+            if (data.audio_base64) {
+                await playLiveAudioBase64(data.audio_base64);
+            } else {
+                await playLiveTTS(reply);
+            }
         } else {
             // Тихий режим: показываем текст, даем время прочесть, затем передаем слово Алине
             const waitMs = Math.max(2500, Math.min(6000, reply.length * 40));
@@ -1174,6 +1178,51 @@ async function playLiveTTS(text) {
             if (isLiveActive) {
                 passTurnToUser();
             }
+            resolve();
+        }
+    });
+}
+
+// Мгновенное воспроизведение готового аудиопотока из base64 без повторных HTTP-запросов (минимальная задержка)
+async function playLiveAudioBase64(base64Data) {
+    return new Promise(async (resolve) => {
+        try {
+            const statusText = document.getElementById('liveStatusText');
+            if (statusText) statusText.textContent = '🔊 Коуч отвечает... (микрофон выключен)';
+            stopBrowserSpeechRecognition();
+
+            const binaryStr = atob(base64Data);
+            const bytes = new Uint8Array(binaryStr.length);
+            for (let i = 0; i < binaryStr.length; i++) {
+                bytes[i] = binaryStr.charCodeAt(i);
+            }
+            const blob = new Blob([bytes], { type: 'audio/mpeg' });
+
+            currentLiveAudio = new Audio(URL.createObjectURL(blob));
+            if (liveSlowVoiceEnabled) {
+                currentLiveAudio.playbackRate = 0.8;
+            }
+
+            currentLiveAudio.onended = () => {
+                currentLiveAudio = null;
+                if (isLiveActive) {
+                    passTurnToUser();
+                }
+                resolve();
+            };
+
+            currentLiveAudio.onerror = () => {
+                currentLiveAudio = null;
+                if (isLiveActive) {
+                    passTurnToUser();
+                }
+                resolve();
+            };
+
+            await currentLiveAudio.play();
+        } catch(e) {
+            currentLiveAudio = null;
+            if (isLiveActive) passTurnToUser();
             resolve();
         }
     });

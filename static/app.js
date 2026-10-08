@@ -190,15 +190,30 @@ let micStream = null;
 let animationFrameId = null;
 let isAITalking = false;
 let currentLiveAudio = null;
-let liveSoundEnabled = localStorage.getItem('ai_coach_live_sound') === 'true';
+let liveSoundEnabled = localStorage.getItem('ai_coach_live_sound') !== 'false'; // Звук включен по умолчанию
 let liveAccumulatedText = '';
 let liveTurnAccumulatedText = '';
 let liveCurrentSessionFinal = '';
 let liveCurrentSessionInterim = '';
 let speechSilenceTimer = null;
-let LIVE_SILENCE_DELAY_MS = 3000; // 3.0 сек для коуча, 4.5 сек для немецкого
+let LIVE_SILENCE_DELAY_MS = 2500; // 2.5 сек для максимальной отзывчивости на мобильных
 let liveCoachMode = 'coach'; // 'coach' | 'german'
 let currentLiveGermanLessonId = 1;
+
+// Разблокировка системного звука на iOS Safari при первом же тапе пользователя
+function primeAudioForIOS(audioEl) {
+    if (!audioEl) return;
+    try {
+        audioEl.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+        const p = audioEl.play();
+        if (p && p.then) {
+            p.then(() => {
+                audioEl.pause();
+                audioEl.currentTime = 0;
+            }).catch(() => {});
+        }
+    } catch(e) {}
+}
 
 // Платформа немецкого языка (180 дней • A1+ ➔ B1 для Алины)
 let currentGermanLevel = localStorage.getItem('ai_coach_german_level') || 'A1+';
@@ -489,7 +504,7 @@ function appendMessage(text, role, scroll = true) {
             <img src="/static/img/coach_avatar.jpg" alt="Coach" class="w-8 h-8 rounded-full object-cover border border-rose-200 shrink-0">
             <div class="bg-rose-50 border border-rose-100 rounded-2xl p-3.5 max-w-xl text-slate-700 text-xs sm:text-sm shadow-sm relative group">
                 <p id="${msgId}" class="whitespace-pre-wrap pr-6">${escapeHtml(text)}</p>
-                <button onclick="playElementTTS('${msgId}')" class="absolute top-2.5 right-2.5 opacity-60 hover:opacity-100 text-rose-600 p-1 rounded-lg hover:bg-rose-100 transition" title="Озвучить ответ">
+                <button onclick="playElementTTS('${msgId}', this)" class="absolute top-2.5 right-2.5 opacity-60 hover:opacity-100 text-rose-600 p-1 rounded-lg hover:bg-rose-100 transition" title="Озвучить ответ">
                     🔊
                 </button>
             </div>
@@ -542,9 +557,12 @@ async function loadChatHistory() {
             container.innerHTML = `
                 <div class="flex items-start gap-2.5">
                     <img src="/static/img/coach_avatar.jpg" alt="Coach" class="w-8 h-8 rounded-full object-cover border border-rose-200 shrink-0">
-                    <div class="bg-rose-50 border border-rose-100 rounded-2xl p-3.5 max-w-xl text-slate-700 text-xs sm:text-sm shadow-sm">
+                    <div class="bg-rose-50 border border-rose-100 rounded-2xl p-3.5 max-w-xl text-slate-700 text-xs sm:text-sm shadow-sm relative group">
                         <p class="font-semibold text-rose-900 mb-1">Здравствуй, дорогая Алина! ✨</p>
-                        <p>Я твой личный дипломированный психолог-коуч. Я помню всё о твоих целях, немецком языке (B1), ресурсе и поддержке твоего мужа Романа. Что сейчас у тебя на душе? Расскажи — я внимательно слушаю.</p>
+                        <p id="initialWelcomeMsg">Я твой личный дипломированный психолог-коуч. Я помню всё о твоих целях, немецком языке (B1), ресурсе и поддержке твоего мужа Романа. Что сейчас у тебя на душе? Расскажи — я внимательно слушаю.</p>
+                        <button onclick="playElementTTS('initialWelcomeMsg', this)" class="absolute top-2.5 right-2.5 opacity-60 hover:opacity-100 text-rose-600 p-1 rounded-lg hover:bg-rose-100 transition" title="Озвучить ответ">
+                            🔊
+                        </button>
                     </div>
                 </div>
             `;
@@ -586,53 +604,122 @@ function startGermanPracticeInChat() {
 }
 
 // ==========================================
-// 4. TTS ОЗВУЧКА
+// 4. TTS ОЗВУЧКА (SINGLETON И МГНОВЕННЫЙ СТОП БЕЗ ПАРАЛЛЕЛЬНОГО ЭХА)
 // ==========================================
-function playElementTTS(elId) {
+let currentTTSAudio = null;
+let currentTTSBtn = null;
+let currentTTSText = null;
+
+function stopCurrentTTS() {
+    if (currentTTSAudio) {
+        try {
+            currentTTSAudio.pause();
+            currentTTSAudio.currentTime = 0;
+        } catch(e) {}
+        currentTTSAudio = null;
+    }
+    if (currentTTSBtn) {
+        currentTTSBtn.textContent = '🔊';
+        currentTTSBtn.classList.remove('text-rose-700', 'animate-pulse');
+        currentTTSBtn = null;
+    }
+    currentTTSText = null;
+}
+
+function playElementTTS(elId, btn) {
     const el = document.getElementById(elId);
-    if (el) playTTS(null, el.textContent);
+    if (el) playTTS(btn, el.textContent);
 }
 
 async function playTTS(btn, text, voice) {
+    // 1. ДВОЙНОЙ КЛИК / НАЖАТИЕ НА ТОТ ЖЕ ДИНАМИК: МГНОВЕННЫЙ СТОП БЕЗ ЭХА
+    if (currentTTSAudio && !currentTTSAudio.paused && (currentTTSBtn === btn || (btn && currentTTSBtn === btn))) {
+        stopCurrentTTS();
+        return;
+    }
+
+    // 2. ОСТАНАВЛИВАЕМ ЛЮБОЙ ДРУГОЙ ПЛЕЕР (НИКАКИХ ПАРАЛЛЕЛЬНЫХ ТРЕКОВ)
+    stopCurrentTTS();
+
+    const targetBtn = btn || null;
+    if (targetBtn) {
+        targetBtn.textContent = '⏳';
+    }
+
+    // Очищаем от Markdown, звёздочек и эмодзи перед озвучкой
+    let cleanText = (text || '')
+        .replace(/\*\*([^*]+)\*\*/g, '$1')
+        .replace(/\*([^*]+)\*/g, '$1')
+        .replace(/__([^_]+)__/g, '$1')
+        .replace(/_([^_]+)_/g, '$1')
+        .replace(/[*#`~]/g, '')
+        .replace(/[💡🇩🇪🎙️✨⭐🎁📖💬🔥❤️🐢🦉]/g, '')
+        .replace(/\s+/g, ' ').trim();
+
+    if (!cleanText) {
+        if (targetBtn) targetBtn.textContent = '🔊';
+        return;
+    }
+
+    // Умный выбор голоса
+    let selectedVoice = voice;
+    if (!selectedVoice) {
+        const hasCyrillic = /[а-яА-ЯёЁ]/.test(cleanText);
+        const hasLatin = /[a-zA-ZäöüßÄÖÜ]/.test(cleanText);
+        if (hasLatin && !hasCyrillic) {
+            selectedVoice = "de-DE-KatjaNeural";
+        } else if (hasLatin && hasCyrillic) {
+            selectedVoice = "de-DE-SeraphinaMultilingualNeural";
+        } else {
+            selectedVoice = "ru-RU-SvetlanaNeural";
+        }
+    }
+
+    // Используем постоянный DOM-аудиоплеер для 100% совместимости с iOS Safari
+    const player = document.getElementById('globalTTSPlayer') || new Audio();
+    player.crossOrigin = 'anonymous';
+
+    // Разблокировка на iOS Safari в синхронном стеке клика
+    primeAudioForIOS(player);
+
+    const cacheKey = selectedVoice + ':' + cleanText;
+    window._ttsAudioCache = window._ttsAudioCache || {};
+
+    const startAudioPlayback = (audioSrc) => {
+        player.src = audioSrc;
+        currentTTSAudio = player;
+        currentTTSBtn = targetBtn;
+        currentTTSText = cleanText;
+
+        if (targetBtn) {
+            targetBtn.textContent = '⏹️';
+            targetBtn.classList.add('text-rose-700', 'animate-pulse');
+        }
+
+        player.onended = () => {
+            stopCurrentTTS();
+        };
+
+        player.onerror = () => {
+            stopCurrentTTS();
+        };
+
+        const playPromise = player.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(err => {
+                console.warn('TTS playback interrupted or blocked on iOS:', err);
+                stopCurrentTTS();
+            });
+        }
+    };
+
+    // Проверяем оперативный кэш браузера для мгновенного звука без ожидания
+    if (window._ttsAudioCache[cacheKey]) {
+        startAudioPlayback(window._ttsAudioCache[cacheKey]);
+        return;
+    }
+
     try {
-        const oldText = btn ? btn.textContent : '🔊';
-        if (btn) btn.textContent = '⏳';
-
-        // Очищаем от Markdown, звёздочек и эмодзи перед озвучкой
-        let cleanText = (text || '')
-            .replace(/\*\*([^*]+)\*\*/g, '$1')
-            .replace(/\*([^*]+)\*/g, '$1')
-            .replace(/__([^_]+)__/g, '$1')
-            .replace(/_([^_]+)_/g, '$1')
-            .replace(/[*#`~]/g, '')
-            .replace(/[💡🇩🇪🎙️✨⭐🎁📖💬🔥❤️🐢🦉]/g, '')
-            .replace(/\s+/g, ' ').trim();
-
-        // Умный выбор голоса
-        let selectedVoice = voice;
-        if (!selectedVoice) {
-            const hasCyrillic = /[а-яА-ЯёЁ]/.test(cleanText);
-            const hasLatin = /[a-zA-ZäöüßÄÖÜ]/.test(cleanText);
-            if (hasLatin && !hasCyrillic) {
-                selectedVoice = "de-DE-KatjaNeural";
-            } else if (hasLatin && hasCyrillic) {
-                selectedVoice = "de-DE-SeraphinaMultilingualNeural";
-            } else {
-                selectedVoice = "ru-RU-SvetlanaNeural";
-            }
-        }
-
-        // Кэширование аудио в оперативной памяти браузера для мгновенного повтора (0 мс задержка)
-        window._ttsAudioCache = window._ttsAudioCache || {};
-        const cacheKey = selectedVoice + ':' + cleanText;
-
-        if (window._ttsAudioCache[cacheKey]) {
-            const cachedAudio = new Audio(window._ttsAudioCache[cacheKey]);
-            cachedAudio.play();
-            if (btn) btn.textContent = oldText;
-            return;
-        }
-
         const res = await fetch('/api/voice/tts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -643,15 +730,16 @@ async function playTTS(btn, text, voice) {
         const audioUrl = URL.createObjectURL(blob);
         window._ttsAudioCache[cacheKey] = audioUrl;
 
-        const audio = new Audio(audioUrl);
-        audio.play();
-        if (btn) btn.textContent = oldText;
+        startAudioPlayback(audioUrl);
     } catch (e) {
-        console.error(e);
-        if (btn) {
-            btn.textContent = '❌';
-            setTimeout(() => btn.textContent = '🔊', 2000);
+        console.error('TTS error:', e);
+        if (targetBtn) {
+            targetBtn.textContent = '❌';
+            setTimeout(() => {
+                if (targetBtn) targetBtn.textContent = '🔊';
+            }, 1500);
         }
+        stopCurrentTTS();
     }
 }
 
@@ -708,6 +796,9 @@ function toggleSlowVoiceMode() {
 function toggleLiveSound() {
     liveSoundEnabled = !liveSoundEnabled;
     localStorage.setItem('ai_coach_live_sound', liveSoundEnabled);
+    if (liveSoundEnabled) {
+        primeAudioForIOS(document.getElementById('liveGlobalAudioPlayer'));
+    }
     if (!liveSoundEnabled && currentLiveAudio) {
         try { currentLiveAudio.pause(); } catch(e){}
         currentLiveAudio = null;
@@ -718,6 +809,10 @@ function toggleLiveSound() {
 }
 
 async function toggleLiveVoiceState() {
+    // Разблокируем аудиосистему iOS прямо в синхронном стеке клика
+    primeAudioForIOS(document.getElementById('liveGlobalAudioPlayer'));
+    primeAudioForIOS(document.getElementById('globalTTSPlayer'));
+
     if (!isLiveActive) {
         startLiveVoice();
     } else {
@@ -733,6 +828,9 @@ async function toggleLiveVoiceState() {
 }
 
 async function startLiveVoice() {
+    // Гарантируем разблокировку на iPhone
+    primeAudioForIOS(document.getElementById('liveGlobalAudioPlayer'));
+
     isLiveActive = true;
     liveTurnState = 'LISTENING';
     isAITalking = false;
@@ -925,12 +1023,13 @@ function startBrowserSpeechRecognition() {
     }
 
     try {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
         const isAndroid = /Android/i.test(navigator.userAgent);
         liveRecognition = new SpeechRecognition();
         liveRecognition.lang = (liveCoachMode === 'german') ? 'de-DE' : 'ru-RU';
-        // На Android continuous: true вызывает зацикливание и дублирование фраз в Google Speech Service.
-        // Поэтому на Android используем continuous = false с мягким перезапуском на onend.
-        liveRecognition.continuous = !isAndroid;
+        // На iOS и Android continuous: true вызывает сбросы и повторные бипы (ding) микрофона каждые 2 секунды.
+        // Поэтому на мобильных ставим continuous = false и мягко накапливаем текст между сессиями.
+        liveRecognition.continuous = !(isIOS || isAndroid);
         liveRecognition.interimResults = true;
 
         let lastSeenFinal = '';
@@ -954,12 +1053,12 @@ function startBrowserSpeechRecognition() {
             }
 
             if (instanceFinal) {
-                liveTurnAccumulatedText = deduplicateSpokenText(liveTurnAccumulatedText + ' ' + instanceFinal);
+                liveTurnAccumulatedText = deduplicateSpokenText((liveTurnAccumulatedText + ' ' + instanceFinal).trim());
             }
             liveCurrentSessionInterim = instanceInterim;
 
-            // Полный распознанный текст с обязательной дедупликацией
-            const fullSpokenText = deduplicateSpokenText(liveTurnAccumulatedText + ' ' + instanceInterim);
+            // Полный распознанный текст (гарантированно сохраняется и не сбрасывается при переподключении)
+            const fullSpokenText = deduplicateSpokenText((liveTurnAccumulatedText + ' ' + instanceInterim).trim());
             liveAccumulatedText = fullSpokenText;
 
             const transcript = document.getElementById('liveTranscript');
@@ -975,7 +1074,7 @@ function startBrowserSpeechRecognition() {
                 // Сбрасываем и перезапускаем таймер паузы тишины
                 if (speechSilenceTimer) clearTimeout(speechSilenceTimer);
                 speechSilenceTimer = setTimeout(() => {
-                    const finalToSend = deduplicateSpokenText(liveTurnAccumulatedText + ' ' + liveCurrentSessionInterim);
+                    const finalToSend = deduplicateSpokenText((liveTurnAccumulatedText + ' ' + liveCurrentSessionInterim).trim());
                     if (finalToSend.length >= 2 && isLiveActive && liveTurnState === 'LISTENING' && !isAITalking) {
                         commitLiveSpeech(finalToSend);
                     }
@@ -995,10 +1094,16 @@ function startBrowserSpeechRecognition() {
             liveCurrentSessionInterim = '';
             liveRecognition = null;
 
-            // Перезапуск микрофона делаем бесшовно: если таймер тишины активен — через 100мс, иначе 400мс
+            // Перезапуск микрофона без зацикливания бипов:
             if (isLiveActive && liveTurnState === 'LISTENING' && !isAITalking) {
                 if (speechRestartTimeout) clearTimeout(speechRestartTimeout);
-                const restartDelay = speechSilenceTimer ? 100 : 400;
+                const hasSpoken = (liveTurnAccumulatedText && liveTurnAccumulatedText.length >= 2);
+                let restartDelay = 800;
+                if (isIOS) {
+                    restartDelay = hasSpoken ? 1600 : 800;
+                } else {
+                    restartDelay = speechSilenceTimer ? 200 : 800;
+                }
                 speechRestartTimeout = setTimeout(() => {
                     if (isLiveActive && liveTurnState === 'LISTENING' && !isAITalking && !liveRecognition) {
                         startBrowserSpeechRecognition();
@@ -1015,6 +1120,7 @@ function startBrowserSpeechRecognition() {
 }
 
 function sendLiveQuickMessage() {
+    primeAudioForIOS(document.getElementById('liveGlobalAudioPlayer'));
     const input = document.getElementById('liveQuickInput');
     if (!input) return;
     const text = input.value.trim();
@@ -1024,12 +1130,13 @@ function sendLiveQuickMessage() {
 }
 
 function commitLiveSpeechImmediately() {
+    primeAudioForIOS(document.getElementById('liveGlobalAudioPlayer'));
     if (speechSilenceTimer) {
         clearTimeout(speechSilenceTimer);
         speechSilenceTimer = null;
     }
     const transcript = document.getElementById('liveTranscript');
-    let text = deduplicateSpokenText(liveTurnAccumulatedText + ' ' + liveCurrentSessionInterim);
+    let text = deduplicateSpokenText((liveTurnAccumulatedText + ' ' + liveCurrentSessionInterim).trim());
     if (!text && transcript) {
         text = transcript.textContent.replace(/^Вы:\s*«?/, '').replace(/»?$/, '').trim();
         text = deduplicateSpokenText(text);
@@ -1094,10 +1201,12 @@ function playNextInAudioQueue() {
             bytes[i] = binaryStr.charCodeAt(i);
         }
         const blob = new Blob([bytes], { type: 'audio/mpeg' });
-        currentLiveAudio = new Audio(URL.createObjectURL(blob));
+        const player = document.getElementById('liveGlobalAudioPlayer') || new Audio();
+        player.src = URL.createObjectURL(blob);
         if (liveSlowVoiceEnabled) {
-            currentLiveAudio.playbackRate = 0.8;
+            player.playbackRate = 0.8;
         }
+        currentLiveAudio = player;
 
         currentLiveAudio.onended = () => {
             currentLiveAudio = null;
@@ -1109,9 +1218,13 @@ function playNextInAudioQueue() {
             playNextInAudioQueue();
         };
 
-        currentLiveAudio.play().catch(() => {
-            playNextInAudioQueue();
-        });
+        const playPromise = currentLiveAudio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch((err) => {
+                console.warn('Live audio queue play error:', err);
+                playNextInAudioQueue();
+            });
+        }
     } catch(e) {
         playNextInAudioQueue();
     }
@@ -1296,10 +1409,12 @@ async function playLiveTTS(text) {
             }
 
             const blob = await res.blob();
-            currentLiveAudio = new Audio(URL.createObjectURL(blob));
+            const player = document.getElementById('liveGlobalAudioPlayer') || new Audio();
+            player.src = URL.createObjectURL(blob);
             if (liveSlowVoiceEnabled) {
-                currentLiveAudio.playbackRate = 0.8;
+                player.playbackRate = 0.8;
             }
+            currentLiveAudio = player;
 
             // КАК ТОЛЬКО КОУЧ ИЛИ ТРЕНЕР ЗАКОНЧИЛ ГОВОРИТЬ -> ВКЛЮЧАЕТСЯ МИКРОФОН (ВОПРОС-ОТВЕТ)
             currentLiveAudio.onended = () => {
@@ -1318,7 +1433,15 @@ async function playLiveTTS(text) {
                 resolve();
             };
 
-            await currentLiveAudio.play();
+            const playPromise = currentLiveAudio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(() => {
+                    if (isLiveActive) passTurnToUser();
+                    resolve();
+                });
+            } else {
+                resolve();
+            }
         } catch(e) {
             currentLiveAudio = null;
             if (isLiveActive) {
@@ -1344,10 +1467,12 @@ async function playLiveAudioBase64(base64Data) {
             }
             const blob = new Blob([bytes], { type: 'audio/mpeg' });
 
-            currentLiveAudio = new Audio(URL.createObjectURL(blob));
+            const player = document.getElementById('liveGlobalAudioPlayer') || new Audio();
+            player.src = URL.createObjectURL(blob);
             if (liveSlowVoiceEnabled) {
-                currentLiveAudio.playbackRate = 0.8;
+                player.playbackRate = 0.8;
             }
+            currentLiveAudio = player;
 
             currentLiveAudio.onended = () => {
                 currentLiveAudio = null;
@@ -1365,7 +1490,15 @@ async function playLiveAudioBase64(base64Data) {
                 resolve();
             };
 
-            await currentLiveAudio.play();
+            const playPromise = currentLiveAudio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(() => {
+                    if (isLiveActive) passTurnToUser();
+                    resolve();
+                });
+            } else {
+                resolve();
+            }
         } catch(e) {
             currentLiveAudio = null;
             if (isLiveActive) passTurnToUser();
@@ -1403,24 +1536,141 @@ function passTurnToUser() {
     }, 400);
 }
 
-// Голосовой ввод в текстовый чат
+// =========================================================================
+// 5.1 ГОЛОСОВАЯ НАДИКТОВКА В ЧАТЕ (В СТИЛЕ ANTIGRAVITY: PUSH-TO-TALK С ПРОВЕРКОЙ)
+// =========================================================================
+let chatDictationRecognition = null;
+let isChatDictating = false;
+let chatDictationBaseText = '';
+let chatDictationSessionFinal = '';
+
+function stopChatDictation() {
+    if (!isChatDictating) return;
+    isChatDictating = false;
+
+    if (chatDictationRecognition) {
+        try {
+            chatDictationRecognition.onresult = null;
+            chatDictationRecognition.onerror = null;
+            chatDictationRecognition.onend = null;
+            chatDictationRecognition.stop();
+        } catch(e) {}
+        chatDictationRecognition = null;
+    }
+
+    const recordBtn = document.getElementById('recordBtn');
+    const input = document.getElementById('chatInput');
+
+    if (recordBtn) {
+        recordBtn.classList.remove('bg-rose-600', 'text-white', 'animate-pulse');
+        recordBtn.classList.add('bg-rose-100', 'text-rose-600', 'hover:bg-rose-200');
+        recordBtn.innerHTML = `
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+            </svg>
+        `;
+        recordBtn.title = 'Голосовой ввод сообщения (нажмите, чтобы начать надиктовку)';
+    }
+
+    if (input) {
+        input.placeholder = 'Алина, напиши, что у тебя на душе или задай вопрос...';
+        // Возвращаем фокус в поле ввода, чтобы Алина могла проверить надиктованный текст и нажать «Отправить»
+        input.focus();
+    }
+}
+
 function toggleRecordVoice() {
+    // Разблокируем аудиосистему на iOS при взаимодействии пользователя
+    primeAudioForIOS(document.getElementById('globalTTSPlayer'));
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-        alert('Голосовой ввод не поддерживается вашим браузером.');
+        alert('Голосовой ввод не поддерживается вашим браузером. На iPhone рекомендуем использовать браузер Safari.');
         return;
     }
-    const rec = new SpeechRecognition();
-    rec.lang = 'ru-RU';
-    rec.onresult = (e) => {
-        const text = e.results[0][0].transcript;
-        const input = document.getElementById('chatInput');
-        if (input) {
-            input.value = text;
-            sendMessage();
-        }
-    };
-    rec.start();
+
+    // Если надиктовка уже активна — повторное нажатие останавливает запись и фиксирует текст
+    if (isChatDictating) {
+        stopChatDictation();
+        return;
+    }
+
+    const input = document.getElementById('chatInput');
+    const recordBtn = document.getElementById('recordBtn');
+    if (!input) return;
+
+    // Сохраняем уже набранный текст, чтобы дополнить его надиктовкой
+    const existingVal = input.value.trim();
+    chatDictationBaseText = existingVal ? existingVal + ' ' : '';
+    chatDictationSessionFinal = '';
+    isChatDictating = true;
+
+    // Визуальное состояние записи в стиле Antigravity: красный пульсирующий стоп-квадрат ⏹️
+    if (recordBtn) {
+        recordBtn.classList.remove('bg-rose-100', 'text-rose-600', 'hover:bg-rose-200');
+        recordBtn.classList.add('bg-rose-600', 'text-white', 'animate-pulse');
+        recordBtn.innerHTML = `
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <rect x="6" y="6" width="12" height="12" rx="2"></rect>
+            </svg>
+        `;
+        recordBtn.title = 'Идет запись речи... Нажмите еще раз, чтобы завершить надиктовку';
+    }
+
+    input.placeholder = '🎙️ Слушаю вас... Говорите. Нажмите ⏹️ для завершения.';
+
+    try {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        chatDictationRecognition = new SpeechRecognition();
+        chatDictationRecognition.lang = 'ru-RU';
+        chatDictationRecognition.continuous = !isIOS;
+        chatDictationRecognition.interimResults = true;
+
+        chatDictationRecognition.onresult = (e) => {
+            let instanceFinal = '';
+            let instanceInterim = '';
+
+            for (let i = e.resultIndex; i < e.results.length; ++i) {
+                const res = e.results[i];
+                const tr = res[0] ? res[0].transcript : '';
+                if (res.isFinal) {
+                    instanceFinal += tr + ' ';
+                } else {
+                    instanceInterim += tr;
+                }
+            }
+
+            if (instanceFinal) {
+                chatDictationSessionFinal = deduplicateSpokenText((chatDictationSessionFinal + ' ' + instanceFinal).trim());
+            }
+
+            const currentSpoken = deduplicateSpokenText((chatDictationSessionFinal + ' ' + instanceInterim).trim());
+            if (currentSpoken) {
+                input.value = (chatDictationBaseText + currentSpoken).trim();
+            }
+        };
+
+        chatDictationRecognition.onerror = (e) => {
+            console.warn('Chat dictation error:', e.error);
+            if (e.error === 'not-allowed') {
+                alert('Доступ к микрофону заблокирован. Разрешите доступ к микрофону в настройках браузера.');
+            }
+            stopChatDictation();
+        };
+
+        chatDictationRecognition.onend = () => {
+            // При завершении сессии распознавания возвращаем кнопку в исходное состояние
+            // Текст остается в поле ввода для проверки и ручной отправки!
+            if (isChatDictating) {
+                stopChatDictation();
+            }
+        };
+
+        chatDictationRecognition.start();
+    } catch(err) {
+        console.error('Failed to start chat dictation:', err);
+        stopChatDictation();
+    }
 }
 
 // =========================================================================

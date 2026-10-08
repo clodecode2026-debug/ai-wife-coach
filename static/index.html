@@ -221,9 +221,12 @@
             <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3.5">
                 <div class="flex items-start gap-2.5">
                     <img src="/static/img/coach_avatar.jpg" alt="Coach" class="w-8 h-8 rounded-full object-cover border border-rose-200 shrink-0">
-                    <div class="bg-rose-50 border border-rose-100 rounded-2xl p-3.5 max-w-xl text-slate-700 text-xs sm:text-sm shadow-sm">
+                    <div class="bg-rose-50 border border-rose-100 rounded-2xl p-3.5 max-w-xl text-slate-700 text-xs sm:text-sm shadow-sm relative group">
                         <p class="font-semibold text-rose-900 mb-1">Здравствуй, дорогая Алина! ✨</p>
-                        <p>Я твой личный дипломированный психолог-коуч. Я помню всё о твоих целях, немецком языке (B1), ресурсе и поддержке твоего мужа Романа. Что сейчас у тебя на душе? Расскажи — я здесь, чтобы бережно и глубоко тебя поддержать.</p>
+                        <p id="initialWelcomeMsg">Я твой личный дипломированный психолог-коуч. Я помню всё о твоих целях, немецком языке (B1), ресурсе и поддержке твоего мужа Романа. Что сейчас у тебя на душе? Расскажи — я здесь, чтобы бережно и глубоко тебя поддержать.</p>
+                        <button onclick="playElementTTS('initialWelcomeMsg', this)" class="absolute top-2.5 right-2.5 opacity-60 hover:opacity-100 text-rose-600 p-1 rounded-lg hover:bg-rose-100 transition" title="Озвучить ответ">
+                            🔊
+                        </button>
                     </div>
                 </div>
             </div>
@@ -287,9 +290,11 @@
                 <div id="liveTranscript" class="mt-2 px-3 py-1.5 sm:py-2 bg-white/10 backdrop-blur-md rounded-xl text-xs text-slate-200 max-w-sm sm:max-w-md text-center min-h-[38px] max-h-[22vh] overflow-y-auto no-scrollbar flex items-center justify-center border border-white/10 shadow-lg">
                     Здесь появится реплика коуча...
                 </div>
-                <div id="livePauseIndicator" class="hidden text-[11px] text-amber-200 mt-1 flex items-center justify-center gap-2">
-                    <span id="livePauseText">⏳ Слушаю паузу (можно продолжать мысль)...</span>
-                    <button onclick="commitLiveSpeechImmediately()" class="underline hover:text-white font-semibold">Отправить ➔</button>
+                <div id="livePauseIndicator" class="hidden text-[11px] text-amber-200 mt-1.5 flex items-center justify-center gap-2 flex-wrap">
+                    <span id="livePauseText">⏳ Пауза... Можно продолжать мысль</span>
+                    <button onclick="commitLiveSpeechImmediately()" class="px-2.5 py-1 bg-gradient-to-r from-rose-500 to-pink-500 hover:opacity-95 text-white rounded-lg font-bold text-[11px] shadow-sm transition active:scale-95 flex items-center gap-1">
+                        <span>Отправить коучу</span> <span>➔</span>
+                    </button>
                 </div>
             </div>
 
@@ -315,9 +320,9 @@
 
                 <!-- Переключатели Звук и Темп -->
                 <div class="flex items-center justify-center gap-2">
-                    <button onclick="toggleLiveSound()" id="liveSoundToggleBtn" class="text-[11px] px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-slate-200 flex items-center gap-1 transition">
-                        <span id="liveSoundIcon">🔇</span>
-                        <span id="liveSoundText">Звук: Выключен</span>
+                    <button onclick="toggleLiveSound()" id="liveSoundToggleBtn" class="text-[11px] px-2.5 py-1 rounded-lg bg-rose-500/30 border border-rose-400 text-rose-100 flex items-center gap-1 transition shadow-xs">
+                        <span id="liveSoundIcon">🔊</span>
+                        <span id="liveSoundText">Звук: Включен</span>
                     </button>
                     <button onclick="toggleSlowVoiceMode()" id="liveSlowToggleBtn" class="text-[11px] px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-slate-200 flex items-center gap-1 transition" title="Медленная четкая речь для лучшего понимания">
                         <span id="liveSlowIcon">🐢</span>
@@ -480,8 +485,12 @@
         </button>
     </nav>
 
+    <!-- Скрытые постоянные аудио-плееры для надежного обхода блокировок Autoplay на iOS Safari -->
+    <audio id="globalTTSPlayer" preload="auto" playsinline webkit-playsinline class="hidden"></audio>
+    <audio id="liveGlobalAudioPlayer" preload="auto" playsinline webkit-playsinline class="hidden"></audio>
+
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    <script src="/static/duolingo/duolingo.js?v=11"></script>
-    <script src="/static/app.js?v=11"></script>
+    <script src="/static/duolingo/duolingo.js?v=12"></script>
+    <script src="/static/app.js?v=12"></script>
 </body>
 </html>

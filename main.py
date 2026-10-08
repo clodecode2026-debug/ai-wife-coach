@@ -6,7 +6,7 @@ import asyncio
 import logging
 import hmac
 import hashlib
-from typing import Optional
+from typing import Optional, Dict, Any
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query, Request, Response, Depends
 from fastapi.staticfiles import StaticFiles
@@ -23,7 +23,7 @@ from database import db_manager
 from german import get_german_phrases
 from library import get_library_items
 from storage import s3_storage
-from books.psychology_books import get_psychology_books, PSYCHOLOGY_BOOKS
+from books.psychology_books import get_psychology_books, PSYCHOLOGY_BOOKS, get_book_by_id
 from books.german_course import get_german_course, GERMAN_COURSE_DATA
 
 # Пин-код и авторизация
@@ -115,6 +115,7 @@ class ChatRequest(BaseModel):
     is_voice_mode: bool = False
     mode: Optional[str] = "coach"  # "coach" | "german"
     german_lesson_id: Optional[int] = None
+    book_id: Optional[str] = None
 
 class TTSRequest(BaseModel):
     text: str
@@ -143,11 +144,44 @@ async def read_index():
     except Exception as e:
         return HTMLResponse(content=f"<h1>AI Wife Coach</h1><p>Ошибка загрузки интерфейса: {e}</p>")
 
+# Кэш соответствия сессий книгам (для быстрого поиска даже при конвертации ID в UUID)
+BOOK_SESSIONS_MAP: Dict[str, str] = {}
+
+def find_book_context(session_id: str, book_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    target_id = book_id
+    if not target_id and session_id in BOOK_SESSIONS_MAP:
+        target_id = BOOK_SESSIONS_MAP[session_id]
+    if not target_id and session_id.startswith("book_"):
+        parts = session_id.split("_")
+        if len(parts) >= 3:
+            target_id = "_".join(parts[1:-1])
+    if target_id:
+        book = get_book_by_id(target_id)
+        if book:
+            return book
+
+    # Если ID не найден напрямую, проверяем по названию сессии или первому сообщению в БД
+    try:
+        history = db_manager.get_chat_history(session_id, limit=3)
+        if history and len(history) > 0:
+            first_msg = history[0].get("content", "")
+            if "когнитивно-поведенческой терапии" in first_msg or "Бранч" in first_msg or "Роб Уиллсон" in first_msg:
+                return get_book_by_id("cbt_workbook_dummies")
+            if "Самооцінка" in first_msg or "Шопiн" in first_msg or "Шопин" in first_msg:
+                return get_book_by_id("shopin_self_esteem")
+            if "Ты есть и этого достаточно" in first_msg or "Макарадзе" in first_msg:
+                return get_book_by_id("makaradze_ty_est_dostatochno")
+    except Exception as e:
+        logger.warning(f"Ошибка поиска контекста книги в истории: {e}")
+
+    return None
+
 @app.post("/api/chat")
 def api_chat(req: ChatRequest, _auth: bool = Depends(require_auth)):
     try:
         session_id = req.session_id
         german_context = None
+        book_context = find_book_context(session_id, req.book_id)
 
         # РЕЖИМ СПЕЦИАЛИЗИРОВАННОГО НЕМЕЦКОГО РЕЧЕВОГО КОУЧА
         if req.mode == "german":
@@ -177,7 +211,8 @@ def api_chat(req: ChatRequest, _auth: bool = Depends(require_auth)):
             history=history,
             dossier=dossier,
             is_voice_mode=req.is_voice_mode,
-            german_context=german_context
+            german_context=german_context,
+            book_context=book_context
         )
 
         # Сохраняем ответ ассистента
@@ -210,6 +245,7 @@ def api_chat(req: ChatRequest, _auth: bool = Depends(require_auth)):
 def api_chat_stream(req: ChatRequest, _auth: bool = Depends(require_auth)):
     session_id = req.session_id
     german_context = None
+    book_context = find_book_context(session_id, req.book_id)
 
     if req.mode == "german":
         session_id = f"german_live_{req.session_id}"
@@ -243,7 +279,8 @@ def api_chat_stream(req: ChatRequest, _auth: bool = Depends(require_auth)):
                 history=history,
                 dossier=dossier,
                 is_voice_mode=req.is_voice_mode,
-                german_context=german_context
+                german_context=german_context,
+                book_context=book_context
             ):
                 sentence_buffer += token
                 full_reply += token
@@ -510,6 +547,35 @@ def api_create_session(req: Optional[CreateSessionRequest] = None, _auth: bool =
     title = req.title if req and req.title else "Новый диалог с Алиной"
     db_manager.save_message(new_id, "assistant", "Здравствуй, дорогая Алина! Я рядом, о чём ты сейчас думаешь?")
     return {"id": new_id, "title": title}
+
+class BookSessionRequest(BaseModel):
+    book_id: str
+
+@app.post("/api/sessions/book")
+def api_create_book_session(req: BookSessionRequest, _auth: bool = Depends(require_auth)):
+    book = get_book_by_id(req.book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Книга не найдена")
+    raw_id = f"book_{book['id']}_{uuid.uuid4().hex[:8]}"
+    title = f"📖 {book['title'][:35]}"
+    b_title = book["title"]
+    b_author = book["author"]
+    b_desc = book["description"]
+    intro = (
+        f"Здравствуй, дорогая Алина! ✨ Мы открыли персональный диалог для обсуждения книги «{b_title}» ({b_author}).\n\n"
+        f"Я знаю ключевые методики, инсайты и практические упражнения из этой книги.\n\n"
+        f"💡 **Суть книги:** {b_desc}\n\n"
+        f"О чём из этой книги тебе сейчас больше всего хочется поговорить? Какую тему или упражнение разберём?"
+    )
+    BOOK_SESSIONS_MAP[raw_id] = book["id"]
+    try:
+        sess_uuid = db_manager._to_uuid(raw_id)
+        BOOK_SESSIONS_MAP[sess_uuid] = book["id"]
+    except Exception:
+        pass
+
+    db_manager.save_message(raw_id, "assistant", intro, title=title)
+    return {"id": raw_id, "title": title, "book_id": book["id"], "greeting": intro}
 
 @app.delete("/api/sessions/{session_id}")
 def api_delete_session(session_id: str, _auth: bool = Depends(require_auth)):

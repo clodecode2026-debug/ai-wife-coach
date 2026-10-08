@@ -81,7 +81,7 @@ class SupabaseManager:
         except Exception as e:
             logger.error(f"Ошибка сохранения досье в Supabase: {e}")
 
-    def save_message(self, session_id: str, role: str, content: str) -> None:
+    def save_message(self, session_id: str, role: str, content: str, title: Optional[str] = None) -> None:
         if not self.client:
             return
         try:
@@ -90,10 +90,10 @@ class SupabaseManager:
                 # Проверяем, существует ли уже эта сессия
                 existing = self.client.table("chat_sessions").select("id").eq("id", sess_uuid).execute()
                 if not existing.data:
-                    title = content[:45] if role == "user" else "Диалог с Алиной"
+                    session_title = title if title else (content[:45] if role == "user" else "Диалог с Алиной")
                     self.client.table("chat_sessions").insert({
                         "id": sess_uuid,
-                        "title": title
+                        "title": session_title
                     }).execute()
             except Exception as err_s:
                 logger.warning(f"Upsert chat_sessions notice: {err_s}")

@@ -13,10 +13,15 @@ def get_library_items():
             "title": b["title"],
             "author": b["author"],
             "category": b["category"],
-            "year": b.get("year", 2000),
-            "rating": b.get("rating", 4.8),
+            "year": b.get("year", 2020),
+            "rating": b.get("rating", 4.9),
             "excerpt": b["excerpt"],
             "description": b["description"],
-            "key_ideas": b["key_ideas"]
+            "key_ideas": b["key_ideas"],
+            "takeaway": b.get("key_ideas", [""])[0] if b.get("key_ideas") else "",
+            "chapters": b.get("chapters", []),
+            "practical_exercises": b.get("practical_exercises", []),
+            "discussion_intro": b.get("discussion_intro", "")
         })
     return items
+

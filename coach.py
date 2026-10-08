@@ -86,7 +86,7 @@ class AIFeminineCoach:
             except Exception as e:
                 logger.error(f"Ошибка инициализации GenAI Client: {e}")
 
-    def _get_system_prompt(self, dossier: Optional[Dict[str, Any]] = None, is_voice_mode: bool = False, german_context: Optional[Dict[str, Any]] = None) -> str:
+    def _get_system_prompt(self, dossier: Optional[Dict[str, Any]] = None, is_voice_mode: bool = False, german_context: Optional[Dict[str, Any]] = None, book_context: Optional[Dict[str, Any]] = None) -> str:
         # СПЕЦИАЛЬНЫЙ РЕЖИМ: НЕМЕЦКИЙ ЯЗЫКОВОЙ РЕЧЕВОЙ КОУЧ (НЕ СБИВАЕТ ПСИХОЛОГА)
         if german_context:
             lesson_title = german_context.get("title", "")
@@ -135,6 +135,48 @@ class AIFeminineCoach:
 
         kb_prompt = get_knowledge_base_prompt()
 
+        book_prompt_section = ""
+        if book_context:
+            b_title = book_context.get("title", "")
+            b_author = book_context.get("author", "")
+            b_cat = book_context.get("category", "")
+            b_desc = book_context.get("description", "")
+            b_ideas = "\n".join([f"  • {i}" for i in book_context.get("key_ideas", [])])
+            b_exercises = "\n".join([f"  • {e}" for e in book_context.get("practical_exercises", [])])
+            b_chapters = "\n".join([f"  • {c}" for c in book_context.get("chapters", [])])
+            b_excerpt = book_context.get("excerpt", "")
+            b_snip = book_context.get("coach_prompt_snippet", "")
+
+            book_prompt_section = f"""
+======================================================================
+ФОКУС ЭТОГО ДИАЛОГА: ОБСУЖДЕНИЕ КНИГИ «{b_title}»
+АВТОР: {b_author} ({b_cat})
+СУТЬ И ФИЛОСОФИЯ КНИГИ:
+{b_desc}
+
+КЛЮЧЕВЫЕ ИДЕИ И МЕТОДИКИ:
+{b_ideas}
+
+ГЛАВЫ И ТЕМЫ КНИГИ:
+{b_chapters}
+
+ПРАКТИЧЕСКИЕ УПРАЖНЕНИЯ И БЛАНКИ АВТОРА:
+{b_exercises}
+
+ЗНАКОВАЯ ЦИТАТА / ИНСАЙТ:
+{b_excerpt}
+
+МЕТОДИЧЕСКИЙ ФОКУС:
+{b_snip}
+======================================================================
+ПРАВИЛА ДИАЛОГА ПО КНИГЕ:
+1. Алина открыла этот персональный чат специально для глубокого обсуждения этой книги!
+2. В каждом ответе активно опирайся на идеи, термины, методику и упражнения именно этой книги.
+3. Помогай Алине применять инструменты автора к её реальной жизни, эмоциям, преодолению тревоги, перфекционизма и укреплению самооценки.
+4. Если Алина делится ситуацией — покажи, как автор книги рекомендует с ней работать, и предложи разобрать подходящее упражнение.
+5. Сохраняй тёплый, поддерживающий тон на «ты» и завершай реплику бережным открытым вопросом.
+"""
+
         if is_voice_mode:
             return f"""Ты — чуткий, живой, дипломированный психолог-собеседник и личный коуч для Алины (35 лет, украинка).
 Ты общаешься с Алиной на «ты», в теплом, бережном, доверительном тоне близкой любящей наставницы («Алина, солнышко...»).
@@ -153,20 +195,18 @@ class AIFeminineCoach:
    - 1 короткая фраза: тёплый отклик на «ты», сонастройка («Алина, солнышко, слышу тебя...»).
    - 1 короткая фраза: мягкая психологическая мысль КПТ или Транзактного анализа (снять тревогу, вернуть опору).
    - 1 короткая фраза: ровно ОДИН открытый бережный вопрос для поддержания живой беседы.
-3. НИКАКИХ списков, пунктов 1-2-3, цитат, длинных рассуждений и лекций! Говори легко, просто, уютно, как близкий человек по телефону.
+3. НИКАКИХ списков, пунктов 1-2-3, длинных рассуждений и лекций! Говори легко, просто, уютно, как близкий человек по телефону.
 
 ПРАВИЛО КОРОТКИХ РЕПЛИК («тут», «привет», «ты здесь», «слышишь меня»):
 - Если реплика Алины очень короткая или это проверка связи, ОТВЕЧАЙ МАКСИМАЛЬНО ПРОСТО И КРАТКО (1-2 короткие фразы):
   «Да, солнышко, я здесь и внимательно слушаю! О чём хочется поговорить?» или «Привет, моя хорошая! Как твое настроение?».
 - КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО разводить философию или искать скрытый смысл, когда собеседник просто поздоровался или сказал «тут»!
 
-КАТЕГОРИЧЕСКИЙ ЗАПРЕТ НА КНИГИ И АВТОРОВ В ГОЛОСЕ:
-- НИКОГДА не упоминай названия книг, авторов («мудрость этих авторов»), методики и теории вслух, если Алина прямо сама не попросила об этом!
-
 СТРОГИЙ ЗАПРЕТ НА БАНАЛЬНОСТИ И ШАБЛОНЫ:
 - Запрет на банальности вроде: «Я понимаю ваши чувства», «Не переживайте, всё наладится», «Держитесь», «Всё будет хорошо». Это звучит фальшиво.
 - Вместо пустых слов используй живой сократический диалог и принятие.
 {dossier_info}
+{book_prompt_section}
 """
 
         return f"""Ты — профессиональный дипломированный психолог-психотерапевт, чуткий собеседник и персональный коуч для Алины.
@@ -184,11 +224,12 @@ class AIFeminineCoach:
 {dossier_info}
 
 {kb_prompt}
+{book_prompt_section}
 """
 
-    def generate_streaming_response(self, message: str, history: List[Dict[str, str]] = None, dossier: Optional[Dict[str, Any]] = None, is_voice_mode: bool = False, german_context: Optional[Dict[str, Any]] = None):
+    def generate_streaming_response(self, message: str, history: List[Dict[str, str]] = None, dossier: Optional[Dict[str, Any]] = None, is_voice_mode: bool = False, german_context: Optional[Dict[str, Any]] = None, book_context: Optional[Dict[str, Any]] = None):
         """Потоковая генерация ответа для мгновенного первого аудио-чанка (~500мс задержки)"""
-        system_prompt = self._get_system_prompt(dossier, is_voice_mode, german_context)
+        system_prompt = self._get_system_prompt(dossier, is_voice_mode, german_context, book_context)
         max_tokens = 120 if german_context else (70 if is_voice_mode else 500)
 
         if is_voice_mode or german_context:
@@ -240,11 +281,11 @@ class AIFeminineCoach:
                     self.router.mark_error(f"bridge:{model_name}", duration_sec=45.0)
 
         # Резервный вызов
-        full = self.generate_response(message, history, dossier, is_voice_mode, german_context)
+        full = self.generate_response(message, history, dossier, is_voice_mode, german_context, book_context)
         yield full
 
-    def generate_response(self, message: str, history: List[Dict[str, str]] = None, dossier: Optional[Dict[str, Any]] = None, is_voice_mode: bool = False, german_context: Optional[Dict[str, Any]] = None) -> str:
-        system_prompt = self._get_system_prompt(dossier, is_voice_mode, german_context)
+    def generate_response(self, message: str, history: List[Dict[str, str]] = None, dossier: Optional[Dict[str, Any]] = None, is_voice_mode: bool = False, german_context: Optional[Dict[str, Any]] = None, book_context: Optional[Dict[str, Any]] = None) -> str:
+        system_prompt = self._get_system_prompt(dossier, is_voice_mode, german_context, book_context)
         # Для голосового режима строго 70 токенов (как раз 2-4 коротких предложения, 25-40 слов), для немецкого 120, для текста 500
         max_tokens = 120 if german_context else (70 if is_voice_mode else 500)
 

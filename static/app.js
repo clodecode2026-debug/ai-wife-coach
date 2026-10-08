@@ -368,6 +368,85 @@ function toggleSessionsDrawer(forceState) {
     }
 }
 
+function getStoredBookForSession(sessId) {
+    if (!sessId) return null;
+    if (sessId.startsWith('book_')) {
+        const parts = sessId.split('_');
+        if (parts.length >= 3) return parts.slice(1, -1).join('_');
+    }
+    try {
+        const map = JSON.parse(localStorage.getItem('ai_coach_book_sessions') || '{}');
+        return map[sessId] || null;
+    } catch(e) {
+        return null;
+    }
+}
+
+function storeBookForSession(sessId, bookId) {
+    if (!sessId || !bookId) return;
+    try {
+        const map = JSON.parse(localStorage.getItem('ai_coach_book_sessions') || '{}');
+        map[sessId] = bookId;
+        localStorage.setItem('ai_coach_book_sessions', JSON.stringify(map));
+    } catch(e) {}
+}
+
+async function startBookDiscussion(bookId) {
+    try {
+        switchTab('chat');
+        const container = document.getElementById('chatMessages');
+        if (container) {
+            container.innerHTML = `
+                <div class="flex items-center justify-center py-12 text-slate-400 text-xs gap-2">
+                    <span class="w-2.5 h-2.5 bg-rose-400 rounded-full animate-bounce"></span>
+                    <span>Открываем тематический диалог с коучем по книге...</span>
+                </div>
+            `;
+        }
+
+        const res = await fetch('/api/sessions/book', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ book_id: bookId })
+        });
+        if (!res.ok) throw new Error('Не удалось создать диалог по книге');
+        const data = await res.json();
+
+        sessionId = data.id;
+        window._currentBookId = data.book_id;
+        localStorage.setItem('ai_coach_session_id', sessionId);
+        storeBookForSession(sessionId, data.book_id);
+
+        if (container) {
+            container.innerHTML = '';
+            const bookInfo = (allLibraryBooks || []).find(b => b.id === data.book_id);
+            if (bookInfo) {
+                const badge = document.createElement('div');
+                badge.className = 'p-3 mb-2 rounded-2xl bg-gradient-to-r from-rose-50 to-pink-50 border border-rose-200 text-xs text-slate-700 shadow-sm';
+                badge.innerHTML = `
+                    <div class="flex items-center justify-between font-bold text-rose-800 mb-1">
+                        <span class="flex items-center gap-1.5">📖 <span>${escapeHtml(bookInfo.title)}</span></span>
+                        <span class="text-[10px] bg-rose-200/60 text-rose-700 px-2 py-0.5 rounded-full">${escapeHtml(bookInfo.author)}</span>
+                    </div>
+                    <p class="text-[11px] text-slate-600">${escapeHtml(bookInfo.excerpt)}</p>
+                    <div class="mt-2 flex flex-wrap gap-1.5 pt-1 border-t border-rose-100">
+                        <button onclick="sendMoodPrompt('Расскажи о главном инсайте из книги «${escapeQuotes(bookInfo.title)}» и как он поможет мне прямо сейчас.')" class="px-2 py-1 bg-white hover:bg-rose-100 text-rose-700 text-[10px] rounded-lg border border-rose-200 transition">💡 Главный инсайт</button>
+                        <button onclick="sendMoodPrompt('Дай мне одно простое практическое упражнение из книги «${escapeQuotes(bookInfo.title)}», которое я смогу сделать за 5 минут.')" class="px-2 py-1 bg-white hover:bg-rose-100 text-rose-700 text-[10px] rounded-lg border border-rose-200 transition">📝 Практическое упражнение</button>
+                        <button onclick="sendMoodPrompt('Как методика из этой книги («${escapeQuotes(bookInfo.title)}») помогает справиться с тревогой и неуверенностью?')" class="px-2 py-1 bg-white hover:bg-rose-100 text-rose-700 text-[10px] rounded-lg border border-rose-200 transition">🌸 Снятие тревоги</button>
+                    </div>
+                `;
+                container.appendChild(badge);
+            }
+            appendMessage(data.greeting, 'assistant', true);
+        }
+
+        loadSessionsList();
+    } catch(err) {
+        console.error('Book discussion error:', err);
+        alert('Не удалось начать диалог по книге. Попробуйте еще раз.');
+    }
+}
+
 async function loadSessionsList() {
     const container = document.getElementById('sessionsList');
     if (!container) return;
@@ -387,10 +466,13 @@ async function loadSessionsList() {
             const isActive = s.id === sessionId || s.id.includes(sessionId);
             const dateStr = s.created_at ? new Date(s.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : '';
             const title = s.title || 'Диалог с Алиной';
+            const isBook = title.includes('📖') || (s.id && s.id.startsWith('book_'));
 
             const item = document.createElement('div');
             item.className = `p-2.5 rounded-xl text-xs flex items-center justify-between gap-2 cursor-pointer transition ${
-                isActive ? 'bg-rose-100/90 text-rose-900 font-bold border border-rose-200' : 'bg-slate-50 hover:bg-rose-50 text-slate-700 border border-slate-100'
+                isActive 
+                    ? (isBook ? 'bg-amber-100/90 text-amber-950 font-bold border border-amber-300' : 'bg-rose-100/90 text-rose-900 font-bold border border-rose-200')
+                    : (isBook ? 'bg-amber-50/60 hover:bg-amber-100/70 text-slate-700 border border-amber-100' : 'bg-slate-50 hover:bg-rose-50 text-slate-700 border border-slate-100')
             }`;
             item.onclick = () => selectSession(s.id);
 
@@ -412,6 +494,7 @@ async function loadSessionsList() {
 
 async function createNewChatSession() {
     try {
+        window._currentBookId = null;
         const res = await fetch('/api/sessions', { method: 'POST' });
         const data = await res.json();
         sessionId = data.id;
@@ -437,6 +520,7 @@ async function createNewChatSession() {
 
 async function selectSession(id) {
     sessionId = id;
+    window._currentBookId = getStoredBookForSession(id);
     localStorage.setItem('ai_coach_session_id', sessionId);
     toggleSessionsDrawer(false);
     loadChatHistory();
@@ -468,11 +552,18 @@ async function sendMessage() {
     appendMessage(text, 'user');
     const loadingId = appendLoadingMessage();
 
+    const currentBookId = window._currentBookId || getStoredBookForSession(sessionId);
+
     try {
+        const payload = { message: text, session_id: sessionId, is_voice_mode: false };
+        if (currentBookId) {
+            payload.book_id = currentBookId;
+        }
+
         const res = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: text, session_id: sessionId, is_voice_mode: false })
+            body: JSON.stringify(payload)
         });
         const data = await res.json();
         removeLoadingMessage(loadingId);
@@ -547,8 +638,28 @@ async function loadChatHistory() {
         const container = document.getElementById('chatMessages');
         if (!container) return;
 
+        const currentBookId = window._currentBookId || getStoredBookForSession(sessionId);
+        const bookInfo = currentBookId ? (allLibraryBooks || []).find(b => b.id === currentBookId) : null;
+
         if (messages && messages.length > 0) {
             container.innerHTML = '';
+            if (bookInfo) {
+                const badge = document.createElement('div');
+                badge.className = 'p-3 mb-2 rounded-2xl bg-gradient-to-r from-rose-50 to-pink-50 border border-rose-200 text-xs text-slate-700 shadow-sm';
+                badge.innerHTML = `
+                    <div class="flex items-center justify-between font-bold text-rose-800 mb-1">
+                        <span class="flex items-center gap-1.5">📖 <span>${escapeHtml(bookInfo.title)}</span></span>
+                        <span class="text-[10px] bg-rose-200/60 text-rose-700 px-2 py-0.5 rounded-full">${escapeHtml(bookInfo.author)}</span>
+                    </div>
+                    <p class="text-[11px] text-slate-600">${escapeHtml(bookInfo.excerpt)}</p>
+                    <div class="mt-2 flex flex-wrap gap-1.5 pt-1 border-t border-rose-100">
+                        <button onclick="sendMoodPrompt('Расскажи о главном инсайте из книги «${escapeQuotes(bookInfo.title)}» и как он поможет мне прямо сейчас.')" class="px-2 py-1 bg-white hover:bg-rose-100 text-rose-700 text-[10px] rounded-lg border border-rose-200 transition">💡 Главный инсайт</button>
+                        <button onclick="sendMoodPrompt('Дай мне одно простое практическое упражнение из книги «${escapeQuotes(bookInfo.title)}», которое я смогу сделать за 5 минут.')" class="px-2 py-1 bg-white hover:bg-rose-100 text-rose-700 text-[10px] rounded-lg border border-rose-200 transition">📝 Практическое упражнение</button>
+                        <button onclick="sendMoodPrompt('Как методика из этой книги («${escapeQuotes(bookInfo.title)}») помогает справиться с тревогой и неуверенностью?')" class="px-2 py-1 bg-white hover:bg-rose-100 text-rose-700 text-[10px] rounded-lg border border-rose-200 transition">🌸 Снятие тревоги</button>
+                    </div>
+                `;
+                container.appendChild(badge);
+            }
             messages.forEach(m => {
                 appendMessage(m.content, m.role, false);
             });
@@ -1251,17 +1362,21 @@ async function handleLiveUserSpeech(text) {
 
     // 1. Попытка мгновенного потокового ответа по предложениям (~500 мс до первого звука)
     let streamSuccess = false;
+    const currentLiveBookId = window._currentBookId || getStoredBookForSession(sessionId);
     try {
+        const streamPayload = {
+            message: text,
+            session_id: sessionId,
+            is_voice_mode: true,
+            mode: liveCoachMode,
+            german_lesson_id: currentLiveGermanLessonId
+        };
+        if (currentLiveBookId) streamPayload.book_id = currentLiveBookId;
+
         const streamRes = await fetch('/api/chat/stream', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                message: text,
-                session_id: sessionId,
-                is_voice_mode: true,
-                mode: liveCoachMode,
-                german_lesson_id: currentLiveGermanLessonId
-            })
+            body: JSON.stringify(streamPayload)
         });
 
         if (streamRes.ok && streamRes.body) {
@@ -1325,16 +1440,19 @@ async function handleLiveUserSpeech(text) {
 
     // 2. Резервный вызов стандартного эндпоинта /api/chat
     try {
+        const fbPayload = {
+            message: text,
+            session_id: sessionId,
+            is_voice_mode: true,
+            mode: liveCoachMode,
+            german_lesson_id: currentLiveGermanLessonId
+        };
+        if (currentLiveBookId) fbPayload.book_id = currentLiveBookId;
+
         const res = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                message: text,
-                session_id: sessionId,
-                is_voice_mode: true,
-                mode: liveCoachMode,
-                german_lesson_id: currentLiveGermanLessonId
-            })
+            body: JSON.stringify(fbPayload)
         });
         const data = await res.json();
         const reply = data.reply || 'Алина, я рядом и слышу каждое твоё слово.';
@@ -2264,14 +2382,21 @@ function renderLibrary(books) {
                 </div>
                 <h4 class="font-extrabold text-sm text-slate-800 mt-2">${escapeHtml(b.title)}</h4>
                 <p class="text-xs text-slate-600 mt-1 line-clamp-3 leading-relaxed">${escapeHtml(b.excerpt)}</p>
-                <div class="mt-2.5 p-2.5 bg-gradient-to-r from-rose-50/80 to-pink-50/80 border border-rose-100/80 rounded-xl text-[11px] text-rose-900 leading-snug">
-                    <span class="font-bold">💡 Главный инсайт:</span> ${escapeHtml(b.takeaway || (b.key_ideas ? b.key_ideas[0] : ''))}
+                <div class="mt-2.5 space-y-1.5">
+                    <div class="p-2.5 bg-gradient-to-r from-rose-50/80 to-pink-50/80 border border-rose-100/80 rounded-xl text-[11px] text-rose-900 leading-snug">
+                        <span class="font-bold">💡 Главный инсайт:</span> ${escapeHtml(b.takeaway || (b.key_ideas ? b.key_ideas[0] : ''))}
+                    </div>
+                    ${b.practical_exercises && b.practical_exercises.length > 0 ? `
+                    <div class="p-2 bg-amber-50/80 border border-amber-200/60 rounded-xl text-[10.5px] text-amber-900 leading-snug">
+                        <span class="font-bold">📝 Практика:</span> ${escapeHtml(b.practical_exercises[0])}
+                    </div>
+                    ` : ''}
                 </div>
             </div>
-            <div class="flex gap-2 pt-1">
-                <button onclick="sendMoodPrompt('Алина хочет разобрать психологическую книгу «${escapeQuotes(b.title)}» (${escapeQuotes(b.author)}). Какой ключевой совет из этой книги поможет мне стать спокойнее и увереннее сегодня?')" 
-                        class="flex-1 py-2 bg-gradient-to-r from-rose-500 to-pink-500 hover:opacity-95 text-white text-xs font-bold rounded-xl transition shadow-sm text-center">
-                    💬 Обсудить с коучем
+            <div class="flex gap-2 pt-2">
+                <button onclick="startBookDiscussion('${escapeQuotes(b.id)}')" 
+                        class="flex-1 py-2.5 bg-gradient-to-r from-rose-500 to-pink-500 hover:opacity-95 text-white text-xs font-bold rounded-xl transition shadow-sm text-center flex items-center justify-center gap-1.5 active:scale-95">
+                    <span>💬 Обсудить с коучем</span>
                 </button>
             </div>
         `;

@@ -1045,8 +1045,14 @@ class LingoGameEngine {
                     <div class="flex flex-col items-center my-1 transition-transform ${offsetClass} relative group">
                         ${isCurrent ? `
                             <div class="absolute -left-16 sm:-left-20 top-0 flex flex-col items-center animate-bounce z-20">
-                                <img src="/static/duolingo/mascot.svg" class="w-12 h-12" alt="Duolingo Owl">
-                                <span class="text-[9px] bg-amber-100 text-amber-800 font-extrabold px-1.5 py-0.5 rounded-full mt-0.5 border border-amber-300 shadow-2xs">СТАРТ</span>
+                                <div class="relative cursor-pointer group/avatar" onclick="if(typeof switchTab==='function') switchTab('dossier')" title="Алина — Твой текущий урок! (Нажми для перехода в профиль)">
+                                    <img src="${(typeof getAlinaAvatar === 'function') ? getAlinaAvatar() : (localStorage.getItem('alina_custom_avatar') || localStorage.getItem('alina_active_avatar') || '/static/img/alina_avatar.jpg')}" 
+                                         class="duolingo-hero-avatar w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover border-2 border-amber-400 ring-4 ring-amber-200/90 shadow-lg group-hover/avatar:scale-105 transition" alt="Алина">
+                                    <span class="absolute -bottom-1 -right-1 text-xs">✨</span>
+                                </div>
+                                <span class="text-[9px] bg-gradient-to-r from-amber-500 to-rose-500 text-white font-black px-2 py-0.5 rounded-full mt-1 shadow-xs tracking-wide">
+                                    Алина 🎯
+                                </span>
                             </div>
                         ` : ''}
 
@@ -1109,7 +1115,11 @@ class LingoGameEngine {
         modal.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in';
         modal.innerHTML = `
             <div class="bg-white rounded-3xl p-5 sm:p-6 max-w-sm w-full shadow-2xl border-2 border-slate-200 text-center space-y-4 animate-scale-up">
-                <img src="/static/duolingo/mascot.svg" class="w-16 h-16 mx-auto animate-bounce" alt="Owl">
+                <div class="relative w-16 h-16 mx-auto">
+                    <img src="${(typeof getAlinaAvatar === 'function') ? getAlinaAvatar() : (localStorage.getItem('alina_custom_avatar') || localStorage.getItem('alina_active_avatar') || '/static/img/alina_avatar.jpg')}" 
+                         class="duolingo-hero-avatar w-16 h-16 rounded-full object-cover border-2 border-rose-300 ring-4 ring-rose-100 shadow-md animate-bounce" alt="Алина">
+                    <span class="absolute -bottom-1 -right-1 text-sm">🇩🇪</span>
+                </div>
                 <div>
                     <span class="text-rose-600 font-extrabold text-xs uppercase">${lesson.level} • ДЕНЬ ${lesson.day || lesson.id}</span>
                     <h3 class="text-lg font-black text-slate-800 mt-1">${escapeHtml(lesson.title)}</h3>

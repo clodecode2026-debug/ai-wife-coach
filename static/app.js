@@ -2618,39 +2618,117 @@ async function saveDossierSettings() {
 // 8.1 УПРАВЛЕНИЕ АВАТАРОМ И ФОТО АЛИНЫ
 // ==========================================
 function getAlinaAvatar() {
-    return localStorage.getItem('alina_active_avatar') || '/static/img/alina_avatar.jpg';
+    return localStorage.getItem('alina_custom_avatar') 
+        || localStorage.getItem('alina_active_avatar') 
+        || '/static/img/alina_avatar.jpg';
 }
+window.getAlinaAvatar = getAlinaAvatar;
 
 function setAlinaAvatar(src) {
+    localStorage.removeItem('alina_custom_avatar');
     localStorage.setItem('alina_active_avatar', src);
     updateAlinaAvatarUI();
+    updateDuolingoMapAvatar();
     showToastNotification('✨ Аватар Алины успешно обновлен!');
 }
+window.setAlinaAvatar = setAlinaAvatar;
+
+/**
+ * Клиентское сжатие и загрузка своего фото:
+ * 1. Читает любой файл со смартфона/ПК (JPEG, PNG, HEIC, WebP)
+ * 2. Ограничивает размер через HTML5 Canvas (512x512 с умным центрированием)
+ * 3. Сжимает в JPEG с качеством 0.85 (~40-60 КБ вместо 10-20 МБ)
+ * 4. Мгновенно синхронизирует чаты, шапку, Досье и карту Duolingo
+ */
+function handleCustomAvatarUpload(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+        alert('Пожалуйста, выберите файл изображения (JPG, PNG, HEIC, WebP)');
+        return;
+    }
+
+    showToastNotification('⏳ Оптимизируем и сжимаем фото...');
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            try {
+                const targetSize = 512;
+                const canvas = document.createElement('canvas');
+                canvas.width = targetSize;
+                canvas.height = targetSize;
+                const ctx = canvas.getContext('2d');
+
+                // Умный центрированный квадратный кроп
+                const minDim = Math.min(img.width, img.height);
+                const sx = (img.width - minDim) / 2;
+                const sy = (img.height - minDim) / 2;
+
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, targetSize, targetSize);
+
+                // Сжатие в легковесный JPEG
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+                // Сохраняем в локальное хранилище
+                localStorage.setItem('alina_custom_avatar', compressedDataUrl);
+                localStorage.setItem('alina_active_avatar', compressedDataUrl);
+
+                // Обновляем все аватары на странице
+                updateAlinaAvatarUI();
+                updateDuolingoMapAvatar();
+
+                showToastNotification('🎉 Своё фото успешно сжато и установлено во всех разделах!');
+            } catch (err) {
+                console.error('Avatar compression error:', err);
+                alert('Не удалось обработать изображение. Попробуйте другой файл.');
+            }
+        };
+        img.onerror = function() {
+            alert('Ошибка чтения файла изображения.');
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+window.handleCustomAvatarUpload = handleCustomAvatarUpload;
+
+function resetAlinaAvatar() {
+    localStorage.removeItem('alina_custom_avatar');
+    localStorage.setItem('alina_active_avatar', '/static/img/alina_avatar.jpg');
+    updateAlinaAvatarUI();
+    updateDuolingoMapAvatar();
+    showToastNotification('✨ Установлено исходное фото Алины');
+}
+window.resetAlinaAvatar = resetAlinaAvatar;
+
+function updateDuolingoMapAvatar() {
+    const activeSrc = getAlinaAvatar();
+    document.querySelectorAll('.duolingo-hero-avatar').forEach(img => {
+        img.src = activeSrc;
+    });
+}
+window.updateDuolingoMapAvatar = updateDuolingoMapAvatar;
 
 function updateAlinaAvatarUI() {
     const activeSrc = getAlinaAvatar();
-    const isStudio = activeSrc.includes('studio');
+    const hasCustom = Boolean(localStorage.getItem('alina_custom_avatar'));
     
-    // Обновляем все иконки аватара Алины
+    // Обновляем все элементы аватара Алины
     document.querySelectorAll('.alina-chat-avatar').forEach(img => img.src = activeSrc);
     document.querySelectorAll('.alina-profile-avatar').forEach(img => img.src = activeSrc);
+    updateDuolingoMapAvatar();
     
     const statusEl = document.getElementById('alinaAvatarStatus');
     if (statusEl) {
-        statusEl.textContent = isStudio 
-            ? '✨ Активный аватар: Studio AI Арт-портрет' 
-            : '✨ Активный аватар: Реальное фото (Ретушь)';
-    }
-
-    const btnReal = document.getElementById('btnAvatarReal');
-    const btnStudio = document.getElementById('btnAvatarStudio');
-    if (btnReal && btnStudio) {
-        if (isStudio) {
-            btnStudio.classList.add('border-rose-400', 'bg-rose-50', 'text-rose-700');
-            btnReal.classList.remove('border-rose-400', 'bg-rose-50', 'text-rose-700');
+        if (hasCustom) {
+            statusEl.textContent = '✨ Активный аватар: Ваше загруженное фото (сжато и оптимизировано)';
         } else {
-            btnReal.classList.add('border-rose-400', 'bg-rose-50', 'text-rose-700');
-            btnStudio.classList.remove('border-rose-400', 'bg-rose-50', 'text-rose-700');
+            statusEl.textContent = '✨ Активный аватар: Студийный портрет Алины';
         }
     }
 }
@@ -2692,7 +2770,7 @@ function switchModalPortrait(type) {
         }
     } else {
         if (imgEl) imgEl.src = '/static/img/alina_portrait.jpg';
-        if (titleEl) titleEl.textContent = 'Портрет Алины — Реальное фото (Ретушь) 💖';
+        if (titleEl) titleEl.textContent = 'Портрет Алины — Студийное фото 💖';
         if (btnReal) {
             btnReal.className = 'flex-1 py-1.5 px-2 bg-rose-500 text-white font-semibold text-xs rounded-xl shadow-xs transition';
         }

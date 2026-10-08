@@ -349,7 +349,7 @@
             <!-- Компактный статус-бар в стиле Duolingo (Строка 1: Логотип + Статистика) -->
             <div class="flex items-center justify-between gap-2 pb-2 mb-1.5 border-b border-slate-100 shrink-0">
                 <div class="flex items-center gap-1.5 min-w-0">
-                    <img src="/static/duolingo/mascot.svg" class="w-7 h-7 shrink-0" alt="Owl">
+                    <img src="/static/img/alina_avatar.jpg" class="alina-profile-avatar w-7 h-7 rounded-full object-cover border border-emerald-400 shadow-2xs shrink-0 cursor-pointer" onclick="switchTab('dossier')" alt="Алина" title="Профиль Алины">
                     <div class="flex items-center gap-1.5 min-w-0">
                         <h2 class="text-xs sm:text-sm font-black text-slate-800 leading-none truncate">Duolingo Deutsch</h2>
                         <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">180 дн.</span>
@@ -442,8 +442,11 @@
                 <!-- Карточка профиля и фото Алины -->
                 <div class="bg-gradient-to-br from-rose-50 via-pink-50/70 to-amber-50/40 border border-rose-200 rounded-2xl p-4 shadow-sm">
                     <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-                        <div class="relative shrink-0 group">
-                            <img id="dossierProfileImg" src="/static/img/alina_avatar.jpg" alt="Алина" class="alina-profile-avatar w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-2 border-rose-300 shadow-md">
+                        <div class="relative shrink-0 cursor-pointer group" onclick="document.getElementById('alinaCustomAvatarInput').click()" title="Нажмите, чтобы загрузить новое фото">
+                            <img id="dossierProfileImg" src="/static/img/alina_avatar.jpg" alt="Алина" class="alina-profile-avatar w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-2 border-rose-300 shadow-md group-hover:opacity-90 transition">
+                            <div class="absolute inset-0 bg-black/20 rounded-2xl opacity-0 group-hover:opacity-100 flex items-center justify-center transition text-white text-xs font-bold">
+                                📷 Сменить
+                            </div>
                             <span class="absolute -bottom-1 -right-1 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow">💖 Алина</span>
                         </div>
                         <div class="flex-1 text-center sm:text-left space-y-2.5">
@@ -452,25 +455,34 @@
                                     <h3 class="font-bold text-slate-800 text-base">Алина</h3>
                                     <span class="text-[11px] font-medium text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">Любимая жена Романа ✨</span>
                                 </div>
-                                <p class="text-xs text-slate-500 mt-0.5">Фото профиля для персонального психологического коуча и чата</p>
+                                <p class="text-xs text-slate-500 mt-0.5">Личное фото профиля: отображается в диалогах чата, шапке и на карте Duolingo</p>
                             </div>
+
+                            <!-- Скрытый инпут для выбора любого фото со смартфона или камеры -->
+                            <input type="file" id="alinaCustomAvatarInput" accept="image/*" class="hidden" onchange="handleCustomAvatarUpload(event)">
                             
-                            <!-- Выбор стиля аватара -->
+                            <!-- Кнопки управления фото -->
                             <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-0.5">
-                                <button onclick="setAlinaAvatar('/static/img/alina_avatar.jpg')" id="btnAvatarReal" class="px-3 py-1.5 bg-white hover:bg-rose-50 text-slate-700 text-xs font-semibold rounded-xl border border-rose-200 shadow-2xs transition flex items-center gap-1.5 active:scale-95">
-                                    <img src="/static/img/alina_avatar.jpg" class="w-4 h-4 rounded-full object-cover">
-                                    <span>Реальное фото (Ретушь)</span>
+                                <button onclick="document.getElementById('alinaCustomAvatarInput').click()" class="px-3 py-1.5 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-xs font-bold rounded-xl shadow-xs hover:opacity-95 transition flex items-center gap-1.5 active:scale-95">
+                                    <span>📸</span>
+                                    <span>Загрузить своё фото</span>
                                 </button>
-                                <button onclick="setAlinaAvatar('/static/img/alina_studio_avatar.jpg')" id="btnAvatarStudio" class="px-3 py-1.5 bg-white hover:bg-rose-50 text-slate-700 text-xs font-semibold rounded-xl border border-rose-200 shadow-2xs transition flex items-center gap-1.5 active:scale-95">
-                                    <img src="/static/img/alina_studio_avatar.jpg" class="w-4 h-4 rounded-full object-cover">
-                                    <span>Studio AI Арт ✨</span>
+                                <button onclick="resetAlinaAvatar()" id="btnAvatarReset" class="px-3 py-1.5 bg-white hover:bg-rose-50 text-slate-700 text-xs font-semibold rounded-xl border border-rose-200 shadow-2xs transition flex items-center gap-1.5 active:scale-95">
+                                    <img src="/static/img/alina_avatar.jpg" class="w-4 h-4 rounded-full object-cover">
+                                    <span>Студийное фото Алины</span>
                                 </button>
                                 <button onclick="openPortraitPreviewModal()" class="px-2.5 py-1.5 bg-rose-100/70 hover:bg-rose-200 text-rose-800 text-xs font-semibold rounded-xl transition flex items-center gap-1" title="Посмотреть во весь рост">
                                     <span>🔍 Во весь рост</span>
                                 </button>
                             </div>
-                            <div id="alinaAvatarStatus" class="text-[11px] text-rose-600 font-medium">
-                                ✨ Активный аватар: Реальное фото (Ретушь)
+
+                            <div class="flex flex-col sm:flex-row items-center justify-between gap-1 pt-1 border-t border-rose-100/80">
+                                <div id="alinaAvatarStatus" class="text-[11px] text-rose-600 font-semibold">
+                                    ✨ Активный аватар: Студийный портрет Алины
+                                </div>
+                                <span class="text-[10px] text-slate-400 bg-white/60 px-2 py-0.5 rounded-full border border-rose-100">
+                                    ⚡️ Сжатие Canvas (~50 КБ) для быстрой работы
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -576,7 +588,7 @@
     <audio id="liveGlobalAudioPlayer" preload="auto" playsinline webkit-playsinline class="hidden"></audio>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    <script src="/static/duolingo/duolingo.js?v=15"></script>
-    <script src="/static/app.js?v=15"></script>
+    <script src="/static/duolingo/duolingo.js?v=16"></script>
+    <script src="/static/app.js?v=16"></script>
 </body>
 </html>

@@ -305,12 +305,11 @@ class LingoGameEngine {
         this.currentLessonData = lesson;
         this.currentChallenges = this.generateChallenges(lesson, lessonsData);
 
-        // Переключаем контейнеры в интерфейсе
-        const pathContainer = document.getElementById('germanPathContainer');
+        // Переключаем контейнеры в интерфейсе (Полноэкранный режим игры 100% viewport)
         const lingoContainer = document.getElementById('lingoAppContainer');
-        if (pathContainer) pathContainer.classList.add('hidden');
         if (lingoContainer) {
             lingoContainer.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
             this.initChallengeState();
             this.render();
         }
@@ -334,7 +333,7 @@ class LingoGameEngine {
     }
 
     // =========================================================================
-    // 4. ГЛАВНЫЙ РЕНДЕР ИГРОВОГО ЭКРАНА DUOLINGO
+    // 4. ГЛАВНЫЙ РЕНДЕР ИГРОВОГО ЭКРАНА DUOLINGO (ПОЛНОЭКРАННЫЙ РЕЖИМ)
     // =========================================================================
     render() {
         const container = document.getElementById('lingoAppContainer');
@@ -349,35 +348,35 @@ class LingoGameEngine {
         const progressPercent = Math.round((this.currentChallengeIndex / this.currentChallenges.length) * 100);
 
         container.innerHTML = `
-            <div class="flex flex-col h-full max-w-2xl mx-auto w-full select-none bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-                <!-- 1. HEADER (Lingo Header: Cross, Progress, Hearts, XP) -->
-                <header class="px-4 sm:px-6 pt-4 pb-2 flex items-center justify-between gap-3 sm:gap-6 border-b border-slate-100">
-                    <button onclick="lingoEngine.exitQuiz()" class="text-slate-400 hover:text-slate-600 transition p-1 text-xl font-bold" title="Выйти к карте уроков">
+            <div class="flex flex-col h-full w-full select-none bg-white overflow-hidden">
+                <!-- 1. HEADER (Lingo Fullscreen Header: Cross, Progress, Hearts, XP) -->
+                <header class="px-4 sm:px-6 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 flex items-center justify-between gap-3 sm:gap-6 border-b border-slate-100 bg-white shrink-0">
+                    <button onclick="lingoEngine.exitQuiz()" class="text-slate-400 hover:text-slate-700 active:scale-95 transition p-2 -ml-2 text-2xl font-bold flex items-center justify-center w-10 h-10 rounded-full hover:bg-slate-100" title="Выйти к карте уроков">
                         ✕
                     </button>
                     
                     <!-- Progress bar -->
-                    <div class="flex-1 bg-slate-100 h-3.5 rounded-full overflow-hidden relative border border-slate-200/60">
+                    <div class="flex-1 bg-slate-100 h-4 rounded-full overflow-hidden relative border border-slate-200/80">
                         <div class="bg-emerald-500 h-full rounded-full transition-all duration-300" style="width: ${progressPercent}%;">
-                            <div class="h-1 bg-emerald-400/60 rounded-full mx-1 mt-0.5"></div>
+                            <div class="h-1 bg-emerald-300/70 rounded-full mx-1.5 mt-0.5"></div>
                         </div>
                     </div>
 
                     <!-- Hearts -->
-                    <div class="flex items-center gap-1.5 text-rose-500 font-extrabold text-sm sm:text-base">
+                    <div onclick="lingoEngine.openHeartRefillModal()" class="flex items-center gap-1.5 text-rose-500 font-black text-sm sm:text-base cursor-pointer hover:scale-105 transition" title="Сердечки">
                         <img src="/static/duolingo/heart.svg" class="w-6 h-6 animate-pulse" alt="Hearts">
                         <span>${this.hearts}</span>
                     </div>
 
                     <!-- XP Points -->
-                    <div class="flex items-center gap-1 text-amber-500 font-extrabold text-xs sm:text-sm bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200/60">
+                    <div class="flex items-center gap-1 text-amber-500 font-extrabold text-xs sm:text-sm bg-amber-50 px-2.5 py-1 rounded-xl border border-amber-200/80">
                         <img src="/static/duolingo/points.svg" class="w-4 h-4" alt="XP">
                         <span>${this.xp} XP</span>
                     </div>
                 </header>
 
                 <!-- 2. QUIZ BODY (Mascot Bubble & Challenge Content) -->
-                <main class="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col justify-between">
+                <main class="flex-1 overflow-y-auto px-4 sm:px-6 py-4 flex flex-col justify-between max-w-xl mx-auto w-full">
                     <div>
                         <!-- Mascot Speech Bubble -->
                         <div class="flex items-start gap-3 sm:gap-4 mb-5">
@@ -721,10 +720,10 @@ class LingoGameEngine {
             }
 
             return `
-                <footer class="p-4 sm:p-5 border-t border-slate-200 bg-white flex items-center justify-end">
+                <footer class="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-slate-200 bg-white flex items-center justify-end shrink-0">
                     <button onclick="lingoEngine.checkAnswer()" 
                             ${!canCheck ? 'disabled' : ''}
-                            class="w-full sm:w-auto px-8 py-3 rounded-2xl font-extrabold text-sm uppercase tracking-wider transition-all duration-150 shadow-sm
+                            class="w-full sm:w-auto px-8 py-3.5 rounded-2xl font-extrabold text-sm uppercase tracking-wider transition-all duration-150 shadow-sm
                                    ${canCheck ? 'bg-emerald-500 hover:bg-emerald-600 text-white border-b-4 border-emerald-600 active:border-b-0 cursor-pointer' : 'bg-slate-200 text-slate-400 cursor-not-allowed border-b-4 border-slate-300'}">
                         Проверить
                     </button>
@@ -741,7 +740,7 @@ class LingoGameEngine {
             ` : '';
 
             return `
-                <footer class="p-4 sm:p-5 border-t-2 border-emerald-300 bg-emerald-100/90 flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in">
+                <footer class="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] border-t-2 border-emerald-300 bg-emerald-100/90 flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in shrink-0">
                     <div class="flex items-center gap-3 text-emerald-800 w-full sm:w-auto">
                         <div class="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center font-black text-xl shadow-sm shrink-0">
                             ✓
@@ -753,7 +752,7 @@ class LingoGameEngine {
                         </div>
                     </div>
                     <button onclick="lingoEngine.nextChallenge()" 
-                            class="w-full sm:w-auto px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-extrabold text-sm uppercase tracking-wider border-b-4 border-emerald-600 active:border-b-0 transition shadow-sm shrink-0">
+                            class="w-full sm:w-auto px-8 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-extrabold text-sm uppercase tracking-wider border-b-4 border-emerald-600 active:border-b-0 transition shadow-sm shrink-0">
                         Далее ➔
                     </button>
                 </footer>
@@ -762,7 +761,7 @@ class LingoGameEngine {
 
         if (this.status === 'wrong') {
             return `
-                <footer class="p-4 sm:p-5 border-t-2 border-rose-300 bg-rose-100/90 flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in">
+                <footer class="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] border-t-2 border-rose-300 bg-rose-100/90 flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in shrink-0">
                     <div class="flex items-center gap-3 text-rose-800 w-full sm:w-auto">
                         <div class="w-10 h-10 rounded-full bg-rose-500 text-white flex items-center justify-center font-black text-xl shadow-sm shrink-0">
                             ✕
@@ -774,7 +773,7 @@ class LingoGameEngine {
                         </div>
                     </div>
                     <button onclick="lingoEngine.nextChallenge()" 
-                            class="w-full sm:w-auto px-8 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl font-extrabold text-sm uppercase tracking-wider border-b-4 border-rose-600 active:border-b-0 transition shadow-sm shrink-0">
+                            class="w-full sm:w-auto px-8 py-3.5 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl font-extrabold text-sm uppercase tracking-wider border-b-4 border-rose-600 active:border-b-0 transition shadow-sm shrink-0">
                         Понятно ➔
                     </button>
                 </footer>
@@ -806,7 +805,7 @@ class LingoGameEngine {
         if (typeof updateCourseProgressUI === 'function') updateCourseProgressUI();
 
         container.innerHTML = `
-            <div class="flex flex-col items-center justify-center p-6 text-center max-w-md mx-auto h-full space-y-5 bg-white rounded-2xl shadow-xl border border-slate-200">
+            <div class="flex flex-col items-center justify-center p-6 text-center max-w-md mx-auto h-full w-full overflow-y-auto space-y-5 bg-white pt-[calc(1.5rem+env(safe-area-inset-top))] pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
                 <img src="/static/duolingo/finish.svg" class="w-28 h-28 animate-bounce" alt="Victory">
                 
                 <div>
@@ -859,6 +858,7 @@ class LingoGameEngine {
             if (!confirmQuit) return;
         }
 
+        document.body.classList.remove('overflow-hidden');
         const lingoContainer = document.getElementById('lingoAppContainer');
         const pathContainer = document.getElementById('germanPathContainer');
         if (lingoContainer) lingoContainer.classList.add('hidden');
@@ -964,14 +964,14 @@ class LingoGameEngine {
         container.innerHTML = `
             <div class="max-w-md mx-auto w-full pb-16 space-y-4">
                 <!-- БАННЕР ТЕКУЩЕГО ЮНИТА (GUIDEBOOK) -->
-                <div class="bg-gradient-to-r ${colorClass} text-white rounded-2xl p-4 sm:p-5 shadow-lg border-b-4 flex items-center justify-between gap-3">
-                    <div>
-                        <span class="text-[10px] sm:text-xs font-black uppercase tracking-wider opacity-90">${escapeHtml(currentLevel)} • РАЗДЕЛ ${currentUnitId}</span>
-                        <h3 class="text-base sm:text-lg font-black leading-tight mt-0.5">${escapeHtml(currentUnitTitle)}</h3>
-                        <p class="text-[11px] opacity-90 mt-1 line-clamp-2">${escapeHtml(currentLesson.grammar || '')}</p>
+                <div class="bg-gradient-to-r ${colorClass} text-white rounded-2xl px-4 py-2.5 shadow-md border-b-2 flex items-center justify-between gap-3">
+                    <div class="min-w-0 flex-1">
+                        <span class="text-[10px] font-black uppercase tracking-wider opacity-90">${escapeHtml(currentLevel)} • РАЗДЕЛ ${currentUnitId}</span>
+                        <h3 class="text-sm sm:text-base font-black truncate leading-tight mt-0.5">${escapeHtml(currentUnitTitle)}</h3>
+                        <p class="text-[10px] opacity-85 truncate mt-0.5">${escapeHtml(currentLesson.grammar || '')}</p>
                     </div>
                     <button onclick="lingoEngine.openGuidebookModal(${currentUnitId})"
-                            class="px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-xl font-extrabold text-xs shrink-0 border border-white/30 flex items-center gap-1.5 transition">
+                            class="px-2.5 py-1.5 bg-white/20 hover:bg-white/30 active:scale-95 backdrop-blur rounded-xl font-extrabold text-xs shrink-0 border border-white/30 flex items-center gap-1 transition">
                         <span>📖</span>
                         <span>Теория</span>
                     </button>

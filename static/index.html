@@ -24,6 +24,50 @@
 </head>
 <body class="bg-gradient-to-br from-rose-50 via-pink-50 to-amber-50 h-[100dvh] text-slate-800 font-['Plus_Jakarta_Sans',sans-serif] flex flex-col overflow-hidden relative">
 
+    <!-- Окно авторизации (Пин-код для Алины: 2509) -->
+    <div id="authPinModal" style="display: none;" class="fixed inset-0 z-[100] bg-rose-50/95 backdrop-blur-xl flex items-center justify-center p-4 transition-all duration-300">
+        <div class="bg-white/95 backdrop-blur-2xl border border-rose-200/90 shadow-2xl rounded-3xl p-6 sm:p-8 max-w-xs w-full text-center relative overflow-hidden">
+            <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-tr from-rose-400 to-pink-500 flex items-center justify-center shadow-lg shadow-rose-200">
+                <span class="text-3xl">💖</span>
+            </div>
+            <h2 class="text-lg font-bold text-slate-800">Привет, солнышко! ✨</h2>
+            <p class="text-xs text-slate-500 mt-1 mb-4">Введи свой пин-код (твой день рождения 🎂)</p>
+
+            <!-- Индикаторы цифр (точки) -->
+            <div class="flex justify-center items-center gap-3.5 mb-4" id="pinDots">
+                <div class="w-3.5 h-3.5 rounded-full border-2 border-rose-300 bg-white transition-all pin-dot" id="dot-0"></div>
+                <div class="w-3.5 h-3.5 rounded-full border-2 border-rose-300 bg-white transition-all pin-dot" id="dot-1"></div>
+                <div class="w-3.5 h-3.5 rounded-full border-2 border-rose-300 bg-white transition-all pin-dot" id="dot-2"></div>
+                <div class="w-3.5 h-3.5 rounded-full border-2 border-rose-300 bg-white transition-all pin-dot" id="dot-3"></div>
+            </div>
+
+            <!-- Сообщение об ошибке -->
+            <div id="pinErrorMsg" class="text-xs text-rose-500 font-medium mb-3 h-4 opacity-0 transition-opacity">Неверный пин-код. Попробуй ещё раз</div>
+
+            <!-- Цифровая клавиатура (Numpad) -->
+            <div class="grid grid-cols-3 gap-2.5 max-w-[230px] mx-auto mb-3">
+                <button type="button" onclick="handlePinInput('1')" class="h-12 rounded-2xl bg-rose-50 hover:bg-rose-100 active:scale-95 text-lg font-bold text-slate-700 shadow-sm border border-rose-100 transition">1</button>
+                <button type="button" onclick="handlePinInput('2')" class="h-12 rounded-2xl bg-rose-50 hover:bg-rose-100 active:scale-95 text-lg font-bold text-slate-700 shadow-sm border border-rose-100 transition">2</button>
+                <button type="button" onclick="handlePinInput('3')" class="h-12 rounded-2xl bg-rose-50 hover:bg-rose-100 active:scale-95 text-lg font-bold text-slate-700 shadow-sm border border-rose-100 transition">3</button>
+                <button type="button" onclick="handlePinInput('4')" class="h-12 rounded-2xl bg-rose-50 hover:bg-rose-100 active:scale-95 text-lg font-bold text-slate-700 shadow-sm border border-rose-100 transition">4</button>
+                <button type="button" onclick="handlePinInput('5')" class="h-12 rounded-2xl bg-rose-50 hover:bg-rose-100 active:scale-95 text-lg font-bold text-slate-700 shadow-sm border border-rose-100 transition">5</button>
+                <button type="button" onclick="handlePinInput('6')" class="h-12 rounded-2xl bg-rose-50 hover:bg-rose-100 active:scale-95 text-lg font-bold text-slate-700 shadow-sm border border-rose-100 transition">6</button>
+                <button type="button" onclick="handlePinInput('7')" class="h-12 rounded-2xl bg-rose-50 hover:bg-rose-100 active:scale-95 text-lg font-bold text-slate-700 shadow-sm border border-rose-100 transition">7</button>
+                <button type="button" onclick="handlePinInput('8')" class="h-12 rounded-2xl bg-rose-50 hover:bg-rose-100 active:scale-95 text-lg font-bold text-slate-700 shadow-sm border border-rose-100 transition">8</button>
+                <button type="button" onclick="handlePinInput('9')" class="h-12 rounded-2xl bg-rose-50 hover:bg-rose-100 active:scale-95 text-lg font-bold text-slate-700 shadow-sm border border-rose-100 transition">9</button>
+                <div class="h-12"></div>
+                <button type="button" onclick="handlePinInput('0')" class="h-12 rounded-2xl bg-rose-50 hover:bg-rose-100 active:scale-95 text-lg font-bold text-slate-700 shadow-sm border border-rose-100 transition">0</button>
+                <button type="button" onclick="handlePinDelete()" class="h-12 rounded-2xl bg-rose-50 hover:bg-rose-100 active:scale-95 text-base font-bold text-rose-500 shadow-sm border border-rose-100 transition flex items-center justify-center">⌫</button>
+            </div>
+            <p class="text-[10px] text-slate-400">Твой личный бережный коуч 💖</p>
+        </div>
+    </div>
+
+    <!-- ПОЛНОЭКРАННЫЙ РЕЖИМ ИГРЫ DUOLINGO (100% IMMERSIVE FULLSCREEN QUIZ) -->
+    <div id="lingoAppContainer" class="hidden fixed inset-0 z-50 bg-white flex flex-col h-[100dvh] w-full overflow-hidden select-none">
+        <!-- Заполняется lingoEngine при старте урока -->
+    </div>
+
     <!-- Верхняя шапка -->
     <header class="bg-white/95 backdrop-blur-md border-b border-rose-100 shrink-0 z-30 shadow-sm pt-[env(safe-area-inset-top)]">
         <div class="max-w-6xl mx-auto px-3 sm:px-4 py-2.5 flex items-center justify-between">
@@ -160,9 +204,6 @@
                 <button onclick="showRomanLoveNoteModal()" class="whitespace-nowrap bg-gradient-to-r from-rose-500 to-pink-500 text-white font-bold px-3 py-1 rounded-full shadow-sm hover:opacity-95 transition flex items-center gap-1">
                     <span>💌 Записка от Романа</span>
                 </button>
-                <button onclick="sendMoodPrompt('Роман рядом, мне нужна твоя экстренная поддержка и техника заземления.')" class="whitespace-nowrap bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold border border-rose-300 px-3 py-1 rounded-full shadow-sm transition flex items-center gap-1">
-                    <span>❤️ Рома рядом (SOS)</span>
-                </button>
                 <button onclick="startGermanPracticeInChat()" class="whitespace-nowrap bg-emerald-600 text-white font-semibold px-3 py-1 rounded-full shadow-sm hover:bg-emerald-700 transition flex items-center gap-1">
                     <span>🇩🇪 Немецкий B1: Урок</span>
                 </button>
@@ -246,6 +287,14 @@
                     <span id="livePauseText">⏳ Слушаю паузу (можно продолжать мысль)...</span>
                     <button onclick="commitLiveSpeechImmediately()" class="underline hover:text-white font-semibold">Отправить ➔</button>
                 </div>
+
+                <!-- Быстрый ввод мысли в Live режиме (страховка для шумных мест и iPhone) -->
+                <div class="mt-2 w-full max-w-md flex items-center gap-1.5 bg-white/10 backdrop-blur-md rounded-2xl p-1 border border-white/20">
+                    <input type="text" id="liveQuickInput" placeholder="Или напишите мысль коучу..." class="flex-1 bg-transparent text-xs text-white placeholder-slate-300 px-3 py-2 outline-none" onkeydown="if(event.key==='Enter') sendLiveQuickMessage()">
+                    <button onclick="sendLiveQuickMessage()" class="px-3.5 py-1.5 bg-gradient-to-r from-rose-500 to-pink-500 hover:opacity-90 active:scale-95 text-white rounded-xl text-xs font-bold transition shadow-sm shrink-0">
+                        Отправить ➔
+                    </button>
+                </div>
             </div>
 
             <!-- Нижние кнопки Live Voice -->
@@ -272,61 +321,62 @@
         </section>
 
         <!-- ВКЛАДКА 3: НЕМЕЦКИЙ ЯЗЫК (ДУОЛИНГО ДЛЯ АЛИНЫ: A1+ ➔ B1 НА 180 ДНЕЙ) -->
-        <section id="tab-german" class="tab-content hidden flex-1 flex flex-col bg-white/95 backdrop-blur rounded-2xl shadow-xl border border-rose-100 p-3 sm:p-4 overflow-hidden h-full">
-            <!-- Верхний статус-бар в стиле Duolingo -->
-            <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-2 border-b border-slate-100 shrink-0">
-                <div class="flex items-center gap-2">
-                    <img src="/static/duolingo/mascot.svg" class="w-8 h-8 shrink-0" alt="Owl">
-                    <div>
-                        <h2 class="text-sm sm:text-base font-black text-slate-800 flex items-center gap-1.5 leading-none">
-                            <span>Duolingo Deutsch</span>
-                            <span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">180 дней</span>
-                        </h2>
-                        <span class="text-[10px] text-slate-400">Старт с A1+ • Без детского алфавита</span>
+        <section id="tab-german" class="tab-content hidden flex-1 flex flex-col bg-white sm:bg-white/95 sm:backdrop-blur rounded-none sm:rounded-2xl sm:shadow-xl sm:border sm:border-rose-100 p-1 sm:p-4 overflow-hidden h-full">
+            <!-- Компактный статус-бар в стиле Duolingo (Строка 1: Логотип + Статистика) -->
+            <div class="flex items-center justify-between gap-2 pb-2 mb-1.5 border-b border-slate-100 shrink-0">
+                <div class="flex items-center gap-1.5 min-w-0">
+                    <img src="/static/duolingo/mascot.svg" class="w-7 h-7 shrink-0" alt="Owl">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <h2 class="text-xs sm:text-sm font-black text-slate-800 leading-none truncate">Duolingo Deutsch</h2>
+                        <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">180 дн.</span>
                     </div>
                 </div>
 
-                <!-- Уровни курса: A1+ Старт, A2 Жизнь, B1 Профи -->
-                <div class="flex items-center gap-1">
-                    <button onclick="setGermanLevel('A1+')" id="german-btn-a1" class="px-2.5 py-1 text-xs font-black rounded-xl bg-emerald-500 text-white shadow-sm transition">A1+ Старт</button>
-                    <button onclick="setGermanLevel('A2')" id="german-btn-a2" class="px-2.5 py-1 text-xs font-bold rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition">A2 Жизнь</button>
-                    <button onclick="setGermanLevel('B1')" id="german-btn-b1" class="px-2.5 py-1 text-xs font-bold rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition">B1 Профи</button>
-                </div>
-
-                <!-- Индикаторы Duolingo: Огонь серии, Опыт XP, Сердечки ❤️ -->
-                <div class="flex items-center gap-2.5 sm:gap-4 text-xs font-black">
-                    <div class="flex items-center gap-1 text-amber-600 bg-amber-50 px-2 py-1 rounded-xl border border-amber-200" title="Серия дней">
+                <!-- Индикаторы: Серия, Опыт, Сердечки в одну строку -->
+                <div class="flex items-center gap-1.5 sm:gap-2.5 text-xs font-black shrink-0">
+                    <div class="flex items-center gap-1 text-amber-600 bg-amber-50 px-2 py-0.5 rounded-xl border border-amber-200" title="Серия дней">
                         <span>🔥</span>
                         <span id="courseStreakDisplay">1 дн.</span>
                     </div>
-                    <div class="flex items-center gap-1 text-sky-600 bg-sky-50 px-2 py-1 rounded-xl border border-sky-200" title="Очки опыта">
+                    <div class="flex items-center gap-1 text-sky-600 bg-sky-50 px-2 py-0.5 rounded-xl border border-sky-200" title="Очки опыта">
                         <img src="/static/duolingo/points.svg" class="w-3.5 h-3.5" alt="XP">
                         <span id="courseXpDisplay">0 XP</span>
                     </div>
-                    <div onclick="lingoEngine.openHeartRefillModal()" class="flex items-center gap-1 text-rose-500 bg-rose-50 hover:bg-rose-100 px-2 py-1 rounded-xl border border-rose-200 cursor-pointer transition shadow-2xs" title="Нажмите, чтобы восстановить сердечки">
+                    <div onclick="lingoEngine.openHeartRefillModal()" class="flex items-center gap-1 text-rose-500 bg-rose-50 hover:bg-rose-100 px-2 py-0.5 rounded-xl border border-rose-200 cursor-pointer transition shadow-2xs" title="Восстановить сердечки">
                         <img src="/static/duolingo/heart.svg" class="w-3.5 h-3.5" alt="Hearts">
                         <span id="courseHeartsDisplay">5</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Переключатель: Дорожка обучения Duolingo vs Карточки слов Anki vs Работа над ошибками -->
-            <div class="flex flex-wrap items-center justify-between gap-2 mb-2 bg-slate-100/80 p-1 rounded-xl border border-slate-200 shrink-0">
-                <div class="flex gap-1">
-                    <button onclick="setGermanViewMode('path')" id="german-mode-path" class="px-3 py-1 text-xs font-black rounded-lg bg-white text-emerald-800 shadow-sm transition flex items-center gap-1.5">
+            <!-- Компактное меню управления (Строка 2: Уровни A1+/A2/B1 + Режимы Дорожка/Карточки/Ошибки) -->
+            <div class="flex items-center justify-between gap-1.5 mb-2 bg-slate-100/90 p-1 rounded-xl border border-slate-200 shrink-0 overflow-x-auto no-scrollbar">
+                <!-- Уровни курса -->
+                <div class="flex items-center gap-1 shrink-0">
+                    <button onclick="setGermanLevel('A1+')" id="german-btn-a1" class="px-2.5 py-1 text-[11px] font-black rounded-lg bg-emerald-500 text-white shadow-xs transition">A1+</button>
+                    <button onclick="setGermanLevel('A2')" id="german-btn-a2" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/70 text-slate-600 hover:bg-white transition">A2</button>
+                    <button onclick="setGermanLevel('B1')" id="german-btn-b1" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-white/70 text-slate-600 hover:bg-white transition">B1</button>
+                </div>
+
+                <div class="h-3.5 w-px bg-slate-300 shrink-0 mx-0.5"></div>
+
+                <!-- Режимы отображения -->
+                <div class="flex items-center gap-1 shrink-0">
+                    <button onclick="setGermanViewMode('path')" id="german-mode-path" class="px-2.5 py-1 text-[11px] font-black rounded-lg bg-white text-emerald-800 shadow-xs transition flex items-center gap-1">
                         <span>🗺️</span>
                         <span>Дорожка</span>
                     </button>
-                    <button onclick="setGermanViewMode('flashcards')" id="german-mode-flashcards" class="px-3 py-1 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-800 transition flex items-center gap-1.5">
+                    <button onclick="setGermanViewMode('flashcards')" id="german-mode-flashcards" class="px-2.5 py-1 text-[11px] font-bold rounded-lg text-slate-600 hover:text-slate-800 transition flex items-center gap-1">
                         <span>📇</span>
-                        <span>Карточки (Anki)</span>
+                        <span>Карточки</span>
                     </button>
-                    <button onclick="openMistakesModal()" id="german-mode-mistakes" class="px-3 py-1 text-xs font-bold rounded-lg text-rose-600 hover:bg-rose-50 transition flex items-center gap-1.5">
+                    <button onclick="openMistakesModal()" id="german-mode-mistakes" class="px-2.5 py-1 text-[11px] font-bold rounded-lg text-rose-600 hover:bg-rose-50 transition flex items-center gap-1">
                         <span>🎯</span>
                         <span>Ошибки (<span id="mistakesBadgeCount">0</span>)</span>
                     </button>
                 </div>
-                <div id="flashcardsStat" class="hidden text-[11px] text-slate-500 pr-2 font-bold">
+
+                <div id="flashcardsStat" class="hidden text-[10px] text-slate-500 pr-1 font-bold">
                     Выучено: <span id="learnedCount" class="text-emerald-600">0</span>
                 </div>
             </div>
@@ -334,11 +384,6 @@
             <!-- КОНТЕЙНЕР 1: ДОРОЖКА УРОКОВ DUOLINGO (THE PATH) -->
             <div id="germanPathContainer" class="flex-1 overflow-y-auto pr-1">
                 <!-- Заполняется движком lingoEngine.renderPathView() -->
-            </div>
-
-            <!-- КОНТЕЙНЕР 2: САМ УРОК DUOLINGO (ИГРА, WORD BANK, MATCH PAIRS) -->
-            <div id="lingoAppContainer" class="hidden flex-1 overflow-y-auto h-full">
-                <!-- Заполняется lingoEngine при старте урока -->
             </div>
 
             <!-- КОНТЕЙНЕР 3: КАРТОЧКИ СЛОВ (ANKI) -->
@@ -429,7 +474,7 @@
     </nav>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    <script src="/static/duolingo/duolingo.js"></script>
-    <script src="/static/app.js"></script>
+    <script src="/static/duolingo/duolingo.js?v=4"></script>
+    <script src="/static/app.js?v=4"></script>
 </body>
 </html>

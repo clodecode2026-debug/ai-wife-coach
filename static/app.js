@@ -1,5 +1,177 @@
 // AI Wife Coach — Frontend App Logic (Алина & Психолог-Коуч)
 
+// ==========================================
+// 🔒 АВТОРИЗАЦИЯ И ПИН-КОД (2509) ДЛЯ АЛИНЫ
+// ==========================================
+let enteredPin = '';
+const AUTH_TOKEN_KEY = 'alina_auth_token';
+
+function getStoredAuthToken() {
+    let token = localStorage.getItem(AUTH_TOKEN_KEY);
+    if (token) return token;
+    token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+    if (token) return token;
+    const match = document.cookie.match(new RegExp('(^| )auth_token=([^;]+)'));
+    if (match) return match[2];
+    return null;
+}
+
+function saveAuthToken(token) {
+    if (!token) return;
+    localStorage.setItem(AUTH_TOKEN_KEY, token);
+    sessionStorage.setItem(AUTH_TOKEN_KEY, token);
+    document.cookie = `auth_token=${token}; max-age=315360000; path=/; samesite=lax`;
+}
+
+function hideAuthPinModal() {
+    const modal = document.getElementById('authPinModal');
+    if (modal) {
+        modal.classList.add('opacity-0', 'pointer-events-none');
+        setTimeout(() => { modal.style.display = 'none'; }, 300);
+    }
+}
+
+function showAuthPinModal() {
+    const modal = document.getElementById('authPinModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.remove('opacity-0', 'pointer-events-none');
+    }
+}
+
+function updatePinDots() {
+    for (let i = 0; i < 4; i++) {
+        const dot = document.getElementById(`dot-${i}`);
+        if (dot) {
+            if (i < enteredPin.length) {
+                dot.classList.add('bg-rose-500', 'border-rose-500', 'scale-110');
+                dot.classList.remove('bg-white', 'border-rose-300');
+            } else {
+                dot.classList.remove('bg-rose-500', 'border-rose-500', 'scale-110');
+                dot.classList.add('bg-white', 'border-rose-300');
+            }
+        }
+    }
+}
+
+async function handlePinInput(digit) {
+    if (enteredPin.length >= 4) return;
+    enteredPin += digit;
+    updatePinDots();
+    if (navigator.vibrate) navigator.vibrate(20);
+
+    if (enteredPin.length === 4) {
+        const pinToSend = enteredPin;
+        try {
+            const res = await window.nativeFetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin: pinToSend }),
+                credentials: 'include'
+            });
+            const data = await res.json();
+            if (res.ok && data.ok) {
+                saveAuthToken(data.token);
+                if (navigator.vibrate) navigator.vibrate([30, 50, 60]);
+                hideAuthPinModal();
+                if (typeof loadChatSessions === 'function') loadChatSessions();
+                if (typeof loadDossier === 'function') loadDossier();
+            } else {
+                showPinError();
+            }
+        } catch (err) {
+            showPinError();
+        }
+    }
+}
+
+function handlePinDelete() {
+    if (enteredPin.length > 0) {
+        enteredPin = enteredPin.slice(0, -1);
+        updatePinDots();
+        if (navigator.vibrate) navigator.vibrate(15);
+    }
+}
+
+function showPinError() {
+    if (navigator.vibrate) navigator.vibrate([80, 50, 80]);
+    const errMsg = document.getElementById('pinErrorMsg');
+    if (errMsg) errMsg.classList.remove('opacity-0');
+    const dots = document.getElementById('pinDots');
+    if (dots) {
+        dots.classList.add('animate-shake');
+        setTimeout(() => dots.classList.remove('animate-shake'), 400);
+    }
+    setTimeout(() => {
+        enteredPin = '';
+        updatePinDots();
+        if (errMsg) errMsg.classList.add('opacity-0');
+    }, 900);
+}
+
+// Перехватчик fetch для прозрачной отправки токена и куки авторизации
+if (!window.nativeFetch) {
+    window.nativeFetch = window.fetch;
+    window.fetch = async function(url, options = {}) {
+        options = options || {};
+        options.headers = options.headers || {};
+        const token = getStoredAuthToken();
+        if (token) {
+            if (options.headers instanceof Headers) {
+                if (!options.headers.has('Authorization')) options.headers.set('Authorization', `Bearer ${token}`);
+            } else if (!options.headers['Authorization']) {
+                options.headers['Authorization'] = `Bearer ${token}`;
+            }
+        }
+        options.credentials = 'include';
+        const response = await window.nativeFetch(url, options);
+        if (response.status === 401 && typeof url === 'string' && !url.includes('/api/auth/')) {
+            showAuthPinModal();
+        }
+        return response;
+    };
+}
+
+// Проверка авторизации при старте (для PWA / iPhone)
+function checkInitialAuth() {
+    const token = getStoredAuthToken();
+    if (token) {
+        // Токен уже есть — скрываем экран пин-кода мгновенно!
+        hideAuthPinModal();
+        window.nativeFetch('/api/auth/check', {
+            headers: { 'Authorization': `Bearer ${token}` },
+            credentials: 'include'
+        }).then(r => r.json()).then(data => {
+            if (!data.authenticated) {
+                showAuthPinModal();
+            } else {
+                saveAuthToken(token);
+            }
+        }).catch(() => {
+            // Офлайн режим — не блокируем вход
+        });
+    } else {
+        showAuthPinModal();
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', checkInitialAuth);
+} else {
+    checkInitialAuth();
+}
+
+window.addEventListener('keydown', (e) => {
+    const modal = document.getElementById('authPinModal');
+    if (modal && modal.style.display !== 'none' && !modal.classList.contains('pointer-events-none')) {
+        if (e.key >= '0' && e.key <= '9') {
+            handlePinInput(e.key);
+        } else if (e.key === 'Backspace') {
+            handlePinDelete();
+        }
+    }
+});
+
 let currentTab = 'chat';
 let sessionId = localStorage.getItem('ai_coach_session_id');
 if (!sessionId) {
@@ -7,9 +179,11 @@ if (!sessionId) {
     localStorage.setItem('ai_coach_session_id', sessionId);
 }
 
-// Live Voice и Web Audio API
+// Live Voice и Web Audio API (Turn-Taking режим «Вопрос-Ответ»)
 let isLiveActive = false;
+let liveTurnState = 'IDLE'; // 'IDLE' | 'LISTENING' | 'PROCESSING' | 'SPEAKING'
 let liveRecognition = null;
+let speechRestartTimeout = null;
 let audioContext = null;
 let analyserNode = null;
 let micStream = null;
@@ -104,6 +278,15 @@ function switchTab(tabId) {
     // Если вышли из Live Voice — останавливаем микрофон
     if (tabId !== 'live' && isLiveActive) {
         stopLiveVoice();
+    }
+
+    // Если переключились на другую вкладку с немецкого — сворачиваем полноэкранный Duolingo
+    if (tabId !== 'german') {
+        const lingoContainer = document.getElementById('lingoAppContainer');
+        if (lingoContainer && !lingoContainer.classList.contains('hidden')) {
+            lingoContainer.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
     }
 }
 
@@ -534,40 +717,57 @@ async function toggleLiveVoiceState() {
     if (!isLiveActive) {
         startLiveVoice();
     } else {
+        // Если коуч сейчас говорит, а пользователь нажал на фото — даем возможность перебить и сразу сказать
+        if (liveTurnState === 'SPEAKING' && currentLiveAudio) {
+            try { currentLiveAudio.pause(); } catch(e){}
+            currentLiveAudio = null;
+            passTurnToUser();
+            return;
+        }
         stopLiveVoice();
     }
 }
 
 async function startLiveVoice() {
     isLiveActive = true;
+    liveTurnState = 'LISTENING';
+    isAITalking = false;
+    liveAccumulatedText = '';
+
     const statusText = document.getElementById('liveStatusText');
     const btn = document.getElementById('liveMainBtn');
     const transcript = document.getElementById('liveTranscript');
     const halo = document.getElementById('liveAvatarHalo');
     const overlay = document.getElementById('liveListeningOverlay');
 
-    statusText.textContent = '🎙️ Слушаю вас, Алина... Говорите свободно!';
-    btn.textContent = 'Завершить разговор';
-    transcript.textContent = 'Я слушаю ваш голос...';
+    if (statusText) {
+        statusText.textContent = (liveCoachMode === 'german') 
+            ? '🎙️ Ваша очередь говорить по-немецки... (микрофон включен)' 
+            : '🎙️ Слушаю вас, Алина... Говорите свободно! (микрофон включен)';
+    }
+    if (btn) btn.textContent = 'Завершить разговор';
+    if (transcript) transcript.textContent = 'Я слушаю ваш голос...';
     if (overlay) overlay.classList.remove('opacity-0');
 
     // Подключаем Web Audio API для живой реакции на звук
     initAudioVisualizer();
 
-    isAITalking = false;
     startBrowserSpeechRecognition();
 }
 
 function stopLiveVoice() {
     isLiveActive = false;
+    liveTurnState = 'IDLE';
+    isAITalking = false;
+
     const statusText = document.getElementById('liveStatusText');
     const btn = document.getElementById('liveMainBtn');
     const overlay = document.getElementById('liveListeningOverlay');
     const halo = document.getElementById('liveAvatarHalo');
     const pauseIndicator = document.getElementById('livePauseIndicator');
 
-    statusText.textContent = 'Разговор завершен. Нажмите на фото, чтобы продолжить.';
-    btn.textContent = 'Начать говорить';
+    if (statusText) statusText.textContent = 'Разговор завершен. Нажмите на фото, чтобы продолжить.';
+    if (btn) btn.textContent = 'Начать говорить';
     if (overlay) overlay.classList.add('opacity-0');
     if (halo) halo.style.transform = 'scale(1)';
     if (pauseIndicator) pauseIndicator.classList.add('hidden');
@@ -576,76 +776,72 @@ function stopLiveVoice() {
         clearTimeout(speechSilenceTimer);
         speechSilenceTimer = null;
     }
+    if (speechRestartTimeout) {
+        clearTimeout(speechRestartTimeout);
+        speechRestartTimeout = null;
+    }
     liveAccumulatedText = '';
 
     stopAudioVisualizer();
+    stopBrowserSpeechRecognition();
 
-    if (liveRecognition) {
-        try { liveRecognition.stop(); } catch(e){}
-        liveRecognition = null;
-    }
     if (currentLiveAudio) {
         try { currentLiveAudio.pause(); } catch(e){}
         currentLiveAudio = null;
     }
 }
 
-// Инициализация Web Audio API для динамической визуализации голоса
-async function initAudioVisualizer() {
-    try {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
-        micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-        
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const source = audioContext.createMediaStreamSource(micStream);
-        analyserNode = audioContext.createAnalyser();
-        analyserNode.fftSize = 64;
-        source.connect(analyserNode);
+// Инициализация визуализации для Live Voice (без блокировки микрофона на iPhone)
+function initAudioVisualizer() {
+    const bars = document.querySelectorAll('.voice-bar');
+    const halo = document.getElementById('liveAvatarHalo');
+    const ring = document.getElementById('livePulseRing');
 
-        const dataArray = new Uint8Array(analyserNode.frequencyBinCount);
-        const bars = document.querySelectorAll('.voice-bar');
-        const halo = document.getElementById('liveAvatarHalo');
-        const ring = document.getElementById('livePulseRing');
+    function updateMeter() {
+        if (!isLiveActive) return;
 
-        function updateMeter() {
-            if (!isLiveActive) return;
-            analyserNode.getByteFrequencyData(dataArray);
-
-            let sum = 0;
-            for (let i = 0; i < dataArray.length; i++) {
-                sum += dataArray[i];
-            }
-            const avg = sum / dataArray.length;
-            const normalized = Math.min(avg / 128, 1.0); // 0.0 to 1.0
-
-            // Анимация эквалайзерных полосок
+        if (liveTurnState === 'LISTENING') {
+            // Фаза прослушивания: мягкая живая волна, реагирующая на накопленный текст
+            const t = Date.now() / 160;
+            const hasText = liveAccumulatedText.length > 0;
             bars.forEach((bar, idx) => {
-                const val = (dataArray[idx % dataArray.length] || 0) / 255;
-                const h = Math.max(4, Math.round(val * 28));
+                const base = Math.sin(t + idx * 0.8) * 0.5 + 0.5;
+                const h = hasText ? Math.round(8 + base * 22) : Math.round(4 + base * 12);
                 bar.style.height = `${h}px`;
             });
-
-            // Анимация масштаба и ореола фото
             if (halo && ring) {
-                if (normalized > 0.08) {
-                    const scale = 1.0 + (normalized * 0.12);
-                    halo.style.transform = `scale(${scale})`;
-                    ring.style.borderColor = 'rgba(244, 63, 94, 0.9)';
-                    ring.style.boxShadow = `0 0 ${20 + normalized * 40}px rgba(244, 63, 94, 0.8)`;
-                } else {
-                    halo.style.transform = 'scale(1.0)';
-                    ring.style.borderColor = 'rgba(244, 63, 94, 0.3)';
-                    ring.style.boxShadow = 'none';
-                }
+                const scale = hasText ? (1.04 + Math.sin(t) * 0.04) : (1.01 + Math.sin(t) * 0.02);
+                halo.style.transform = `scale(${scale})`;
+                ring.style.borderColor = hasText ? 'rgba(244, 63, 94, 0.9)' : 'rgba(244, 63, 94, 0.4)';
+                ring.style.boxShadow = hasText ? '0 0 30px rgba(244, 63, 94, 0.8)' : '0 0 10px rgba(244, 63, 94, 0.3)';
             }
-
-            animationFrameId = requestAnimationFrame(updateMeter);
+        } else if (liveTurnState === 'SPEAKING') {
+            // Фаза ответа коуча: плавная сиреневая волна голоса
+            const t = Date.now() / 140;
+            bars.forEach((bar, idx) => {
+                const wave = Math.sin(t + idx * 0.9) * 0.5 + 0.5;
+                bar.style.height = `${Math.round(4 + wave * 22)}px`;
+            });
+            if (halo && ring) {
+                const pulse = Math.sin(t) * 0.04 + 1.02;
+                halo.style.transform = `scale(${pulse})`;
+                ring.style.borderColor = 'rgba(168, 85, 247, 0.8)';
+                ring.style.boxShadow = '0 0 25px rgba(168, 85, 247, 0.5)';
+            }
+        } else {
+            // Фаза обработки: спокойное ожидание
+            bars.forEach(bar => bar.style.height = '4px');
+            if (halo && ring) {
+                halo.style.transform = 'scale(1.0)';
+                ring.style.borderColor = 'rgba(244, 63, 94, 0.3)';
+                ring.style.boxShadow = 'none';
+            }
         }
 
-        updateMeter();
-    } catch (e) {
-        console.warn('Audio Visualizer init notice:', e);
+        animationFrameId = requestAnimationFrame(updateMeter);
     }
+
+    updateMeter();
 }
 
 function stopAudioVisualizer() {
@@ -661,21 +857,38 @@ function stopAudioVisualizer() {
         try { audioContext.close(); } catch(e){}
         audioContext = null;
     }
-    // Сброс высоты полосок
     document.querySelectorAll('.voice-bar').forEach(bar => bar.style.height = '4px');
 }
 
+// Надежная остановка микрофона без ложных перезапусков
+function stopBrowserSpeechRecognition() {
+    if (speechRestartTimeout) {
+        clearTimeout(speechRestartTimeout);
+        speechRestartTimeout = null;
+    }
+    if (liveRecognition) {
+        try {
+            // Отключаем onend и onerror, чтобы программное выключение микрофона не вызывало автостарт
+            liveRecognition.onend = null;
+            liveRecognition.onerror = null;
+            liveRecognition.abort();
+        } catch(e){}
+        liveRecognition = null;
+    }
+}
+
+// Запуск прослушивания речи пользователя
 function startBrowserSpeechRecognition() {
-    if (!isLiveActive || isAITalking) return;
+    // Включаем микрофон ТОЛЬКО если активен режим Live, наступила очередь Алины (LISTENING) и AI не говорит
+    if (!isLiveActive || liveTurnState !== 'LISTENING' || isAITalking) return;
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
         const tr = document.getElementById('liveTranscript');
-        if (tr) tr.textContent = 'Распознавание речи не поддерживается браузером. Используйте текст.';
+        if (tr) tr.textContent = 'Распознавание речи не поддерживается браузером. Напишите текст в поле внизу.';
         return;
     }
 
-    // Если распознавание уже активно, не перезапускаем повторно (избегаем браузерного звука "тилилинь")
     if (liveRecognition) {
         return;
     }
@@ -683,10 +896,14 @@ function startBrowserSpeechRecognition() {
     try {
         liveRecognition = new SpeechRecognition();
         liveRecognition.lang = (liveCoachMode === 'german') ? 'de-DE' : 'ru-RU';
-        liveRecognition.continuous = true;
+        // На мобильных устройствах (особенно iOS Safari) continuous = false обязателен
+        const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        liveRecognition.continuous = !isMobileDevice;
         liveRecognition.interimResults = true;
 
         liveRecognition.onresult = (event) => {
+            if (liveTurnState !== 'LISTENING') return;
+
             let interim = '';
             let newlyFinal = '';
             for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -710,13 +927,13 @@ function startBrowserSpeechRecognition() {
                 if (transcript) transcript.textContent = `Вы: «${fullSpokenText}»`;
                 if (pauseIndicator) pauseIndicator.classList.remove('hidden');
                 const pauseSec = (LIVE_SILENCE_DELAY_MS / 1000).toFixed(1);
-                if (pauseText) pauseText.textContent = `⏳ Слушаю паузу (${pauseSec} сек)... Не торопитесь`;
+                if (pauseText) pauseText.textContent = `⏳ Пауза (${pauseSec} сек)... Можно продолжать`;
 
-                // Сбрасываем старый таймер тишины и запускаем новый
+                // Сбрасываем старый таймер паузы и запускаем новый
                 if (speechSilenceTimer) clearTimeout(speechSilenceTimer);
                 speechSilenceTimer = setTimeout(() => {
                     const textToSend = (liveAccumulatedText + interim).trim();
-                    if (textToSend.length >= 2 && isLiveActive && !isAITalking) {
+                    if (textToSend.length >= 2 && isLiveActive && liveTurnState === 'LISTENING') {
                         commitLiveSpeech(textToSend);
                     }
                 }, LIVE_SILENCE_DELAY_MS);
@@ -725,20 +942,26 @@ function startBrowserSpeechRecognition() {
 
         liveRecognition.onerror = (e) => {
             console.warn('SpeechRecognition error:', e.error);
-            // При ошибке 'no-speech' не спамим перезапусками
             if (e.error === 'not-allowed') {
                 const tr = document.getElementById('liveTranscript');
-                if (tr) tr.textContent = 'Доступ к микрофону заблокирован. Разрешите микрофон в браузере.';
+                if (tr) tr.textContent = 'Доступ к микрофону заблокирован. Разрешите микрофон в браузере Safari.';
             }
         };
 
         liveRecognition.onend = () => {
-            // Очищаем ссылку на объект
             liveRecognition = null;
-            // Перезапуск делаем ТОЛЬКО если пользователь все еще в живом режиме и AI НЕ говорит, с аккуратной задержкой
-            if (isLiveActive && !isAITalking) {
-                setTimeout(() => {
-                    if (isLiveActive && !isAITalking && !liveRecognition) {
+            // Если на мобильном распознавание завершилось и есть распознанный текст — отправляем!
+            const textToSend = liveAccumulatedText.trim();
+            if (textToSend.length >= 2 && isLiveActive && liveTurnState === 'LISTENING' && !isAITalking) {
+                commitLiveSpeech(textToSend);
+                return;
+            }
+
+            // Перезапуск делаем ТОЛЬКО если фаза строго LISTENING (очередь пользователя) и AI не говорит
+            if (isLiveActive && liveTurnState === 'LISTENING' && !isAITalking) {
+                if (speechRestartTimeout) clearTimeout(speechRestartTimeout);
+                speechRestartTimeout = setTimeout(() => {
+                    if (isLiveActive && liveTurnState === 'LISTENING' && !isAITalking && !liveRecognition) {
                         startBrowserSpeechRecognition();
                     }
                 }, 800);
@@ -750,6 +973,15 @@ function startBrowserSpeechRecognition() {
         liveRecognition = null;
         console.warn('SpeechRecognition start error:', e);
     }
+}
+
+function sendLiveQuickMessage() {
+    const input = document.getElementById('liveQuickInput');
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    commitLiveSpeech(text);
 }
 
 function commitLiveSpeechImmediately() {
@@ -767,6 +999,7 @@ function commitLiveSpeechImmediately() {
     }
 }
 
+// Человек закончил говорить: микрофон сразу выключается, запрос отправляется коучу
 function commitLiveSpeech(text) {
     if (speechSilenceTimer) {
         clearTimeout(speechSilenceTimer);
@@ -776,20 +1009,28 @@ function commitLiveSpeech(text) {
     if (pauseIndicator) pauseIndicator.classList.add('hidden');
     liveAccumulatedText = '';
 
-    if (liveRecognition) {
-        try { liveRecognition.stop(); } catch(e){}
-    }
+    // 1. ПЕРЕХОД В СОСТОЯНИЕ ОБРАБОТКИ
+    liveTurnState = 'PROCESSING';
+    isAITalking = true;
+
+    // 2. МИКРОФОН ВЫКЛЮЧАЕТСЯ ПОЛНОСТЬЮ
+    stopBrowserSpeechRecognition();
+
     handleLiveUserSpeech(text);
 }
 
 async function handleLiveUserSpeech(text) {
     if (!isLiveActive) return;
+    liveTurnState = 'PROCESSING';
     isAITalking = true;
+
+    // Гарантируем, что микрофон выключен во время обдумывания
+    stopBrowserSpeechRecognition();
 
     const statusText = document.getElementById('liveStatusText');
     const transcript = document.getElementById('liveTranscript');
 
-    if (statusText) statusText.textContent = '🤔 Обдумываю ответ...';
+    if (statusText) statusText.textContent = '🤔 Обдумываю ответ... (микрофон выключен)';
     if (transcript) transcript.textContent = `Вы: «${text}»`;
 
     try {
@@ -807,33 +1048,44 @@ async function handleLiveUserSpeech(text) {
         const data = await res.json();
         const reply = data.reply || 'Алина, я рядом и слышу каждое твоё слово.';
 
+        if (!isLiveActive) return;
+
         if (transcript) transcript.textContent = reply;
+
+        // ПЕРЕХОД К ФАЗЕ ОТВЕТА КОУЧА: микрофон строго отключен
+        liveTurnState = 'SPEAKING';
+        if (statusText) statusText.textContent = '🔊 Коуч отвечает... (микрофон выключен)';
 
         if (liveSoundEnabled) {
             await playLiveTTS(reply);
         } else {
-            // Тихий режим: показываем текст и возобновляем прослушивание
-            if (statusText) statusText.textContent = '💬 Ответ готов. Читайте на экране.';
+            // Тихий режим: показываем текст, даем время прочесть, затем передаем слово Алине
+            const waitMs = Math.max(2500, Math.min(6000, reply.length * 40));
             setTimeout(() => {
-                isAITalking = false;
-                if (isLiveActive) {
-                    if (statusText) statusText.textContent = '🎙️ Слушаю вас, Алина... Говорите!';
-                    startBrowserSpeechRecognition();
+                if (isLiveActive && liveTurnState === 'SPEAKING') {
+                    passTurnToUser();
                 }
-            }, 2000);
+            }, waitMs);
         }
     } catch(e) {
         if (statusText) statusText.textContent = 'Заминка связи. Слушаю снова...';
-        isAITalking = false;
-        if (isLiveActive) setTimeout(() => startBrowserSpeechRecognition(), 1000);
+        if (isLiveActive) {
+            setTimeout(() => {
+                passTurnToUser();
+            }, 1000);
+        }
     }
 }
 
+// Воспроизведение ответа коуча: микрофон выключен, после окончания аудио — микрофон включается
 async function playLiveTTS(text) {
     return new Promise(async (resolve) => {
         try {
             const statusText = document.getElementById('liveStatusText');
-            if (statusText) statusText.textContent = '🔊 Коуч отвечает... Пожалуйста, слушайте.';
+            if (statusText) statusText.textContent = '🔊 Коуч отвечает... (микрофон выключен)';
+
+            // Во время ответа коуча микрофон строго выключен
+            stopBrowserSpeechRecognition();
 
             // Полная очистка от markdown, звездочек и эмодзи перед синтезом речи
             let cleanText = (text || '')
@@ -856,46 +1108,71 @@ async function playLiveTTS(text) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text: cleanText, voice: voiceToUse })
             });
+
             if (!res.ok) {
-                isAITalking = false;
-                if (isLiveActive) startBrowserSpeechRecognition();
+                if (isLiveActive) passTurnToUser();
                 resolve();
                 return;
             }
+
             const blob = await res.blob();
             currentLiveAudio = new Audio(URL.createObjectURL(blob));
             if (liveSlowVoiceEnabled) {
                 currentLiveAudio.playbackRate = 0.8;
             }
 
+            // КАК ТОЛЬКО КОУЧ ИЛИ ТРЕНЕР ЗАКОНЧИЛ ГОВОРИТЬ -> ВКЛЮЧАЕТСЯ МИКРОФОН (ВОПРОС-ОТВЕТ)
             currentLiveAudio.onended = () => {
-                isAITalking = false;
                 currentLiveAudio = null;
-                const statusText = document.getElementById('liveStatusText');
-                if (statusText) {
-                    statusText.textContent = (liveCoachMode === 'german') 
-                        ? '🎙️ Ваша очередь говорить по-немецки... (4.5 сек пауза)' 
-                        : '🎙️ Ваша очередь говорить... Я слушаю!';
+                if (isLiveActive) {
+                    passTurnToUser();
                 }
-                if (isLiveActive) setTimeout(() => startBrowserSpeechRecognition(), 400);
                 resolve();
             };
 
             currentLiveAudio.onerror = () => {
-                isAITalking = false;
                 currentLiveAudio = null;
-                if (isLiveActive) startBrowserSpeechRecognition();
+                if (isLiveActive) {
+                    passTurnToUser();
+                }
                 resolve();
             };
 
             await currentLiveAudio.play();
         } catch(e) {
-            isAITalking = false;
             currentLiveAudio = null;
-            if (isLiveActive) startBrowserSpeechRecognition();
+            if (isLiveActive) {
+                passTurnToUser();
+            }
             resolve();
         }
     });
+}
+
+// Автоматическая передача слова человеку в режиме «Вопрос-Ответ»: включается микрофон
+function passTurnToUser() {
+    if (!isLiveActive) return;
+
+    liveTurnState = 'LISTENING';
+    isAITalking = false;
+    liveAccumulatedText = '';
+
+    const statusText = document.getElementById('liveStatusText');
+    if (statusText) {
+        statusText.textContent = (liveCoachMode === 'german') 
+            ? '🎙️ Ваша очередь говорить по-немецки... (микрофон включен)' 
+            : '🎙️ Ваша очередь говорить... Я слушаю! (микрофон включен)';
+    }
+
+    const pauseIndicator = document.getElementById('livePauseIndicator');
+    if (pauseIndicator) pauseIndicator.classList.add('hidden');
+
+    // Небольшая пауза 400мс для плавного переключения аудиоканала смартфона
+    setTimeout(() => {
+        if (isLiveActive && liveTurnState === 'LISTENING') {
+            startBrowserSpeechRecognition();
+        }
+    }, 400);
 }
 
 // Голосовой ввод в текстовый чат
@@ -1028,7 +1305,11 @@ function startLiveGermanCoach(lessonId) {
     liveCoachMode = 'german';
     LIVE_SILENCE_DELAY_MS = 4500; // 4.5 секунды тишины: время на размышление без спешки!
 
-    // Закрываем модалки, если открыты
+    // Закрываем модалки и полноэкранный Duolingo, если были открыты
+    const lingoContainer = document.getElementById('lingoAppContainer');
+    if (lingoContainer) lingoContainer.classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+
     const m1 = document.getElementById('lingoLessonModal');
     if (m1) m1.remove();
 
@@ -1041,9 +1322,9 @@ function startLiveGermanCoach(lessonId) {
         toggleLiveSound();
     }
 
-    // Запускаем распознавание речи, если ещё не активно
+    // Запускаем режим Live, если ещё не активен
     if (!isLiveActive) {
-        toggleLiveVoiceState();
+        startLiveVoice();
     }
 
     const allLessons = window.allGermanCourseData?.lessons || [];
@@ -1061,6 +1342,9 @@ function switchToCoachLiveMode() {
     updateLiveCoachModeUI();
     const transcript = document.getElementById('liveTranscript');
     if (transcript) transcript.textContent = 'Здравствуй, дорогая Алина! Я снова рядом в роли твоего психолога и личного коуча. О чём ты думаешь?';
+    if (isLiveActive) {
+        passTurnToUser();
+    }
 }
 
 function updateLiveCoachModeUI() {

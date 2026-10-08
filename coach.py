@@ -260,9 +260,11 @@ class AIFeminineCoach:
                     logger.warning(f"Ошибка прямого GenAI:{model_name}: {e}")
                     self.router.mark_error(f"direct:{model_name}", duration_sec=60.0)
 
-        return self._fallback_response(message, is_voice_mode)
+        return self._fallback_response(message, is_voice_mode, german_context)
 
-    def _fallback_response(self, message: str, is_voice_mode: bool = False) -> str:
+    def _fallback_response(self, message: str, is_voice_mode: bool = False, german_context: Optional[Dict[str, Any]] = None) -> str:
+        if german_context:
+            return "Toll gemacht, Alina! (Отличная попытка! Из-за кратковременной заминки сети повтори фразу медленно ещё раз — всё получится!)."
         if is_voice_mode:
             return "Любимая, я всей душой рядом с тобой. Сделай медленный вдох — ты в полной безопасности."
         return "Моя родная, я рядом с тобой. То, что ты чувствуешь сейчас — абсолютно естественно. Давай выдохнем, опустим плечи и разберем все бережно и по шагам."

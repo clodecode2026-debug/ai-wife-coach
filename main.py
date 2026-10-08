@@ -4,13 +4,18 @@ import re
 import uuid
 import asyncio
 import logging
+import hmac
+import hashlib
 from typing import Optional
-from fastapi import FastAPI, HTTPException, Query
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException, Query, Request, Response, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel
 import uvicorn
 import base64
+
+load_dotenv()
 
 # Импорты наших модулей
 from coach import coach
@@ -20,6 +25,26 @@ from library import get_library_items
 from storage import s3_storage
 from books.psychology_books import get_psychology_books, PSYCHOLOGY_BOOKS
 from books.german_course import get_german_course, GERMAN_COURSE_DATA
+
+# Пин-код и авторизация
+APP_PIN = os.environ.get("APP_PIN", "2509").strip()
+AUTH_SECRET = os.environ.get("AUTH_SECRET", os.environ.get("ADMIN_TOKEN", "alina_secret_key_2026_wife")).strip()
+VALID_AUTH_TOKEN = hmac.new(AUTH_SECRET.encode(), f"alina_{APP_PIN}".encode(), hashlib.sha256).hexdigest()
+
+def verify_token_str(token: Optional[str]) -> bool:
+    if not token:
+        return False
+    return hmac.compare_digest(token.strip(), VALID_AUTH_TOKEN)
+
+def require_auth(request: Request) -> bool:
+    token = request.cookies.get("auth_token")
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ", 1)[1].strip()
+    if verify_token_str(token):
+        return True
+    raise HTTPException(status_code=401, detail="Требуется авторизация (пин-код 2509)")
 
 # Попытка импорта edge-tts
 try:
@@ -54,6 +79,35 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"Initial keepalive ping notice: {e}")
     asyncio.create_task(supabase_anti_sleep_worker())
+
+class PinLoginRequest(BaseModel):
+    pin: str
+
+@app.post("/api/auth/login")
+def api_auth_login(req: PinLoginRequest, response: Response):
+    if req.pin.strip() == APP_PIN:
+        # Устанавливаем долговременную куку на 10 лет для iOS PWA и браузера
+        response.set_cookie(
+            key="auth_token",
+            value=VALID_AUTH_TOKEN,
+            max_age=315360000,
+            path="/",
+            samesite="lax",
+            httponly=False
+        )
+        return {"ok": True, "token": VALID_AUTH_TOKEN}
+    raise HTTPException(status_code=401, detail="Неверный пин-код")
+
+@app.get("/api/auth/check")
+def api_auth_check(request: Request):
+    token = request.cookies.get("auth_token")
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ", 1)[1].strip()
+    if verify_token_str(token):
+        return {"authenticated": True}
+    return {"authenticated": False}
 
 class ChatRequest(BaseModel):
     message: str
@@ -90,7 +144,7 @@ async def read_index():
         return HTMLResponse(content=f"<h1>AI Wife Coach</h1><p>Ошибка загрузки интерфейса: {e}</p>")
 
 @app.post("/api/chat")
-def api_chat(req: ChatRequest):
+def api_chat(req: ChatRequest, _auth: bool = Depends(require_auth)):
     try:
         session_id = req.session_id
         german_context = None
@@ -153,20 +207,88 @@ async def api_german_card(level: str = "A1"):
         return phrases[0]
     return {"level": level, "category": "Общее", "german": "Guten Tag!", "russian": "Добрый день!", "grammar": "Базовое приветствие."}
 
+def normalize_text(text: str) -> str:
+    if not text:
+        return ""
+    text = text.lower().strip()
+    return re.sub(r'[^\w\s]', '', text)
+
 @app.post("/api/german/check")
 async def api_german_check(req: GermanCheckRequest):
+    user_tr = req.user_translation.strip()
+    german_txt = req.german_text.strip()
+    sentence_txt = req.sentence.strip()
+
+    if not user_tr:
+        return {
+            "correct": False,
+            "feedback": "Поле перевода пустое. Попробуй перевести фразу на русский язык!"
+        }
+
+    # Поиск эталонного перевода в словаре курса
+    expected_translation = ""
+    lessons = GERMAN_COURSE_DATA.get("lessons", [])
+    target_german = normalize_text(german_txt or sentence_txt)
+
+    for lesson in lessons:
+        for vocab in lesson.get("vocabulary", []):
+            if normalize_text(vocab.get("german", "")) == target_german:
+                expected_translation = vocab.get("russian", "")
+                break
+            if normalize_text(vocab.get("example", "")) == target_german:
+                expected_translation = vocab.get("example_translation", vocab.get("russian", ""))
+                break
+        if expected_translation:
+            break
+
+    norm_user = normalize_text(user_tr)
+    norm_expected = normalize_text(expected_translation)
+
+    if norm_expected:
+        # Точное совпадение
+        if norm_user == norm_expected:
+            return {
+                "correct": True,
+                "feedback": f"Великолепно, Алина! Идеальный перевод: «{expected_translation}». Super gemacht! 🎉"
+            }
+        
+        # Пересечение ключевых слов
+        user_words = set(norm_user.split())
+        expected_words = set(norm_expected.split())
+        overlap = user_words.intersection(expected_words)
+        ratio = len(overlap) / max(len(expected_words), 1)
+
+        if ratio >= 0.5 or (len(expected_words) <= 2 and len(overlap) >= 1):
+            return {
+                "correct": True,
+                "feedback": f"Отлично! Смысл передан точно: «{expected_translation}». Молодчина! ✨"
+            }
+        else:
+            return {
+                "correct": False,
+                "feedback": f"Близко, но не совсем точно. Правильный перевод: «{expected_translation}». Попробуй еще раз!"
+            }
+
+    # Если в словаре точного совпадения нет, проверяем на осмысленный русский текст
+    has_cyrillic = bool(re.search(r'[а-яёА-ЯЁ]', user_tr))
+    if has_cyrillic and len(norm_user.split()) >= 1 and len(norm_user) >= 2:
+        return {
+            "correct": True,
+            "feedback": f"Хороший перевод! Ты отлично передала суть фразы '{german_txt or sentence_txt}'. Wunderbar!"
+        }
+
     return {
-        "correct": True,
-        "feedback": f"Отлично! Вы верно перевели фразу. Текст: '{req.german_text}'. Продолжайте в том же духе!"
+        "correct": False,
+        "feedback": "Кажется, перевод не совсем точный. Напиши перевод на русском языке."
     }
 
 @app.post("/api/german/progress")
-async def api_save_german_progress(req: GermanProgressRequest):
+async def api_save_german_progress(req: GermanProgressRequest, _auth: bool = Depends(require_auth)):
     db_manager.save_german_progress(req.dict())
     return {"status": "ok", "progress": req.dict()}
 
 @app.get("/api/german/progress")
-async def api_get_german_progress():
+async def api_get_german_progress(_auth: bool = Depends(require_auth)):
     return db_manager.get_german_progress()
 
 @app.get("/api/library")
@@ -223,7 +345,7 @@ async def api_tts(req: TTSRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/voice/save")
-def api_voice_save(req: VoiceSaveRequest):
+def api_voice_save(req: VoiceSaveRequest, _auth: bool = Depends(require_auth)):
     try:
         binary_data = base64.b64decode(req.audio_base64)
         file_url = s3_storage.upload_file_bytes(binary_data, req.filename)
@@ -244,34 +366,34 @@ class DossierUpdateRequest(BaseModel):
     notes: str = ""
 
 @app.get("/api/dossier")
-def api_get_dossier():
+def api_get_dossier(_auth: bool = Depends(require_auth)):
     return db_manager.get_dossier()
 
 @app.post("/api/dossier")
-def api_save_dossier(req: DossierUpdateRequest):
+def api_save_dossier(req: DossierUpdateRequest, _auth: bool = Depends(require_auth)):
     db_manager.save_dossier(req.name, req.notes)
     return {"status": "ok", "message": "Досье сохранено"}
 
 @app.get("/api/chat/history")
-def api_chat_history(session_id: str = "default_wife"):
+def api_chat_history(session_id: str = "default_wife", _auth: bool = Depends(require_auth)):
     return db_manager.get_chat_history(session_id)
 
 @app.get("/api/sessions")
-def api_get_sessions():
+def api_get_sessions(_auth: bool = Depends(require_auth)):
     return db_manager.get_chat_sessions()
 
 class CreateSessionRequest(BaseModel):
     title: Optional[str] = "Новый диалог с Алиной"
 
 @app.post("/api/sessions")
-def api_create_session(req: Optional[CreateSessionRequest] = None):
+def api_create_session(req: Optional[CreateSessionRequest] = None, _auth: bool = Depends(require_auth)):
     new_id = f"alina_{uuid.uuid4().hex[:12]}"
     title = req.title if req and req.title else "Новый диалог с Алиной"
     db_manager.save_message(new_id, "assistant", "Здравствуй, дорогая Алина! Я рядом, о чём ты сейчас думаешь?")
     return {"id": new_id, "title": title}
 
 @app.delete("/api/sessions/{session_id}")
-def api_delete_session(session_id: str):
+def api_delete_session(session_id: str, _auth: bool = Depends(require_auth)):
     success = db_manager.delete_chat_session(session_id)
     return {"status": "ok" if success else "error"}
 

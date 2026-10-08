@@ -1,8 +1,11 @@
 import os
+from dotenv import load_dotenv
 import boto3
 from botocore.client import Config
 from botocore.exceptions import BotoCoreError, ClientError
 import logging
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +16,7 @@ class S3StorageManager:
         self.secret_key = os.environ.get("S3_SECRET_KEY")
         self.bucket_name = os.environ.get("S3_BUCKET", "agent-files")
         self.region_name = os.environ.get("S3_REGION", "us-east-1")
+        verify_ssl = os.environ.get("S3_VERIFY_SSL", "true").lower() in ("true", "1", "yes")
         
         self.s3_client = None
         if self.access_key and self.secret_key:
@@ -27,7 +31,7 @@ class S3StorageManager:
                     aws_secret_access_key=self.secret_key,
                     region_name=self.region_name,
                     config=cfg,
-                    verify=False
+                    verify=verify_ssl
                 )
                 logger.info(f"S3 Storj storage client успешно инициализирован (bucket: {self.bucket_name})")
             except Exception as e:

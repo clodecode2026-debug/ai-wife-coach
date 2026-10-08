@@ -1049,6 +1049,52 @@ function commitLiveSpeech(text) {
     handleLiveUserSpeech(text);
 }
 
+let liveAudioQueue = [];
+let isPlayingAudioQueue = false;
+let liveStreamIsDone = false;
+
+function playNextInAudioQueue() {
+    if (liveAudioQueue.length === 0) {
+        isPlayingAudioQueue = false;
+        if (liveStreamIsDone && isLiveActive && liveTurnState === 'SPEAKING') {
+            passTurnToUser();
+        }
+        return;
+    }
+
+    isPlayingAudioQueue = true;
+    const nextB64 = liveAudioQueue.shift();
+
+    try {
+        const binaryStr = atob(nextB64);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) {
+            bytes[i] = binaryStr.charCodeAt(i);
+        }
+        const blob = new Blob([bytes], { type: 'audio/mpeg' });
+        currentLiveAudio = new Audio(URL.createObjectURL(blob));
+        if (liveSlowVoiceEnabled) {
+            currentLiveAudio.playbackRate = 0.8;
+        }
+
+        currentLiveAudio.onended = () => {
+            currentLiveAudio = null;
+            playNextInAudioQueue();
+        };
+
+        currentLiveAudio.onerror = () => {
+            currentLiveAudio = null;
+            playNextInAudioQueue();
+        };
+
+        currentLiveAudio.play().catch(() => {
+            playNextInAudioQueue();
+        });
+    } catch(e) {
+        playNextInAudioQueue();
+    }
+}
+
 async function handleLiveUserSpeech(text) {
     if (!isLiveActive) return;
     liveTurnState = 'PROCESSING';
@@ -1063,6 +1109,86 @@ async function handleLiveUserSpeech(text) {
     if (statusText) statusText.textContent = '🤔 Обдумываю ответ... (микрофон выключен)';
     if (transcript) transcript.textContent = `Вы: «${text}»`;
 
+    // Сброс очередей стриминга
+    liveAudioQueue = [];
+    isPlayingAudioQueue = false;
+    liveStreamIsDone = false;
+
+    // 1. Попытка мгновенного потокового ответа по предложениям (~500 мс до первого звука)
+    let streamSuccess = false;
+    try {
+        const streamRes = await fetch('/api/chat/stream', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: text,
+                session_id: sessionId,
+                is_voice_mode: true,
+                mode: liveCoachMode,
+                german_lesson_id: currentLiveGermanLessonId
+            })
+        });
+
+        if (streamRes.ok && streamRes.body) {
+            const reader = streamRes.body.getReader();
+            const decoder = new TextDecoder('utf-8');
+            let streamBuffer = '';
+            let accumulatedReply = '';
+
+            liveTurnState = 'SPEAKING';
+            if (statusText) statusText.textContent = '🔊 Коуч отвечает... (микрофон выключен)';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                streamBuffer += decoder.decode(value, { stream: true });
+                const lines = streamBuffer.split('\n\n');
+                streamBuffer = lines.pop();
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const jsonStr = line.replace('data: ', '').trim();
+                        try {
+                            const data = JSON.parse(jsonStr);
+                            if (data.type === 'chunk') {
+                                streamSuccess = true;
+                                accumulatedReply += (accumulatedReply ? ' ' : '') + data.text;
+                                if (transcript) transcript.textContent = accumulatedReply;
+
+                                if (liveSoundEnabled && data.audio_base64) {
+                                    liveAudioQueue.push(data.audio_base64);
+                                    if (!isPlayingAudioQueue) {
+                                        playNextInAudioQueue();
+                                    }
+                                }
+                            } else if (data.type === 'done') {
+                                liveStreamIsDone = true;
+                                if (transcript && data.full_text) {
+                                    transcript.textContent = data.full_text;
+                                }
+                                if (!liveSoundEnabled) {
+                                    const waitMs = Math.max(2500, Math.min(6000, (data.full_text || '').length * 40));
+                                    setTimeout(() => {
+                                        if (isLiveActive && liveTurnState === 'SPEAKING') {
+                                            passTurnToUser();
+                                        }
+                                    }, waitMs);
+                                } else if (!isPlayingAudioQueue && liveAudioQueue.length === 0) {
+                                    passTurnToUser();
+                                }
+                            }
+                        } catch(e){}
+                    }
+                }
+            }
+            if (streamSuccess) return;
+        }
+    } catch(streamErr) {
+        console.warn('Streaming notice, fallback to standard endpoint:', streamErr);
+    }
+
+    // 2. Резервный вызов стандартного эндпоинта /api/chat
     try {
         const res = await fetch('/api/chat', {
             method: 'POST',
@@ -1082,7 +1208,6 @@ async function handleLiveUserSpeech(text) {
 
         if (transcript) transcript.textContent = reply;
 
-        // ПЕРЕХОД К ФАЗЕ ОТВЕТА КОУЧА: микрофон строго отключен
         liveTurnState = 'SPEAKING';
         if (statusText) statusText.textContent = '🔊 Коуч отвечает... (микрофон выключен)';
 
@@ -1093,7 +1218,6 @@ async function handleLiveUserSpeech(text) {
                 await playLiveTTS(reply);
             }
         } else {
-            // Тихий режим: показываем текст, даем время прочесть, затем передаем слово Алине
             const waitMs = Math.max(2500, Math.min(6000, reply.length * 40));
             setTimeout(() => {
                 if (isLiveActive && liveTurnState === 'SPEAKING') {

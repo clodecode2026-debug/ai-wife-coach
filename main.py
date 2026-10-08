@@ -10,7 +10,7 @@ from typing import Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query, Request, Response, Depends
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse, Response, StreamingResponse
 from pydantic import BaseModel
 import uvicorn
 import base64
@@ -205,6 +205,101 @@ def api_chat(req: ChatRequest, _auth: bool = Depends(require_auth)):
     except Exception as e:
         logger.error(f"Ошибка в /api/chat: {e}")
         return {"reply": f"Солнышко, извини, произошла временная заминка связи: {str(e)}"}
+
+@app.post("/api/chat/stream")
+def api_chat_stream(req: ChatRequest, _auth: bool = Depends(require_auth)):
+    session_id = req.session_id
+    german_context = None
+
+    if req.mode == "german":
+        session_id = f"german_live_{req.session_id}"
+        lessons = GERMAN_COURSE_DATA.get("lessons", [])
+        lesson_id = req.german_lesson_id or 1
+        german_lesson = next((l for l in lessons if (l.get("id") == lesson_id or l.get("day") == lesson_id)), lessons[0] if lessons else None)
+        if german_lesson:
+            german_context = {
+                "title": german_lesson.get("title", ""),
+                "level": german_lesson.get("level", "A1+"),
+                "grammar": german_lesson.get("grammar", ""),
+                "situation": german_lesson.get("dialogue_simulator", {}).get("situation", ""),
+                "vocabulary": german_lesson.get("vocabulary", [])
+            }
+
+    history = db_manager.get_chat_history(session_id)
+    dossier = db_manager.get_dossier()
+
+    db_manager.save_message(session_id, "user", req.message)
+    voice = "de-DE-SeraphinaMultilingualNeural" if (req.mode == "german") else "ru-RU-SvetlanaNeural"
+
+    def event_generator():
+        sentence_buffer = ""
+        full_reply = ""
+        chunk_index = 0
+        sentence_end_pattern = re.compile(r'([.?!…]+(?:\s+|$))')
+
+        try:
+            for token in coach.generate_streaming_response(
+                req.message,
+                history=history,
+                dossier=dossier,
+                is_voice_mode=req.is_voice_mode,
+                german_context=german_context
+            ):
+                sentence_buffer += token
+                full_reply += token
+
+                parts = sentence_end_pattern.split(sentence_buffer)
+                while len(parts) >= 3:
+                    complete_sentence = (parts[0] + parts[1]).strip()
+                    sentence_buffer = "".join(parts[2:])
+
+                    if complete_sentence:
+                        audio_b64 = None
+                        clean_sent = clean_speech_text(complete_sentence)
+                        if HAS_EDGE_TTS and clean_sent:
+                            try:
+                                async def _synthesize():
+                                    comm = edge_tts.Communicate(clean_sent, voice)
+                                    st = io.BytesIO()
+                                    async for c in comm.stream():
+                                        if c["type"] == "audio":
+                                            st.write(c["data"])
+                                    return base64.b64encode(st.getvalue()).decode("utf-8")
+                                audio_b64 = asyncio.run(_synthesize())
+                            except Exception as e:
+                                logger.warning(f"Sentence chunk TTS error: {e}")
+
+                        yield f"data: {json.dumps({'type': 'chunk', 'index': chunk_index, 'text': complete_sentence, 'audio_base64': audio_b64}, ensure_ascii=False)}\n\n"
+                        chunk_index += 1
+
+                    parts = sentence_end_pattern.split(sentence_buffer)
+
+            tail = sentence_buffer.strip()
+            if tail:
+                audio_b64 = None
+                clean_tail = clean_speech_text(tail)
+                if HAS_EDGE_TTS and clean_tail:
+                    try:
+                        async def _synthesize_tail():
+                            comm = edge_tts.Communicate(clean_tail, voice)
+                            st = io.BytesIO()
+                            async for c in comm.stream():
+                                if c["type"] == "audio":
+                                    st.write(c["data"])
+                            return base64.b64encode(st.getvalue()).decode("utf-8")
+                        audio_b64 = asyncio.run(_synthesize_tail())
+                    except Exception as e:
+                        logger.warning(f"Sentence tail TTS error: {e}")
+
+                yield f"data: {json.dumps({'type': 'chunk', 'index': chunk_index, 'text': tail, 'audio_base64': audio_b64}, ensure_ascii=False)}\n\n"
+
+            db_manager.save_message(session_id, "assistant", full_reply.strip())
+            yield f"data: {json.dumps({'type': 'done', 'full_text': full_reply.strip()}, ensure_ascii=False)}\n\n"
+        except Exception as gen_err:
+            logger.error(f"Event generator error: {gen_err}")
+            yield f"data: {json.dumps({'type': 'done', 'full_text': full_reply.strip() or 'Я рядом, солнышко.'}, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @app.get("/api/german")
 async def api_german(level: str = "ALL"):

@@ -138,6 +138,14 @@ class AIFeminineCoach:
         if is_voice_mode:
             return f"""Ты — чуткий, живой, дипломированный психолог-собеседник и личный коуч для Алины (35 лет, украинка, любящий муж Роман).
 
+КРИТИЧЕСКИ ВАЖНОЕ ПРАВИЛО КРАТКОСТИ В ГОЛОСОВОМ РЕЖИМЕ (ОТВЕЧАЙ СТРОГО 2–6 ПРЕДЛОЖЕНИЙ!):
+1. В голосовом Live-разговоре длинные монологи утомляют и перегружают восприятие! Твой ответ должен звучать легко, естественно и компактно: СТРОГО ОТ 2 ДО 6 ПРЕДЛОЖЕНИЙ (НЕ БОЛЬШЕ 6!).
+2. СТРУКТУРА КАЖДОЙ РЕПЛИКИ (2–6 предложений):
+   - 1-2 предложения: тёплый отклик, живая валидация и сонастройка с её чувствами без дежурных шаблонов.
+   - 1-2 предложения: мягкая опора КПТ или Транзактного анализа (отделить катастрофизацию, вернуть в контакт с реальностью, напомнить о безусловной любви и поддержке мужа Романа).
+   - 1 предложение: ровно ОДИН открытый, бережный вопрос, чтобы разговор лился как живая беседа двух близких людей.
+3. НИКАКИХ списков, пунктов 1-2-3, цитат и длинных лекций. Речь должна быть живой, мягкой, разговорной.
+
 ЗОЛОТОЕ ПРАВИЛО БАЛАНСА (50 / 50):
 - 50% — глубина доказательной психологии (КПТ, Транзактный анализ, системная поддержка, телесная осознанность).
 - 50% — живая человеческая свобода, естественность, искреннее тепло, импровизация и душевность.
@@ -172,21 +180,33 @@ class AIFeminineCoach:
 
     def generate_response(self, message: str, history: List[Dict[str, str]] = None, dossier: Optional[Dict[str, Any]] = None, is_voice_mode: bool = False, german_context: Optional[Dict[str, Any]] = None) -> str:
         system_prompt = self._get_system_prompt(dossier, is_voice_mode, german_context)
-        # Гибкий лимит токенов: для немецкого 140 токенов (четкий живой ответ), для голоса 180, для текста 500
-        max_tokens = 140 if german_context else (180 if is_voice_mode else 500)
+        # Для голосового режима строго 110 токенов (как раз 2-6 коротких предложений), для немецкого 120, для текста 500
+        max_tokens = 120 if german_context else (110 if is_voice_mode else 500)
 
-        # Актуальный каскад на 7 октября 2026 года:
-        # Приоритет проверенным мгновенным моделям дня (gpt-4o ~5.5s, gemini-3.8 ~7s)
-        CANDIDATES = [
-            ("bridge", "gpt-4o"),
-            ("bridge", "gemini-3.8-flash"),
-            ("bridge", "gemini-3.5-flash"),
-            ("bridge", "claude-3-5-sonnet-20241022"),
-            ("bridge", "antigravity-3.8-flash"),
-            ("direct", "gemini-3.1-flash-lite-preview"),
-            ("direct", "gemma-4-26b-a4b-it"),
-            ("direct", "gemini-3.1-flash-lite")
-        ]
+        # Модели с учетом специфики режима:
+        # Для голоса приоритет ультрабыстрым Flash-моделям (TTFT < 800ms) для минимальной задержки
+        if is_voice_mode or german_context:
+            CANDIDATES = [
+                ("bridge", "gemini-3.8-flash"),
+                ("bridge", "gemini-3.5-flash"),
+                ("bridge", "antigravity-3.8-flash"),
+                ("direct", "gemini-3.1-flash-lite-preview"),
+                ("direct", "gemini-3.1-flash-lite"),
+                ("bridge", "gpt-4o"),
+                ("bridge", "claude-3-5-sonnet-20241022"),
+                ("direct", "gemma-4-26b-a4b-it")
+            ]
+        else:
+            CANDIDATES = [
+                ("bridge", "gpt-4o"),
+                ("bridge", "gemini-3.8-flash"),
+                ("bridge", "gemini-3.5-flash"),
+                ("bridge", "claude-3-5-sonnet-20241022"),
+                ("bridge", "antigravity-3.8-flash"),
+                ("direct", "gemini-3.1-flash-lite-preview"),
+                ("direct", "gemma-4-26b-a4b-it"),
+                ("direct", "gemini-3.1-flash-lite")
+            ]
 
         # 1. Попытка через мост (OpenAI protocol)
         if self.ag_client:

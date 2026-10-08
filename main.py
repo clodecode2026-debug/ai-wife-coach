@@ -183,7 +183,25 @@ def api_chat(req: ChatRequest, _auth: bool = Depends(require_auth)):
         # Сохраняем ответ ассистента
         db_manager.save_message(session_id, "assistant", reply)
 
-        return {"reply": reply}
+        # Для голосового режима: сразу генерируем аудио на сервере в 1 сетевой раундтрип для ультранизкой задержки
+        audio_base64 = None
+        if req.is_voice_mode and HAS_EDGE_TTS:
+            try:
+                voice = "de-DE-SeraphinaMultilingualNeural" if (req.mode == "german") else "ru-RU-SvetlanaNeural"
+                clean_text = clean_speech_text(reply)
+                if clean_text:
+                    async def _gen_tts_audio():
+                        comm = edge_tts.Communicate(clean_text, voice)
+                        st = io.BytesIO()
+                        async for chunk in comm.stream():
+                            if chunk["type"] == "audio":
+                                st.write(chunk["data"])
+                        return base64.b64encode(st.getvalue()).decode("utf-8")
+                    audio_base64 = asyncio.run(_gen_tts_audio())
+            except Exception as tts_err:
+                logger.warning(f"Voice mode server-side TTS warning: {tts_err}")
+
+        return {"reply": reply, "audio_base64": audio_base64}
     except Exception as e:
         logger.error(f"Ошибка в /api/chat: {e}")
         return {"reply": f"Солнышко, извини, произошла временная заминка связи: {str(e)}"}

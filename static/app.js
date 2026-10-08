@@ -202,6 +202,7 @@ let currentLiveGermanLessonId = 1;
 
 // Платформа немецкого языка (180 дней • A1+ ➔ B1 для Алины)
 let currentGermanLevel = localStorage.getItem('ai_coach_german_level') || 'A1+';
+window.currentGermanLevel = currentGermanLevel;
 let currentGermanMode = 'lessons'; // 'lessons' | 'flashcards' | 'duolingo'
 let allGermanCourseData = null;
 let currentCourseDay = parseInt(localStorage.getItem('ai_coach_german_day') || '1', 10);
@@ -1486,6 +1487,7 @@ function updateLearnedCountUI() {
 
 function setGermanLevel(level) {
     currentGermanLevel = (level === 'A1') ? 'A1+' : level;
+    window.currentGermanLevel = currentGermanLevel;
     localStorage.setItem('ai_coach_german_level', currentGermanLevel);
 
     // Перемещаем фокус на первый день выбранного уровня
@@ -1497,6 +1499,10 @@ function setGermanLevel(level) {
         currentCourseDay = 91;
     }
     localStorage.setItem('ai_coach_german_day', currentCourseDay);
+
+    if (window.lingoEngine) {
+        window.lingoEngine.currentLessonId = currentCourseDay;
+    }
 
     currentFlashcardLessonId = 'all';
     renderGermanPlatform();
@@ -1516,8 +1522,12 @@ function startLingoLesson(lessonId) {
 }
 
 function startFlashcardsForLesson(lessonId, level) {
-    currentGermanLevel = level || currentGermanLevel;
-    currentFlashcardLessonId = lessonId;
+    if (level) {
+        currentGermanLevel = (level === 'A1') ? 'A1+' : level;
+        window.currentGermanLevel = currentGermanLevel;
+        localStorage.setItem('ai_coach_german_level', currentGermanLevel);
+    }
+    currentFlashcardLessonId = String(lessonId);
     currentGermanMode = 'flashcards';
     renderGermanPlatform();
 }
@@ -1673,8 +1683,15 @@ function prepareFlashcards() {
 
     const lessons = allGermanCourseData.lessons || [];
     lessons.forEach(lesson => {
-        if (lesson.level !== currentGermanLevel) return;
-        if (currentFlashcardLessonId !== 'all' && lesson.id !== currentFlashcardLessonId) return;
+        // Если выбран конкретный урок — фильтруем по ID урока (сравнение строк)
+        if (currentFlashcardLessonId !== 'all') {
+            if (String(lesson.id) !== String(currentFlashcardLessonId) && String(lesson.day) !== String(currentFlashcardLessonId)) {
+                return;
+            }
+        } else {
+            // Если выбран 'all' — берем карточки уроков текущего уровня (A1+, A2, B1)
+            if (lesson.level !== currentGermanLevel) return;
+        }
 
         (lesson.vocabulary || []).forEach((v, idx) => {
             currentFlashcards.push({
@@ -1692,7 +1709,31 @@ function prepareFlashcards() {
         });
     });
 
-    currentCardIdx = 0;
+    // Защита от пустых карточек: если по фильтру ничего не нашлось, сбрасываем фильтр на 'all' для текущего уровня
+    if (currentFlashcards.length === 0 && currentFlashcardLessonId !== 'all') {
+        currentFlashcardLessonId = 'all';
+        lessons.forEach(lesson => {
+            if (lesson.level !== currentGermanLevel) return;
+            (lesson.vocabulary || []).forEach((v, idx) => {
+                currentFlashcards.push({
+                    id: `${lesson.id}_${idx}_${v.german}`,
+                    german: v.german,
+                    transcription: v.transcription || '',
+                    russian: v.russian,
+                    example: v.example || '',
+                    example_translation: v.example_translation || '',
+                    voice_hint: v.voice_hint || 'de-DE-KatjaNeural',
+                    lesson_id: lesson.id,
+                    lesson_title: lesson.title,
+                    level: lesson.level
+                });
+            });
+        });
+    }
+
+    if (currentCardIdx >= currentFlashcards.length) {
+        currentCardIdx = 0;
+    }
     isCardFlipped = false;
 }
 
@@ -1710,7 +1751,8 @@ function renderFlashcardsView() {
     let lessonOptions = `<option value="all" ${currentFlashcardLessonId === 'all' ? 'selected' : ''}>🌟 Все слова уровня ${currentGermanLevel} (${currentFlashcards.length} шт)</option>`;
     lessons.forEach(l => {
         const count = (l.vocabulary || []).length;
-        lessonOptions += `<option value="${l.id}" ${currentFlashcardLessonId === l.id ? 'selected' : ''}>Урок ${l.id}: ${escapeHtml(l.title)} (${count} слов)</option>`;
+        const isSelected = String(currentFlashcardLessonId) === String(l.id) || String(currentFlashcardLessonId) === String(l.day);
+        lessonOptions += `<option value="${l.id}" ${isSelected ? 'selected' : ''}>Урок ${l.day || l.id}: ${escapeHtml(l.title)} (${count} слов)</option>`;
     });
 
     filterPanel.innerHTML = `

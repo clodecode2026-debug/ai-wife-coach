@@ -916,7 +916,7 @@ class LingoGameEngine {
         }
 
         // Текущий уровень
-        const currentLevel = window.currentGermanLevel || 'A1+';
+        const currentLevel = window.currentGermanLevel || localStorage.getItem('ai_coach_german_level') || 'A1+';
         const filteredLessons = allLessons.filter(l => l.level === currentLevel);
 
         // Находим текущий активный юнит
@@ -1052,6 +1052,10 @@ class LingoGameEngine {
                     <button onclick="document.getElementById('lingoLessonModal').remove(); lingoEngine.startLesson(${lesson.day || lesson.id}, window.allGermanCourseData.lessons)"
                             class="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-wider border-b-4 border-emerald-600 active:border-b-0 shadow-md transition">
                         ▶ Начать интерактивный урок (+20 XP)
+                    </button>
+                    <button onclick="document.getElementById('lingoLessonModal').remove(); if(typeof startFlashcardsForLesson === 'function') startFlashcardsForLesson(${lesson.day || lesson.id}, '${lesson.level}');"
+                            class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-black text-xs uppercase tracking-wider border-b-4 border-amber-600 active:border-b-0 shadow-md transition flex items-center justify-center gap-1.5">
+                        <span>🗂️ Карточки слов дня (${(lesson.vocabulary || lesson.vocab || []).length} слов)</span>
                     </button>
                     <button onclick="startLiveGermanCoach(${lesson.day || lesson.id})"
                             class="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-95 text-white rounded-2xl font-black text-xs uppercase tracking-wider border-b-4 border-purple-800 active:border-b-0 shadow-md transition flex items-center justify-center gap-1.5">

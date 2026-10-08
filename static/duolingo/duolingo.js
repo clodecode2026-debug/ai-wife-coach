@@ -73,12 +73,23 @@ class LingoGameEngine {
     // =========================================================================
     getSmartDistractors(targetText, allLessons, count = 2, isGerman = true) {
         const pool = [];
-        const targetLen = targetText.trim().split(/\s+/).length;
+        const targetClean = (targetText || '').trim().toLowerCase();
+        const targetLen = targetClean.split(/\s+/).length;
+
+        // Фильтр отсеивания любых артефактов и заглушек
+        const isValidCandidate = (str) => {
+            if (!str || typeof str !== 'string') return false;
+            const s = str.trim();
+            if (s.length < 2 || s.toLowerCase() === targetClean) return false;
+            if (s.includes('_') || /Fachwort|Ausdruck|День\s*\d|Термин|Beispiel/i.test(s)) return false;
+            if (/^\d+$/.test(s) || s.startsWith('[')) return false;
+            return true;
+        };
 
         allLessons.forEach(l => {
             (l.vocabulary || []).forEach(v => {
                 const text = isGerman ? v.german : v.russian;
-                if (text && text !== targetText && !pool.includes(text)) {
+                if (isValidCandidate(text) && !pool.includes(text)) {
                     const len = text.trim().split(/\s+/).length;
                     // Подбираем фразы схожей длины (по числу слов ±3), чтобы не палить правильный ответ
                     if (Math.abs(len - targetLen) <= 3) {
@@ -88,8 +99,33 @@ class LingoGameEngine {
             });
         });
 
-        // Перемешиваем и выбираем нужное количество
+        // Качественные естественные варианты на случай редких/новых уроков
+        const germanFallbacks = [
+            'Ich verstehe das leider nicht.',
+            'Können Sie das bitte wiederholen?',
+            'Das ist für mich sehr wichtig.',
+            'Ich lerne jeden Tag fleißig Deutsch.',
+            'Wir sprechen über unsere Pläne.',
+            'Ich möchte mich gerne verbessern.'
+        ].filter(f => f.toLowerCase() !== targetClean);
+
+        const russianFallbacks = [
+            'Я пока не могу точно сказать.',
+            'Мы можем обсудить это чуть позже.',
+            'Мне нужно немного времени подумать.',
+            'Это имеет большое значение для меня.',
+            'Я стараюсь говорить уверенно.'
+        ].filter(f => f.toLowerCase() !== targetClean);
+
+        const fallbacks = isGerman ? germanFallbacks : russianFallbacks;
+
+        // Перемешиваем и добираем при необходимости
         const shuffled = pool.sort(() => 0.5 - Math.random());
+        while (shuffled.length < count && fallbacks.length > 0) {
+            const nextFb = fallbacks.pop();
+            if (!shuffled.includes(nextFb)) shuffled.push(nextFb);
+        }
+
         return shuffled.slice(0, count);
     }
 

@@ -82,7 +82,7 @@
                 </div>
                 <div>
                     <div class="flex items-center gap-1.5">
-                        <h1 class="font-bold text-sm bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">AI Coach для Алины</h1>
+                        <h1 class="font-bold text-sm bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">Коуч 💖</h1>
                         <span class="text-[10px] bg-rose-100 text-rose-700 font-semibold px-1.5 py-0.2 rounded">B1 & КПТ</span>
                     </div>
                     <p class="text-[10px] text-slate-500 hidden sm:block">Профессиональный психолог, немецкий язык & поддержка любящего мужа Романа</p>
@@ -244,28 +244,28 @@
         </section>
 
         <!-- ВКЛАДКА 2: LIVE VOICE РЕЖИМ (С ФОТО КОУЧА И РЕАЛЬНЫМ ВИЗУАЛИЗАТОРОМ РЕЧИ) -->
-        <section id="tab-live" class="tab-content hidden flex-1 flex flex-col bg-gradient-to-br from-slate-950 via-purple-950 to-rose-950 text-white rounded-2xl shadow-2xl border border-purple-500/30 p-6 relative overflow-hidden items-center justify-between h-full">
+        <section id="tab-live" class="tab-content hidden flex-1 flex flex-col bg-gradient-to-br from-slate-950 via-purple-950 to-rose-950 text-white rounded-2xl shadow-2xl border border-purple-500/30 p-3 sm:p-5 relative overflow-y-auto no-scrollbar items-center justify-between h-full min-h-0">
             <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(236,72,153,0.18),transparent_70%)] pointer-events-none"></div>
             
-            <div class="text-center z-10 pt-2">
-                <span id="liveModeBadge" class="px-3 py-1 bg-rose-500/20 text-rose-300 rounded-full text-xs font-semibold border border-rose-500/30">Google Live Voice • Алина & Коуч</span>
-                <h2 id="liveTitleText" class="text-xl sm:text-2xl font-bold mt-2 bg-gradient-to-r from-rose-300 via-pink-300 to-amber-200 bg-clip-text text-transparent">Живой разговор</h2>
-                <p id="liveSubtitleText" class="text-xs text-slate-300 mt-1 max-w-md mx-auto">Коуч слушает ваш голос в реальном времени и отвечает емко, глубоко и бережно</p>
-                <div id="liveSwitchToCoachBtn" class="hidden mt-2">
-                    <button onclick="switchToCoachLiveMode()" class="text-xs px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-amber-200 transition">
+            <div class="text-center z-10 pt-1 shrink-0">
+                <span id="liveModeBadge" class="px-2.5 py-0.5 bg-rose-500/20 text-rose-300 rounded-full text-[11px] font-semibold border border-rose-500/30">Google Live Voice • Алина & Коуч</span>
+                <h2 id="liveTitleText" class="text-base sm:text-xl font-bold mt-1 bg-gradient-to-r from-rose-300 via-pink-300 to-amber-200 bg-clip-text text-transparent">Живой разговор</h2>
+                <p id="liveSubtitleText" class="text-[11px] text-slate-300 mt-0.5 max-w-xs sm:max-w-md mx-auto line-clamp-2">Коуч слушает ваш голос в реальном времени и отвечает емко, глубоко и бережно</p>
+                <div id="liveSwitchToCoachBtn" class="hidden mt-1.5">
+                    <button onclick="switchToCoachLiveMode()" class="text-[11px] px-3 py-0.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-amber-200 transition">
                         🔄 Вернуться к коучу-психологу
                     </button>
                 </div>
             </div>
 
             <!-- ИНТЕРАКТИВНЫЙ АВАТАР КОУЧА С АУДИО-ВИЗУАЛИЗАТОРОМ -->
-            <div class="flex flex-col items-center justify-center my-auto z-10 relative">
+            <div class="flex flex-col items-center justify-center my-auto py-2 z-10 relative shrink-0">
                 <!-- Ореол-аура вокруг фото -->
-                <div id="liveAvatarHalo" class="w-48 h-48 sm:w-56 sm:h-56 rounded-full flex items-center justify-center transition-all duration-300 relative cursor-pointer" onclick="toggleLiveVoiceState()">
+                <div id="liveAvatarHalo" class="w-28 h-28 xs:w-32 xs:h-32 sm:w-44 sm:h-44 rounded-full flex items-center justify-center transition-all duration-300 relative cursor-pointer active:scale-95" onclick="toggleLiveVoiceState()">
                     <div id="livePulseRing" class="absolute inset-0 rounded-full border-2 border-rose-400/40 pointer-events-none transition-all"></div>
                     
                     <!-- Само фото коуча -->
-                    <div class="w-44 h-44 sm:w-52 sm:h-52 rounded-full overflow-hidden border-4 border-rose-400/80 shadow-[0_0_50px_rgba(244,63,94,0.5)] z-10 relative">
+                    <div class="w-24 h-24 xs:w-28 xs:h-28 sm:w-40 sm:h-40 rounded-full overflow-hidden border-2 sm:border-4 border-rose-400/80 shadow-[0_0_35px_rgba(244,63,94,0.45)] z-10 relative">
                         <img id="liveCoachImg" src="/static/img/coach_avatar.jpg" alt="Психолог-коуч" class="w-full h-full object-cover">
                         <!-- Слой поверх фото при слушании -->
                         <div id="liveListeningOverlay" class="absolute inset-0 bg-rose-500/10 opacity-0 transition-opacity"></div>
@@ -273,50 +273,53 @@
                 </div>
 
                 <!-- Звуковой визуализатор-эквалайзер волны -->
-                <div id="liveAudioWaves" class="flex items-center gap-1.5 mt-5 h-8">
-                    <span class="voice-bar w-1.5 h-2 bg-rose-400 rounded-full"></span>
-                    <span class="voice-bar w-1.5 h-3 bg-pink-400 rounded-full"></span>
-                    <span class="voice-bar w-1.5 h-5 bg-rose-300 rounded-full"></span>
-                    <span class="voice-bar w-1.5 h-2 bg-purple-400 rounded-full"></span>
-                    <span class="voice-bar w-1.5 h-4 bg-pink-300 rounded-full"></span>
-                    <span class="voice-bar w-1.5 h-2 bg-rose-400 rounded-full"></span>
+                <div id="liveAudioWaves" class="flex items-center gap-1.5 mt-2.5 h-6">
+                    <span class="voice-bar w-1.5 h-1.5 bg-rose-400 rounded-full"></span>
+                    <span class="voice-bar w-1.5 h-2.5 bg-pink-400 rounded-full"></span>
+                    <span class="voice-bar w-1.5 h-4 bg-rose-300 rounded-full"></span>
+                    <span class="voice-bar w-1.5 h-1.5 bg-purple-400 rounded-full"></span>
+                    <span class="voice-bar w-1.5 h-3 bg-pink-300 rounded-full"></span>
+                    <span class="voice-bar w-1.5 h-1.5 bg-rose-400 rounded-full"></span>
                 </div>
 
-                <p id="liveStatusText" class="text-sm font-semibold mt-4 text-rose-200">Нажмите на фото, чтобы начать разговор с коучем</p>
+                <p id="liveStatusText" class="text-xs sm:text-sm font-semibold mt-2 text-rose-200 text-center px-2">Нажмите на фото, чтобы начать разговор с коучем</p>
                 
-                <div id="liveTranscript" class="mt-3 px-4 py-2.5 bg-white/10 backdrop-blur-md rounded-xl text-xs text-slate-200 max-w-md text-center min-h-[44px] flex items-center justify-center border border-white/10 shadow-lg">
+                <div id="liveTranscript" class="mt-2 px-3 py-1.5 sm:py-2 bg-white/10 backdrop-blur-md rounded-xl text-xs text-slate-200 max-w-sm sm:max-w-md text-center min-h-[38px] flex items-center justify-center border border-white/10 shadow-lg">
                     Здесь появится реплика коуча...
                 </div>
                 <div id="livePauseIndicator" class="hidden text-[11px] text-amber-200 mt-1 flex items-center justify-center gap-2">
                     <span id="livePauseText">⏳ Слушаю паузу (можно продолжать мысль)...</span>
                     <button onclick="commitLiveSpeechImmediately()" class="underline hover:text-white font-semibold">Отправить ➔</button>
                 </div>
+            </div>
 
-                <!-- Быстрый ввод мысли в Live режиме (страховка для шумных мест и iPhone) -->
-                <div class="mt-2 w-full max-w-md flex items-center gap-1.5 bg-white/10 backdrop-blur-md rounded-2xl p-1 border border-white/20">
-                    <input type="text" id="liveQuickInput" placeholder="Или напишите мысль коучу..." class="flex-1 bg-transparent text-xs text-white placeholder-slate-300 px-3 py-2 outline-none" onkeydown="if(event.key==='Enter') sendLiveQuickMessage()">
-                    <button onclick="sendLiveQuickMessage()" class="px-3.5 py-1.5 bg-gradient-to-r from-rose-500 to-pink-500 hover:opacity-90 active:scale-95 text-white rounded-xl text-xs font-bold transition shadow-sm shrink-0">
+            <!-- Нижняя панель действий Live Voice (всегда видна, не перекрывается) -->
+            <div class="w-full max-w-md flex flex-col gap-2 z-10 shrink-0 pt-1 pb-1">
+                <!-- Быстрый ввод мысли в Live режиме -->
+                <div class="w-full flex items-center gap-1.5 bg-white/10 backdrop-blur-md rounded-xl p-1 border border-white/20 shadow-sm">
+                    <input type="text" id="liveQuickInput" placeholder="Или напишите мысль коучу..." class="flex-1 bg-transparent text-xs text-white placeholder-slate-300 px-3 py-1.5 outline-none" onkeydown="if(event.key==='Enter') sendLiveQuickMessage()">
+                    <button onclick="sendLiveQuickMessage()" class="px-3 py-1.5 bg-gradient-to-r from-rose-500 to-pink-500 hover:opacity-90 active:scale-95 text-white rounded-lg text-xs font-bold transition shadow-sm shrink-0">
                         Отправить ➔
                     </button>
                 </div>
-            </div>
 
-            <!-- Нижние кнопки Live Voice -->
-            <div class="w-full max-w-md flex flex-col gap-2.5 z-10 pb-2">
-                <div class="flex gap-3">
-                    <button onclick="toggleLiveVoiceState()" id="liveMainBtn" class="flex-1 py-3 bg-gradient-to-r from-rose-500 to-pink-600 rounded-xl font-bold text-sm shadow-lg hover:opacity-95 transition">
+                <!-- Основные кнопки управления -->
+                <div class="flex gap-2">
+                    <button onclick="toggleLiveVoiceState()" id="liveMainBtn" class="flex-1 py-2.5 sm:py-3 bg-gradient-to-r from-rose-500 to-pink-600 rounded-xl font-bold text-xs sm:text-sm shadow-lg hover:opacity-95 active:scale-95 transition">
                         Начать говорить
                     </button>
-                    <button onclick="switchTab('chat')" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-xl text-sm font-semibold transition">
+                    <button onclick="switchTab('chat')" class="px-4 py-2.5 sm:py-3 bg-white/10 hover:bg-white/20 active:scale-95 rounded-xl text-xs sm:text-sm font-semibold transition shrink-0">
                         Текстовый чат
                     </button>
                 </div>
+
+                <!-- Переключатели Звук и Темп -->
                 <div class="flex items-center justify-center gap-2">
-                    <button onclick="toggleLiveSound()" id="liveSoundToggleBtn" class="text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-slate-200 flex items-center gap-1.5 transition">
+                    <button onclick="toggleLiveSound()" id="liveSoundToggleBtn" class="text-[11px] px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-slate-200 flex items-center gap-1 transition">
                         <span id="liveSoundIcon">🔇</span>
                         <span id="liveSoundText">Звук: Выключен</span>
                     </button>
-                    <button onclick="toggleSlowVoiceMode()" id="liveSlowToggleBtn" class="text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-slate-200 flex items-center gap-1.5 transition" title="Медленная четкая речь для лучшего понимания">
+                    <button onclick="toggleSlowVoiceMode()" id="liveSlowToggleBtn" class="text-[11px] px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-slate-200 flex items-center gap-1 transition" title="Медленная четкая речь для лучшего понимания">
                         <span id="liveSlowIcon">🐢</span>
                         <span id="liveSlowText">Темп: 1.0x</span>
                     </button>
@@ -478,7 +481,7 @@
     </nav>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    <script src="/static/duolingo/duolingo.js?v=5"></script>
-    <script src="/static/app.js?v=5"></script>
+    <script src="/static/duolingo/duolingo.js?v=6"></script>
+    <script src="/static/app.js?v=6"></script>
 </body>
 </html>

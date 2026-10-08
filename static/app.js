@@ -192,8 +192,11 @@ let isAITalking = false;
 let currentLiveAudio = null;
 let liveSoundEnabled = localStorage.getItem('ai_coach_live_sound') === 'true';
 let liveAccumulatedText = '';
+let liveTurnAccumulatedText = '';
+let liveCurrentSessionFinal = '';
+let liveCurrentSessionInterim = '';
 let speechSilenceTimer = null;
-let LIVE_SILENCE_DELAY_MS = 2500; // По умолчанию 2.5 сек, для немецкого 4.5 сек
+let LIVE_SILENCE_DELAY_MS = 3000; // 3.0 сек для коуча, 4.5 сек для немецкого
 let liveCoachMode = 'coach'; // 'coach' | 'german'
 let currentLiveGermanLessonId = 1;
 
@@ -781,6 +784,9 @@ function stopLiveVoice() {
         speechRestartTimeout = null;
     }
     liveAccumulatedText = '';
+    liveTurnAccumulatedText = '';
+    liveCurrentSessionFinal = '';
+    liveCurrentSessionInterim = '';
 
     stopAudioVisualizer();
     stopBrowserSpeechRecognition();
@@ -877,7 +883,7 @@ function stopBrowserSpeechRecognition() {
     }
 }
 
-// Запуск прослушивания речи пользователя
+// Запуск прослушивания речи пользователя с непрерывным накоплением фраз
 function startBrowserSpeechRecognition() {
     // Включаем микрофон ТОЛЬКО если активен режим Live, наступила очередь Алины (LISTENING) и AI не говорит
     if (!isLiveActive || liveTurnState !== 'LISTENING' || isAITalking) return;
@@ -896,29 +902,35 @@ function startBrowserSpeechRecognition() {
     try {
         liveRecognition = new SpeechRecognition();
         liveRecognition.lang = (liveCoachMode === 'german') ? 'de-DE' : 'ru-RU';
-        // На мобильных устройствах (особенно iOS Safari) continuous = false обязателен
-        const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        liveRecognition.continuous = !isMobileDevice;
+        // continuous = true на всех устройствах предотвращает обрыв после первого же слова
+        liveRecognition.continuous = true;
         liveRecognition.interimResults = true;
 
         liveRecognition.onresult = (event) => {
-            if (liveTurnState !== 'LISTENING') return;
+            if (liveTurnState !== 'LISTENING' || isAITalking) return;
 
-            let interim = '';
-            let newlyFinal = '';
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    newlyFinal += event.results[i][0].transcript + ' ';
+            let instanceFinal = '';
+            let instanceInterim = '';
+
+            for (let i = 0; i < event.results.length; ++i) {
+                const res = event.results[i];
+                if (res.isFinal) {
+                    instanceFinal += res[0].transcript + ' ';
                 } else {
-                    interim += event.results[i][0].transcript;
+                    instanceInterim += res[0].transcript;
                 }
             }
 
-            if (newlyFinal) {
-                liveAccumulatedText += newlyFinal;
-            }
+            liveCurrentSessionFinal = instanceFinal;
+            liveCurrentSessionInterim = instanceInterim;
 
-            const fullSpokenText = (liveAccumulatedText + interim).trim();
+            // Полный распознанный текст за весь ход диалога (накопленные фрагменты + текущая сессия)
+            const fullSpokenText = (liveTurnAccumulatedText + ' ' + instanceFinal + ' ' + instanceInterim)
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            liveAccumulatedText = fullSpokenText;
+
             const transcript = document.getElementById('liveTranscript');
             const pauseIndicator = document.getElementById('livePauseIndicator');
             const pauseText = document.getElementById('livePauseText');
@@ -929,12 +941,14 @@ function startBrowserSpeechRecognition() {
                 const pauseSec = (LIVE_SILENCE_DELAY_MS / 1000).toFixed(1);
                 if (pauseText) pauseText.textContent = `⏳ Пауза (${pauseSec} сек)... Можно продолжать`;
 
-                // Сбрасываем старый таймер паузы и запускаем новый
+                // Сбрасываем и перезапускаем таймер паузы тишины
                 if (speechSilenceTimer) clearTimeout(speechSilenceTimer);
                 speechSilenceTimer = setTimeout(() => {
-                    const textToSend = (liveAccumulatedText + interim).trim();
-                    if (textToSend.length >= 2 && isLiveActive && liveTurnState === 'LISTENING') {
-                        commitLiveSpeech(textToSend);
+                    const finalToSend = (liveTurnAccumulatedText + ' ' + liveCurrentSessionFinal + ' ' + liveCurrentSessionInterim)
+                        .replace(/\s+/g, ' ')
+                        .trim();
+                    if (finalToSend.length >= 2 && isLiveActive && liveTurnState === 'LISTENING' && !isAITalking) {
+                        commitLiveSpeech(finalToSend);
                     }
                 }, LIVE_SILENCE_DELAY_MS);
             }
@@ -944,27 +958,32 @@ function startBrowserSpeechRecognition() {
             console.warn('SpeechRecognition error:', e.error);
             if (e.error === 'not-allowed') {
                 const tr = document.getElementById('liveTranscript');
-                if (tr) tr.textContent = 'Доступ к микрофону заблокирован. Разрешите микрофон в браузере Safari.';
+                if (tr) tr.textContent = 'Доступ к микрофону заблокирован. Разрешите микрофон в настройках браузера.';
             }
         };
 
         liveRecognition.onend = () => {
-            liveRecognition = null;
-            // Если на мобильном распознавание завершилось и есть распознанный текст — отправляем!
-            const textToSend = liveAccumulatedText.trim();
-            if (textToSend.length >= 2 && isLiveActive && liveTurnState === 'LISTENING' && !isAITalking) {
-                commitLiveSpeech(textToSend);
-                return;
+            // Сохраняем накопленный финал текущей сессии распознавания в общий ход
+            if (liveCurrentSessionFinal) {
+                liveTurnAccumulatedText = (liveTurnAccumulatedText + ' ' + liveCurrentSessionFinal)
+                    .replace(/\s+/g, ' ')
+                    .trim();
+                liveCurrentSessionFinal = '';
             }
+            liveCurrentSessionInterim = '';
+            liveRecognition = null;
 
-            // Перезапуск делаем ТОЛЬКО если фаза строго LISTENING (очередь пользователя) и AI не говорит
+            // Защита от сброса: НЕ отправляем текст преждевременно при onend!
+            // Пользователь может молчать или делать паузу. Отправка происходит только по таймеру тишины.
+            // Перезапуск микрофона делаем бесшовно: если таймер тишины активен — через 100мс, иначе 800мс
             if (isLiveActive && liveTurnState === 'LISTENING' && !isAITalking) {
                 if (speechRestartTimeout) clearTimeout(speechRestartTimeout);
+                const restartDelay = speechSilenceTimer ? 100 : 800;
                 speechRestartTimeout = setTimeout(() => {
                     if (isLiveActive && liveTurnState === 'LISTENING' && !isAITalking && !liveRecognition) {
                         startBrowserSpeechRecognition();
                     }
-                }, 800);
+                }, restartDelay);
             }
         };
 
@@ -990,7 +1009,9 @@ function commitLiveSpeechImmediately() {
         speechSilenceTimer = null;
     }
     const transcript = document.getElementById('liveTranscript');
-    let text = liveAccumulatedText.trim();
+    let text = (liveTurnAccumulatedText + ' ' + liveCurrentSessionFinal + ' ' + liveCurrentSessionInterim)
+        .replace(/\s+/g, ' ')
+        .trim();
     if (!text && transcript) {
         text = transcript.textContent.replace(/^Вы:\s*«?/, '').replace(/»?$/, '').trim();
     }
@@ -1005,8 +1026,17 @@ function commitLiveSpeech(text) {
         clearTimeout(speechSilenceTimer);
         speechSilenceTimer = null;
     }
+    if (speechRestartTimeout) {
+        clearTimeout(speechRestartTimeout);
+        speechRestartTimeout = null;
+    }
     const pauseIndicator = document.getElementById('livePauseIndicator');
     if (pauseIndicator) pauseIndicator.classList.add('hidden');
+
+    // Очищаем все накопители текущего голосового высказывания
+    liveTurnAccumulatedText = '';
+    liveCurrentSessionFinal = '';
+    liveCurrentSessionInterim = '';
     liveAccumulatedText = '';
 
     // 1. ПЕРЕХОД В СОСТОЯНИЕ ОБРАБОТКИ
@@ -1155,6 +1185,9 @@ function passTurnToUser() {
 
     liveTurnState = 'LISTENING';
     isAITalking = false;
+    liveTurnAccumulatedText = '';
+    liveCurrentSessionFinal = '';
+    liveCurrentSessionInterim = '';
     liveAccumulatedText = '';
 
     const statusText = document.getElementById('liveStatusText');

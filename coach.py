@@ -86,7 +86,7 @@ class AIFeminineCoach:
             except Exception as e:
                 logger.error(f"Ошибка инициализации GenAI Client: {e}")
 
-    def _get_system_prompt(self, dossier: Optional[Dict[str, Any]] = None, is_voice_mode: bool = False, german_context: Optional[Dict[str, Any]] = None, book_context: Optional[Dict[str, Any]] = None) -> str:
+    def _get_system_prompt(self, dossier: Optional[Dict[str, Any]] = None, is_voice_mode: bool = False, german_context: Optional[Dict[str, Any]] = None, book_context: Optional[Dict[str, Any]] = None, depth_mode: Optional[str] = "express") -> str:
         # СПЕЦИАЛЬНЫЙ РЕЖИМ: НЕМЕЦКИЙ ЯЗЫКОВОЙ РЕЧЕВОЙ КОУЧ (НЕ СБИВАЕТ ПСИХОЛОГА)
         if german_context:
             lesson_title = german_context.get("title", "")
@@ -173,8 +173,11 @@ class AIFeminineCoach:
 1. Алина открыла этот персональный чат специально для глубокого обсуждения этой книги!
 2. В каждом ответе активно опирайся на идеи, термины, методику и упражнения именно этой книги.
 3. Помогай Алине применять инструменты автора к её реальной жизни, эмоциям, преодолению тревоги, перфекционизма и укреплению самооценки.
-4. Если Алина делится ситуацией — покажи, как автор книги рекомендует с ней работать, и предложи разобрать подходящее упражнение.
-5. Сохраняй тёплый, поддерживающий тон на «ты» и завершай реплику бережным открытым вопросом.
+4. ПРИНЦИП «МИКРО-ШАГИ ВМЕСТО ЛЕКЦИЙ» (СТАНДАРТ ТЕРАПЕВТИЧЕСКОГО КОУЧИНГА):
+   - КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО вываливать все шаги упражнения разом в виде длинного списка или домашнего задания. Это вызывает перегрузку.
+   - Проводи практику ИНТЕРАКТИВНО прямо в диалоге: предложи сделать упражнение вместе и задай ровно ОДИН направляющий вопрос (Шаг 1).
+   - Жди ответ Алины! Поддержи её, закрепи результат и только затем переходи к следующему шагу.
+5. Сохраняй тёплый, поддерживающий тон на «ты» и завершай реплику ровно ОДНИМ бережным вопросом или призывом к микро-шагу.
 """
 
         if is_voice_mode:
@@ -209,6 +212,17 @@ class AIFeminineCoach:
 {book_prompt_section}
 """
 
+        depth_instruction = """
+ФОРМАТ ЭКСПРЕСС-ПОДДЕРЖКИ («НА БЕГУ»):
+- Алина находится в экспресс-режиме: отвечай предельно ёмко, заботливо и компактно (СТРОГО 2–4 коротких предложения, максимум 60–80 слов).
+- Мгновенное эмоциональное заземление + ровно ОДИН поддерживающий вывод или микро-шаг.
+- НИКАКИХ длинных лекций, громоздких списков и пространных рассуждений!
+""" if (depth_mode == "express") else """
+ФОРМАТ ГЛУБОКОЙ СЕССИИ:
+- Неспешный, чуткий терапевтический диалог. Помогай исследовать чувства, мысли и внутренние опоры.
+- Не выкатывай длинные списки инструкций — исследуй тему по одному шагу.
+"""
+
         return f"""Ты — профессиональный дипломированный психолог-психотерапевт, чуткий собеседник и персональный коуч для Алины.
 Ты общаешься с Алиной на «ты», в тёплом, бережном и доверительном тоне заботливой наставницы («Алина, солнышко...»).
 
@@ -221,16 +235,18 @@ class AIFeminineCoach:
 - Категорически ЗАПРЕЩЕНО использовать дежурные фразы: «Я понимаю ваши чувства», «Не переживайте», «Все образуется», «Держитесь».
 - Работай через доказательную КПТ и Транзактный анализ: вскрывай автоматические мысли, отделяй факты от катастрофизации, укрепляй Заботливого Взрослого.
 - Каждую реплику завершай открытым бережным вопросом к Алине.
+
+{depth_instruction}
 {dossier_info}
 
 {kb_prompt}
 {book_prompt_section}
 """
 
-    def generate_streaming_response(self, message: str, history: List[Dict[str, str]] = None, dossier: Optional[Dict[str, Any]] = None, is_voice_mode: bool = False, german_context: Optional[Dict[str, Any]] = None, book_context: Optional[Dict[str, Any]] = None):
+    def generate_streaming_response(self, message: str, history: List[Dict[str, str]] = None, dossier: Optional[Dict[str, Any]] = None, is_voice_mode: bool = False, german_context: Optional[Dict[str, Any]] = None, book_context: Optional[Dict[str, Any]] = None, depth_mode: Optional[str] = "express"):
         """Потоковая генерация ответа для мгновенного первого аудио-чанка (~500мс задержки)"""
-        system_prompt = self._get_system_prompt(dossier, is_voice_mode, german_context, book_context)
-        max_tokens = 120 if german_context else (70 if is_voice_mode else 500)
+        system_prompt = self._get_system_prompt(dossier, is_voice_mode, german_context, book_context, depth_mode)
+        max_tokens = 120 if german_context else (70 if is_voice_mode else (220 if depth_mode == "express" else 500))
 
         if is_voice_mode or german_context:
             CANDIDATES = [
@@ -281,13 +297,12 @@ class AIFeminineCoach:
                     self.router.mark_error(f"bridge:{model_name}", duration_sec=45.0)
 
         # Резервный вызов
-        full = self.generate_response(message, history, dossier, is_voice_mode, german_context, book_context)
+        full = self.generate_response(message, history, dossier, is_voice_mode, german_context, book_context, depth_mode)
         yield full
 
-    def generate_response(self, message: str, history: List[Dict[str, str]] = None, dossier: Optional[Dict[str, Any]] = None, is_voice_mode: bool = False, german_context: Optional[Dict[str, Any]] = None, book_context: Optional[Dict[str, Any]] = None) -> str:
-        system_prompt = self._get_system_prompt(dossier, is_voice_mode, german_context, book_context)
-        # Для голосового режима строго 70 токенов (как раз 2-4 коротких предложения, 25-40 слов), для немецкого 120, для текста 500
-        max_tokens = 120 if german_context else (70 if is_voice_mode else 500)
+    def generate_response(self, message: str, history: List[Dict[str, str]] = None, dossier: Optional[Dict[str, Any]] = None, is_voice_mode: bool = False, german_context: Optional[Dict[str, Any]] = None, book_context: Optional[Dict[str, Any]] = None, depth_mode: Optional[str] = "express") -> str:
+        system_prompt = self._get_system_prompt(dossier, is_voice_mode, german_context, book_context, depth_mode)
+        max_tokens = 120 if german_context else (70 if is_voice_mode else (220 if depth_mode == "express" else 500))
 
         # Модели с учетом специфики режима:
         # Для голоса приоритет ультрабыстрым Flash-моделям (TTFT < 800ms) для минимальной задержки

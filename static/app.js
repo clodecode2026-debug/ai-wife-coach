@@ -241,6 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateLiveSoundUI();
     updateLearnedCountUI();
     updateCourseProgressUI();
+    updateChatModeUI();
 
     // Отслеживание онлайн/офлайн статуса сети
     window.addEventListener('online', () => {
@@ -541,8 +542,131 @@ async function deleteSession(id) {
 }
 
 // ==========================================
-// 3. ЧАТ С КОУЧЕМ
+// 3. ЧАТ С КОУЧЕМ & CONVERSATIONAL MICRO-UI
 // ==========================================
+let chatDepthMode = localStorage.getItem('ai_coach_depth_mode') || 'express';
+
+function updateChatModeUI() {
+    const icon = document.getElementById('chatModeIcon');
+    const label = document.getElementById('chatModeLabel');
+    const btn = document.getElementById('chatModeToggleBtn');
+    if (!icon || !btn) return;
+    if (chatDepthMode === 'express') {
+        icon.textContent = '⚡️';
+        if (label) label.textContent = 'Экспресс';
+        btn.title = 'Режим: Экспресс (2-3 ёмких предложения, только суть)';
+        btn.classList.add('bg-white/30', 'text-amber-100');
+    } else {
+        icon.textContent = '🛋';
+        if (label) label.textContent = 'Глубоко';
+        btn.title = 'Режим: Глубокая психологическая сессия';
+        btn.classList.remove('bg-white/30', 'text-amber-100');
+    }
+}
+
+function toggleChatDepthMode() {
+    chatDepthMode = (chatDepthMode === 'express') ? 'deep' : 'express';
+    localStorage.setItem('ai_coach_depth_mode', chatDepthMode);
+    updateChatModeUI();
+    showToastNotification(chatDepthMode === 'express' ? '⚡️ Включен экспресс-режим: кратко и по сути' : '🛋 Включен режим глубокого психологического разбора');
+}
+
+function showToastNotification(msg) {
+    const existing = document.getElementById('appToastNotice');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.id = 'appToastNotice';
+    toast.className = 'fixed top-14 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 backdrop-blur text-white text-xs font-semibold px-4 py-2.5 rounded-2xl shadow-2xl border border-rose-400/40 animate-fade-in flex items-center gap-2 pointer-events-none max-w-xs text-center';
+    toast.innerHTML = `<span>💖</span><span>${escapeHtml(msg)}</span>`;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.remove();
+    }, 2800);
+}
+
+async function saveInsightToDossier(msgId, btn) {
+    const el = document.getElementById(msgId);
+    if (!el) return;
+    const text = el.textContent.trim();
+    if (!text) return;
+
+    if (navigator.vibrate) {
+        try { navigator.vibrate(25); } catch(e) {}
+    }
+
+    if (btn) btn.textContent = '⏳';
+
+    try {
+        const res = await fetch('/api/dossier/insight', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text })
+        });
+        if (res.ok) {
+            if (btn) {
+                btn.textContent = '✅';
+                btn.title = 'Сохранено в твоё досье!';
+                setTimeout(() => { btn.textContent = '⭐'; }, 2500);
+            }
+            showToastNotification('✨ Опорная мысль сохранена в твое Досье!');
+        } else {
+            throw new Error('Save failed');
+        }
+    } catch(e) {
+        if (btn) btn.textContent = '⭐';
+    }
+}
+
+function getQuickReplyChips(text, isBook) {
+    if (isBook) {
+        return [
+            { icon: '📝', text: 'Давай сделаем Шаг 1 упражнения' },
+            { icon: '💡', text: 'Объясни суть проще в 2 фразах' },
+            { icon: '🌸', text: 'Мне сейчас просто нужна поддержка' },
+            { icon: '✨', text: 'В чём главный инсайт автора?' }
+        ];
+    }
+
+    const lower = (text || '').toLowerCase();
+    if (lower.includes('шаг 1') || lower.includes('упражнен') || lower.includes('практик')) {
+        return [
+            { icon: '🌿', text: 'Да, давай разберём это вместе' },
+            { icon: '🤔', text: 'Мне сложно сформулировать, подскажи' },
+            { icon: '☕️', text: 'Я очень устала, давай просто поговорим' }
+        ];
+    } else if (lower.includes('тревог') || lower.includes('страх') || lower.includes('напряжен')) {
+        return [
+            { icon: '🌸', text: 'Помоги заземлиться и снять тревогу' },
+            { icon: '💡', text: 'Какое правило КПТ здесь применить?' },
+            { icon: '❤️', text: 'Что бы мне сказал любящий Роман?' }
+        ];
+    } else if (lower.includes('немецк') || lower.includes('b1') || lower.includes('язык')) {
+        return [
+            { icon: '🇩🇪', text: 'Потренируй со мной одну фразу B1' },
+            { icon: '✨', text: 'Как не бояться говорить с немцами?' },
+            { icon: '☕️', text: 'Слишком устала учить язык сегодня' }
+        ];
+    } else {
+        return [
+            { icon: '🌸', text: 'Мне тревожно, помоги успокоиться' },
+            { icon: '☕️', text: 'Я очень устала, сил совсем нет' },
+            { icon: '💡', text: 'Что мне сделать прямо сейчас?' },
+            { icon: '✨', text: 'Помоги с синдромом отличницы' }
+        ];
+    }
+}
+
+function sendQuickReply(text) {
+    if (navigator.vibrate) {
+        try { navigator.vibrate(15); } catch(e) {}
+    }
+    const input = document.getElementById('chatInput');
+    if (input) {
+        input.value = text;
+        sendMessage();
+    }
+}
+
 async function sendMessage() {
     const input = document.getElementById('chatInput');
     const text = input.value.trim();
@@ -555,7 +679,12 @@ async function sendMessage() {
     const currentBookId = window._currentBookId || getStoredBookForSession(sessionId);
 
     try {
-        const payload = { message: text, session_id: sessionId, is_voice_mode: false };
+        const payload = { 
+            message: text, 
+            session_id: sessionId, 
+            is_voice_mode: false,
+            depth_mode: chatDepthMode 
+        };
         if (currentBookId) {
             payload.book_id = currentBookId;
         }
@@ -568,7 +697,7 @@ async function sendMessage() {
         const data = await res.json();
         removeLoadingMessage(loadingId);
         appendMessage(data.reply || 'Алина, дорогая, я рядом с тобой.', 'assistant');
-        loadSessionsList(); // обновляем название сессии если нужно
+        loadSessionsList();
     } catch (err) {
         removeLoadingMessage(loadingId);
         appendMessage('Алина, временная заминка связи. Но я всегда рядом!', 'assistant');
@@ -591,13 +720,32 @@ function appendMessage(text, role, scroll = true) {
     } else {
         div.className = 'flex items-start gap-2.5';
         const msgId = 'msg_' + Math.random().toString(36).substring(2, 9);
+        const isBook = Boolean(window._currentBookId || getStoredBookForSession(sessionId));
+        const chips = getQuickReplyChips(text, isBook);
+        const chipsHtml = `
+            <div class="mt-2.5 pt-2 border-t border-rose-200/60 flex flex-wrap gap-1.5 items-center">
+                ${chips.map(c => `
+                    <button onclick="sendQuickReply('${escapeQuotes(c.text)}')" class="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-rose-100/90 active:scale-95 text-[10.5px] font-medium text-rose-800 rounded-full border border-rose-200 shadow-2xs transition">
+                        <span>${c.icon}</span>
+                        <span>${escapeHtml(c.text)}</span>
+                    </button>
+                `).join('')}
+            </div>
+        `;
+
         div.innerHTML = `
             <img src="/static/img/coach_avatar.jpg" alt="Coach" class="w-8 h-8 rounded-full object-cover border border-rose-200 shrink-0">
             <div class="bg-rose-50 border border-rose-100 rounded-2xl p-3.5 max-w-xl text-slate-700 text-xs sm:text-sm shadow-sm relative group">
-                <p id="${msgId}" class="whitespace-pre-wrap pr-6">${escapeHtml(text)}</p>
-                <button onclick="playElementTTS('${msgId}', this)" class="absolute top-2.5 right-2.5 opacity-60 hover:opacity-100 text-rose-600 p-1 rounded-lg hover:bg-rose-100 transition" title="Озвучить ответ">
-                    🔊
-                </button>
+                <p id="${msgId}" class="whitespace-pre-wrap pr-14">${escapeHtml(text)}</p>
+                <div class="absolute top-2.5 right-2.5 flex items-center gap-0.5">
+                    <button onclick="saveInsightToDossier('${msgId}', this)" class="opacity-60 hover:opacity-100 text-amber-600 p-1 rounded-lg hover:bg-amber-100 transition" title="Сохранить в личные опоры (Досье)">
+                        ⭐
+                    </button>
+                    <button onclick="playElementTTS('${msgId}', this)" class="opacity-60 hover:opacity-100 text-rose-600 p-1 rounded-lg hover:bg-rose-100 transition" title="Озвучить ответ">
+                        🔊
+                    </button>
+                </div>
+                ${chipsHtml}
             </div>
         `;
     }
@@ -674,6 +822,20 @@ async function loadChatHistory() {
                         <button onclick="playElementTTS('initialWelcomeMsg', this)" class="absolute top-2.5 right-2.5 opacity-60 hover:opacity-100 text-rose-600 p-1 rounded-lg hover:bg-rose-100 transition" title="Озвучить ответ">
                             🔊
                         </button>
+                        <div class="mt-2.5 pt-2 border-t border-rose-200/60 flex flex-wrap gap-1.5 items-center">
+                            <button onclick="sendQuickReply('Я очень устала сегодня после работы, сил совсем нет...')" class="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-rose-100/90 active:scale-95 text-[10.5px] font-medium text-rose-800 rounded-full border border-rose-200 shadow-2xs transition">
+                                <span>☕️</span><span>Очень устала</span>
+                            </button>
+                            <button onclick="sendQuickReply('Мне тревожно и накатывает страх, помоги успокоиться методом КПТ.')" class="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-rose-100/90 active:scale-95 text-[10.5px] font-medium text-rose-800 rounded-full border border-rose-200 shadow-2xs transition">
+                                <span>🌸</span><span>Тревожно</span>
+                            </button>
+                            <button onclick="sendQuickReply('Помоги разобрать синдром отличницы и перфекционизм.')" class="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-rose-100/90 active:scale-95 text-[10.5px] font-medium text-rose-800 rounded-full border border-rose-200 shadow-2xs transition">
+                                <span>✨</span><span>Самооценка</span>
+                            </button>
+                            <button onclick="sendQuickReply('Хочу обсудить отношения и диалог с мужем Романом.')" class="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-rose-100/90 active:scale-95 text-[10.5px] font-medium text-rose-800 rounded-full border border-rose-200 shadow-2xs transition">
+                                <span>💍</span><span>Роман и семья</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -1369,7 +1531,8 @@ async function handleLiveUserSpeech(text) {
             session_id: sessionId,
             is_voice_mode: true,
             mode: liveCoachMode,
-            german_lesson_id: currentLiveGermanLessonId
+            german_lesson_id: currentLiveGermanLessonId,
+            depth_mode: chatDepthMode
         };
         if (currentLiveBookId) streamPayload.book_id = currentLiveBookId;
 
@@ -1445,7 +1608,8 @@ async function handleLiveUserSpeech(text) {
             session_id: sessionId,
             is_voice_mode: true,
             mode: liveCoachMode,
-            german_lesson_id: currentLiveGermanLessonId
+            german_lesson_id: currentLiveGermanLessonId,
+            depth_mode: chatDepthMode
         };
         if (currentLiveBookId) fbPayload.book_id = currentLiveBookId;
 

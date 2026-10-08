@@ -81,6 +81,22 @@ class SupabaseManager:
         except Exception as e:
             logger.error(f"Ошибка сохранения досье в Supabase: {e}")
 
+    def add_insight_to_dossier(self, insight: str) -> bool:
+        if not self.client:
+            return False
+        try:
+            curr = self.get_dossier()
+            notes = curr.get("notes", "")
+            clean = insight.strip().replace("\n", " ")
+            if len(clean) > 220:
+                clean = clean[:217] + "..."
+            updated_notes = f"{notes}\n⭐ Опора: {clean}".strip()
+            self.save_dossier(curr.get("name", "Алина"), updated_notes)
+            return True
+        except Exception as e:
+            logger.error(f"Ошибка сохранения инсайта в досье: {e}")
+            return False
+
     def save_message(self, session_id: str, role: str, content: str, title: Optional[str] = None) -> None:
         if not self.client:
             return

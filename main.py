@@ -116,6 +116,7 @@ class ChatRequest(BaseModel):
     mode: Optional[str] = "coach"  # "coach" | "german"
     german_lesson_id: Optional[int] = None
     book_id: Optional[str] = None
+    depth_mode: Optional[str] = "express"
 
 class TTSRequest(BaseModel):
     text: str
@@ -212,7 +213,8 @@ def api_chat(req: ChatRequest, _auth: bool = Depends(require_auth)):
             dossier=dossier,
             is_voice_mode=req.is_voice_mode,
             german_context=german_context,
-            book_context=book_context
+            book_context=book_context,
+            depth_mode=req.depth_mode
         )
 
         # Сохраняем ответ ассистента
@@ -280,7 +282,8 @@ def api_chat_stream(req: ChatRequest, _auth: bool = Depends(require_auth)):
                 dossier=dossier,
                 is_voice_mode=req.is_voice_mode,
                 german_context=german_context,
-                book_context=book_context
+                book_context=book_context,
+                depth_mode=req.depth_mode
             ):
                 sentence_buffer += token
                 full_reply += token
@@ -529,6 +532,16 @@ def api_get_dossier(_auth: bool = Depends(require_auth)):
 def api_save_dossier(req: DossierUpdateRequest, _auth: bool = Depends(require_auth)):
     db_manager.save_dossier(req.name, req.notes)
     return {"status": "ok", "message": "Досье сохранено"}
+
+class InsightRequest(BaseModel):
+    text: str
+
+@app.post("/api/dossier/insight")
+def api_save_insight(req: InsightRequest, _auth: bool = Depends(require_auth)):
+    success = db_manager.add_insight_to_dossier(req.text)
+    if not success:
+        raise HTTPException(status_code=500, detail="Не удалось сохранить инсайт в досье")
+    return {"status": "ok", "message": "Инсайт сохранён в досье"}
 
 @app.get("/api/chat/history")
 def api_chat_history(session_id: str = "default_wife", _auth: bool = Depends(require_auth)):

@@ -272,7 +272,13 @@ def api_chat_stream(req: ChatRequest, _auth: bool = Depends(require_auth)):
                         yield f"data: {json.dumps({'type': 'chunk', 'index': chunk_index, 'text': complete_sentence, 'audio_base64': audio_b64}, ensure_ascii=False)}\n\n"
                         chunk_index += 1
 
+                        if req.is_voice_mode and chunk_index >= 4:
+                            break
+
                     parts = sentence_end_pattern.split(sentence_buffer)
+                if req.is_voice_mode and chunk_index >= 4:
+                    sentence_buffer = ""
+                    break
 
             tail = sentence_buffer.strip()
             if tail:

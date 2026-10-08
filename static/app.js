@@ -883,6 +883,30 @@ function stopBrowserSpeechRecognition() {
     }
 }
 
+// Надежная очистка от дублей слов и фраз из-за специфики Web Speech API на смартфонах
+function deduplicateSpokenText(text) {
+    if (!text) return '';
+    const clean = text.replace(/\s+/g, ' ').trim();
+    const words = clean.split(' ');
+    const deduped = [];
+    for (let i = 0; i < words.length; i++) {
+        const w = words[i];
+        if (!w) continue;
+        const cleanCurr = w.toLowerCase().replace(/[^a-zа-яё0-9]/gi, '');
+        const cleanPrev = deduped.length > 0 
+            ? deduped[deduped.length - 1].toLowerCase().replace(/[^a-zа-яё0-9]/gi, '') 
+            : '';
+        if (cleanCurr && cleanCurr === cleanPrev) {
+            continue;
+        }
+        deduped.push(w);
+    }
+    let res = deduped.join(' ');
+    // Повторяющиеся фразы из 2-4 слов подряд
+    res = res.replace(/\b(\S+(?:\s+\S+){1,3})\s+\1\b/gi, '$1');
+    return res.trim();
+}
+
 // Запуск прослушивания речи пользователя с непрерывным накоплением фраз
 function startBrowserSpeechRecognition() {
     // Включаем микрофон ТОЛЬКО если активен режим Live, наступила очередь Алины (LISTENING) и AI не говорит
@@ -900,35 +924,41 @@ function startBrowserSpeechRecognition() {
     }
 
     try {
+        const isAndroid = /Android/i.test(navigator.userAgent);
         liveRecognition = new SpeechRecognition();
         liveRecognition.lang = (liveCoachMode === 'german') ? 'de-DE' : 'ru-RU';
-        // continuous = true на всех устройствах предотвращает обрыв после первого же слова
-        liveRecognition.continuous = true;
+        // На Android continuous: true вызывает зацикливание и дублирование фраз в Google Speech Service.
+        // Поэтому на Android используем continuous = false с мягким перезапуском на onend.
+        liveRecognition.continuous = !isAndroid;
         liveRecognition.interimResults = true;
 
+        let lastSeenFinal = '';
         liveRecognition.onresult = (event) => {
             if (liveTurnState !== 'LISTENING' || isAITalking) return;
 
             let instanceFinal = '';
             let instanceInterim = '';
 
-            for (let i = 0; i < event.results.length; ++i) {
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
                 const res = event.results[i];
-                if (res.isFinal) {
-                    instanceFinal += res[0].transcript + ' ';
-                } else {
-                    instanceInterim += res[0].transcript;
+                const tr = res[0] ? res[0].transcript.trim() : '';
+                if (res.isFinal && (res[0].confidence === undefined || res[0].confidence > 0)) {
+                    if (tr && tr !== lastSeenFinal) {
+                        instanceFinal += tr + ' ';
+                        lastSeenFinal = tr;
+                    }
+                } else if (!res.isFinal) {
+                    instanceInterim += tr;
                 }
             }
 
-            liveCurrentSessionFinal = instanceFinal;
+            if (instanceFinal) {
+                liveTurnAccumulatedText = deduplicateSpokenText(liveTurnAccumulatedText + ' ' + instanceFinal);
+            }
             liveCurrentSessionInterim = instanceInterim;
 
-            // Полный распознанный текст за весь ход диалога (накопленные фрагменты + текущая сессия)
-            const fullSpokenText = (liveTurnAccumulatedText + ' ' + instanceFinal + ' ' + instanceInterim)
-                .replace(/\s+/g, ' ')
-                .trim();
-
+            // Полный распознанный текст с обязательной дедупликацией
+            const fullSpokenText = deduplicateSpokenText(liveTurnAccumulatedText + ' ' + instanceInterim);
             liveAccumulatedText = fullSpokenText;
 
             const transcript = document.getElementById('liveTranscript');
@@ -944,9 +974,7 @@ function startBrowserSpeechRecognition() {
                 // Сбрасываем и перезапускаем таймер паузы тишины
                 if (speechSilenceTimer) clearTimeout(speechSilenceTimer);
                 speechSilenceTimer = setTimeout(() => {
-                    const finalToSend = (liveTurnAccumulatedText + ' ' + liveCurrentSessionFinal + ' ' + liveCurrentSessionInterim)
-                        .replace(/\s+/g, ' ')
-                        .trim();
+                    const finalToSend = deduplicateSpokenText(liveTurnAccumulatedText + ' ' + liveCurrentSessionInterim);
                     if (finalToSend.length >= 2 && isLiveActive && liveTurnState === 'LISTENING' && !isAITalking) {
                         commitLiveSpeech(finalToSend);
                     }
@@ -963,22 +991,13 @@ function startBrowserSpeechRecognition() {
         };
 
         liveRecognition.onend = () => {
-            // Сохраняем накопленный финал текущей сессии распознавания в общий ход
-            if (liveCurrentSessionFinal) {
-                liveTurnAccumulatedText = (liveTurnAccumulatedText + ' ' + liveCurrentSessionFinal)
-                    .replace(/\s+/g, ' ')
-                    .trim();
-                liveCurrentSessionFinal = '';
-            }
             liveCurrentSessionInterim = '';
             liveRecognition = null;
 
-            // Защита от сброса: НЕ отправляем текст преждевременно при onend!
-            // Пользователь может молчать или делать паузу. Отправка происходит только по таймеру тишины.
-            // Перезапуск микрофона делаем бесшовно: если таймер тишины активен — через 100мс, иначе 800мс
+            // Перезапуск микрофона делаем бесшовно: если таймер тишины активен — через 100мс, иначе 400мс
             if (isLiveActive && liveTurnState === 'LISTENING' && !isAITalking) {
                 if (speechRestartTimeout) clearTimeout(speechRestartTimeout);
-                const restartDelay = speechSilenceTimer ? 100 : 800;
+                const restartDelay = speechSilenceTimer ? 100 : 400;
                 speechRestartTimeout = setTimeout(() => {
                     if (isLiveActive && liveTurnState === 'LISTENING' && !isAITalking && !liveRecognition) {
                         startBrowserSpeechRecognition();
@@ -1009,11 +1028,10 @@ function commitLiveSpeechImmediately() {
         speechSilenceTimer = null;
     }
     const transcript = document.getElementById('liveTranscript');
-    let text = (liveTurnAccumulatedText + ' ' + liveCurrentSessionFinal + ' ' + liveCurrentSessionInterim)
-        .replace(/\s+/g, ' ')
-        .trim();
+    let text = deduplicateSpokenText(liveTurnAccumulatedText + ' ' + liveCurrentSessionInterim);
     if (!text && transcript) {
         text = transcript.textContent.replace(/^Вы:\s*«?/, '').replace(/»?$/, '').trim();
+        text = deduplicateSpokenText(text);
     }
     if (text && text.length >= 2) {
         commitLiveSpeech(text);
@@ -1033,6 +1051,9 @@ function commitLiveSpeech(text) {
     const pauseIndicator = document.getElementById('livePauseIndicator');
     if (pauseIndicator) pauseIndicator.classList.add('hidden');
 
+    const cleanText = deduplicateSpokenText(text);
+    if (!cleanText || cleanText.length < 2) return;
+
     // Очищаем все накопители текущего голосового высказывания
     liveTurnAccumulatedText = '';
     liveCurrentSessionFinal = '';
@@ -1046,7 +1067,7 @@ function commitLiveSpeech(text) {
     // 2. МИКРОФОН ВЫКЛЮЧАЕТСЯ ПОЛНОСТЬЮ
     stopBrowserSpeechRecognition();
 
-    handleLiveUserSpeech(text);
+    handleLiveUserSpeech(cleanText);
 }
 
 let liveAudioQueue = [];

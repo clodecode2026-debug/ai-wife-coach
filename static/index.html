@@ -19,7 +19,7 @@
     <title>Коуч 💖 — Личный психолог & Немецкий B1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css?v=23">
+    <link rel="stylesheet" href="/static/style.css?v=24">
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -262,11 +262,11 @@
             <div class="p-2.5 sm:p-3 bg-white border-t border-rose-100 flex items-center gap-2 shrink-0">
                 <input type="text" id="chatInput" placeholder="Алина, напиши, что у тебя на душе или задай вопрос..." class="flex-1 px-3.5 py-2.5 border border-rose-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400 text-xs sm:text-sm bg-rose-50/30" onkeypress="if(event.key === 'Enter') sendMessage()">
                 
-                <button onclick="toggleRecordVoice()" id="recordBtn" class="p-2.5 bg-rose-100 text-rose-600 hover:bg-rose-200 rounded-xl transition shrink-0" title="Голосовой ввод сообщения">
+                <button onclick="toggleRecordVoice()" id="recordBtn" class="p-2.5 bg-rose-100 text-rose-600 hover:bg-rose-200 rounded-xl transition shrink-0 btn-tactile-mic cursor-pointer" title="Голосовой ввод сообщения">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
                 </button>
 
-                <button onclick="sendMessage()" id="sendMsgBtn" class="bg-gradient-to-r from-rose-500 to-pink-500 text-white font-bold px-4 sm:px-5 py-2.5 rounded-xl shadow-md hover:opacity-95 transition flex items-center justify-center gap-1.5 shrink-0 text-xs sm:text-sm active:scale-95 whitespace-nowrap min-w-[95px]">
+                <button onclick="sendMessage()" id="sendMsgBtn" class="bg-gradient-to-r from-rose-500 to-pink-500 text-white font-bold px-4 sm:px-5 py-2.5 rounded-xl shadow-md hover:opacity-95 transition flex items-center justify-center gap-1.5 shrink-0 text-xs sm:text-sm whitespace-nowrap min-w-[95px] btn-tactile-send cursor-pointer">
                     <span>Отправить</span>
                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                 </button>
@@ -754,26 +754,118 @@
     </main>
 
     <!-- Нижняя мобильная навигация -->
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-rose-100 px-2 py-1.5 flex justify-around items-center z-40 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] pb-[env(safe-area-inset-bottom)]">
-        <button onclick="switchTab('chat')" id="nav-btn-chat" class="flex flex-col items-center justify-center text-rose-600 flex-1 py-1 transition">
-            <span class="text-lg">💬</span>
-            <span class="text-[10px] font-bold mt-0.5">Диалог</span>
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-rose-100 px-1.5 py-1 flex justify-around items-center z-40 shadow-[0_-4px_24px_rgba(244,63,94,0.08)] pb-[calc(0.25rem+env(safe-area-inset-bottom))]">
+        <button onclick="switchTab('chat')" id="nav-btn-chat" class="nav-tab-btn nav-tab-active" title="Диалог">
+            <div class="nav-tab-icon-wrap">
+                <svg class="w-6 h-6" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="navChatGrad" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stop-color="#FDA4AF"/>
+                      <stop offset="50%" stop-color="#F43F5E"/>
+                      <stop offset="100%" stop-color="#BE123C"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M6 15C6 9.477 10.477 5 16 5C21.523 5 26 9.477 26 15C26 20.523 21.523 25 16 25C13.8 25 11.8 24.3 10 23.1L5 25L6.3 20.5C6.1 19.8 6 19 6 18V15Z" fill="url(#navChatGrad)" filter="drop-shadow(0 2px 3px rgba(0,0,0,0.2))"/>
+                  <path d="M8 14C8 9.8 11.5 7 16 7C20.5 7 24 9.8 24 14C24 10.5 20.5 8 16 8C11.5 8 8 10.5 8 14Z" fill="#FFFFFF" opacity="0.65"/>
+                  <circle cx="11.5" cy="15" r="1.5" fill="#FFFFFF"/>
+                  <circle cx="16" cy="15" r="1.5" fill="#FFFFFF"/>
+                  <circle cx="20.5" cy="15" r="1.5" fill="#FFFFFF"/>
+                </svg>
+            </div>
+            <span class="nav-tab-label">Диалог</span>
+            <span class="nav-tab-dot"></span>
         </button>
-        <button onclick="switchTab('live')" id="nav-btn-live" class="flex flex-col items-center justify-center text-slate-400 hover:text-rose-600 flex-1 py-1 transition">
-            <span class="text-lg">🎙</span>
-            <span class="text-[10px] font-medium mt-0.5">Live Voice</span>
+
+        <button onclick="switchTab('live')" id="nav-btn-live" class="nav-tab-btn" title="Live Voice">
+            <div class="nav-tab-icon-wrap">
+                <svg class="w-6 h-6" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="navMicMetal" x1="12" y1="6" x2="20" y2="22" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stop-color="#FFFFFF"/>
+                      <stop offset="50%" stop-color="#E2E8F0"/>
+                      <stop offset="100%" stop-color="#64748B"/>
+                    </linearGradient>
+                    <linearGradient id="navMicGlow" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stop-color="#F43F5E"/>
+                      <stop offset="100%" stop-color="#A855F7"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M11 15C11 17.76 13.24 20 16 20C18.76 20 21 17.76 21 15" stroke="url(#navMicMetal)" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M16 20V25M13 25H19" stroke="url(#navMicMetal)" stroke-width="2" stroke-linecap="round"/>
+                  <rect x="13" y="6" width="6" height="11" rx="3" fill="url(#navMicMetal)" stroke="#475569" stroke-width="0.8"/>
+                  <rect x="13.5" y="11.5" width="5" height="1.5" rx="0.75" fill="url(#navMicGlow)"/>
+                  <path d="M7 13C6 15 6 17 7 19" stroke="#EC4899" stroke-width="1.8" stroke-linecap="round" opacity="0.85"/>
+                  <path d="M25 13C26 15 26 17 25 19" stroke="#EC4899" stroke-width="1.8" stroke-linecap="round" opacity="0.85"/>
+                </svg>
+            </div>
+            <span class="nav-tab-label">Live Voice</span>
+            <span class="nav-tab-dot"></span>
         </button>
-        <button onclick="switchTab('german')" id="nav-btn-german" class="flex flex-col items-center justify-center text-slate-400 hover:text-rose-600 flex-1 py-1 transition">
-            <span class="text-lg">🇩🇪</span>
-            <span class="text-[10px] font-medium mt-0.5">Немецкий</span>
+
+        <button onclick="switchTab('german')" id="nav-btn-german" class="nav-tab-btn" title="Немецкий">
+            <div class="nav-tab-icon-wrap">
+                <svg class="w-6 h-6" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="navGermanGold" x1="6" y1="6" x2="26" y2="26" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stop-color="#FEF08A"/>
+                      <stop offset="50%" stop-color="#F59E0B"/>
+                      <stop offset="100%" stop-color="#B45309"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M16 4L25 7V15C25 21 19 26 16 28C13 26 7 21 7 15V7L16 4Z" fill="url(#navGermanGold)" filter="drop-shadow(0 2px 3px rgba(0,0,0,0.22))"/>
+                  <path d="M16 6L23 8.5V14.5C23 19.5 18 23.5 16 25C14 23.5 9 19.5 9 14.5V8.5L16 6Z" fill="#FFFFFF"/>
+                  <path d="M9.5 9L22.5 9V12H9.5V9Z" fill="#1E293B"/>
+                  <path d="M9.5 12L22.5 12V16H9.5V12Z" fill="#EF4444"/>
+                  <path d="M9.5 16L22.5 16C22.5 19 18 22 16 23.5C14 22 9.5 19 9.5 16Z" fill="#FBBF24"/>
+                  <circle cx="16" cy="14" r="2.5" fill="#FFFFFF" opacity="0.9"/>
+                </svg>
+            </div>
+            <span class="nav-tab-label">Немецкий</span>
+            <span class="nav-tab-dot"></span>
         </button>
-        <button onclick="switchTab('library')" id="nav-btn-library" class="flex flex-col items-center justify-center text-slate-400 hover:text-rose-600 flex-1 py-1 transition">
-            <span class="text-lg">📚</span>
-            <span class="text-[10px] font-medium mt-0.5">Книги</span>
+
+        <button onclick="switchTab('library')" id="nav-btn-library" class="nav-tab-btn" title="Книги">
+            <div class="nav-tab-icon-wrap">
+                <svg class="w-6 h-6" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="navBookCover" x1="6" y1="6" x2="26" y2="26" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stop-color="#60A5FA"/>
+                      <stop offset="50%" stop-color="#2563EB"/>
+                      <stop offset="100%" stop-color="#1D4ED8"/>
+                    </linearGradient>
+                    <linearGradient id="navBookPages" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#FFFBEB"/>
+                      <stop offset="100%" stop-color="#FEF3C7"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M7 23L16 26L25 23V8L16 11L7 8V23Z" fill="#1E40AF" filter="drop-shadow(0 2px 3px rgba(0,0,0,0.2))"/>
+                  <path d="M8 9C11 10 14 10.5 16 12V25C14 23.5 11 23 8 22V9Z" fill="url(#navBookPages)"/>
+                  <path d="M24 9C21 10 18 10.5 16 12V25C18 23.5 21 23 24 22V9Z" fill="url(#navBookPages)"/>
+                  <line x1="16" y1="12" x2="16" y2="25.5" stroke="#D97706" stroke-width="1.2"/>
+                  <path d="M15 13C15 18 17 20 17 24L16 23L15 24V13Z" fill="#F59E0B"/>
+                </svg>
+            </div>
+            <span class="nav-tab-label">Книги</span>
+            <span class="nav-tab-dot"></span>
         </button>
-        <button onclick="switchTab('dossier')" id="nav-btn-dossier" class="flex flex-col items-center justify-center text-slate-400 hover:text-rose-600 flex-1 py-1 transition">
-            <span class="text-lg">💖</span>
-            <span class="text-[10px] font-medium mt-0.5">Досье</span>
+
+        <button onclick="switchTab('dossier')" id="nav-btn-dossier" class="nav-tab-btn" title="Досье">
+            <div class="nav-tab-icon-wrap">
+                <svg class="w-6 h-6" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="navHeartGrad" x1="6" y1="6" x2="26" y2="26" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stop-color="#FDA4AF"/>
+                      <stop offset="40%" stop-color="#F43F5E"/>
+                      <stop offset="100%" stop-color="#BE123C"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M16 27C16 27 6 20.5 6 12.5C6 8.5 9 5.5 13 5.5C14.5 5.5 15.5 6.2 16 7C16.5 6.2 17.5 5.5 19 5.5C23 5.5 26 8.5 26 12.5C26 20.5 16 27 16 27Z" fill="url(#navHeartGrad)" filter="drop-shadow(0 2px 4px rgba(244,63,94,0.35))"/>
+                  <path d="M16 8C15 6 13.5 6.5 11 8C8.5 9.5 8 12.5 8 14C8 11.5 10 7.5 13.5 7C15 6.8 15.8 7.5 16 8Z" fill="#FFFFFF" opacity="0.6"/>
+                  <path d="M21 9L21.8 11L24 11.8L21.8 12.6L21 15L20.2 12.6L18 11.8L20.2 11L21 9Z" fill="#FEF08A"/>
+                </svg>
+            </div>
+            <span class="nav-tab-label">Досье</span>
+            <span class="nav-tab-dot"></span>
         </button>
     </nav>
 
@@ -966,7 +1058,7 @@
     <audio id="liveGlobalAudioPlayer" preload="auto" playsinline webkit-playsinline class="hidden"></audio>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    <script src="/static/duolingo/duolingo.js?v=23"></script>
-    <script src="/static/app.js?v=23"></script>
+    <script src="/static/duolingo/duolingo.js?v=24"></script>
+    <script src="/static/app.js?v=24"></script>
 </body>
 </html>

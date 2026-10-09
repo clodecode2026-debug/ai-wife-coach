@@ -287,14 +287,16 @@ function switchTab(tabId) {
 
         if (btnMobile) {
             if (t === tabId) {
-                btnMobile.classList.add('text-rose-600', 'font-semibold');
-                btnMobile.classList.remove('text-slate-400', 'font-normal');
+                btnMobile.classList.add('nav-tab-active');
             } else {
-                btnMobile.classList.remove('text-rose-600', 'font-semibold');
-                btnMobile.classList.add('text-slate-400', 'font-normal');
+                btnMobile.classList.remove('nav-tab-active');
             }
         }
     });
+
+    if (navigator.vibrate) {
+        try { navigator.vibrate(10); } catch(e) {}
+    }
 
     // Если вышли из Live Voice — останавливаем микрофон
     if (tabId !== 'live' && isLiveActive) {
@@ -717,7 +719,7 @@ function appendMessage(text, role, scroll = true) {
     const div = document.createElement('div');
     
     if (role === 'user') {
-        div.className = 'flex items-start justify-end gap-2.5';
+        div.className = 'flex items-start justify-end gap-2.5 msg-bubble-enter';
         const userAvatar = getAlinaAvatar();
         div.innerHTML = `
             <div class="bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded-2xl p-3.5 max-w-xl text-xs sm:text-sm shadow-sm">
@@ -726,7 +728,7 @@ function appendMessage(text, role, scroll = true) {
             <img src="${userAvatar}" alt="Алина" class="alina-chat-avatar w-8 h-8 rounded-full object-cover border border-rose-300 shadow-sm shrink-0">
         `;
     } else {
-        div.className = 'flex items-start gap-2.5';
+        div.className = 'flex items-start gap-2.5 msg-bubble-enter';
         const msgId = 'msg_' + Math.random().toString(36).substring(2, 9);
         const isBook = Boolean(window._currentBookId || getStoredBookForSession(sessionId));
         const chips = getQuickReplyChips(text, isBook);
@@ -766,14 +768,16 @@ function appendLoadingMessage() {
     const id = 'loading_' + Date.now();
     const div = document.createElement('div');
     div.id = id;
-    div.className = 'flex items-start gap-2.5';
+    div.className = 'flex items-start gap-2.5 msg-bubble-enter';
     div.innerHTML = `
         <img src="/static/img/coach_avatar.jpg" alt="Coach" class="w-8 h-8 rounded-full object-cover border border-rose-200 shrink-0">
-        <div class="bg-rose-50 border border-rose-100 rounded-2xl p-3.5 text-slate-500 text-xs shadow-sm flex items-center gap-2">
-            <span class="w-2 h-2 bg-rose-400 rounded-full animate-bounce"></span>
-            <span class="w-2 h-2 bg-rose-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-            <span class="w-2 h-2 bg-rose-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
-            <span class="ml-1">Коуч формулирует психологическую рекомендацию...</span>
+        <div class="bg-white/95 backdrop-blur-md border border-rose-200/80 rounded-2xl px-3.5 py-2.5 text-slate-700 text-xs shadow-sm flex items-center gap-2.5">
+            <div class="flex items-center gap-1.5 py-0.5">
+                <span class="aurora-dot"></span>
+                <span class="aurora-dot"></span>
+                <span class="aurora-dot"></span>
+            </div>
+            <span class="font-medium text-slate-600">Коуч настраивается на тебя... ✨</span>
         </div>
     `;
     container.appendChild(div);
@@ -2395,7 +2399,7 @@ function renderFlashcardsView() {
 
     // Сама интерактивная карточка с цветовой дифференциацией рода
     const flashcardEl = document.createElement('div');
-    flashcardEl.className = `bg-white border-2 ${cardBorderClass} rounded-2xl p-6 shadow-md min-h-[230px] flex flex-col justify-between cursor-pointer transition-all duration-200 select-none relative group`;
+    flashcardEl.className = `bg-white border-2 ${cardBorderClass} rounded-2xl p-6 shadow-md min-h-[230px] flex flex-col justify-between cursor-pointer transition-all duration-200 select-none relative group animate-card-flip`;
     flashcardEl.onclick = (e) => {
         // Если кликнули на кнопку озвучки — не переворачиваем
         if (e.target.closest('button')) return;
@@ -2499,12 +2503,14 @@ function onFlashcardLessonChange(val) {
 }
 
 function toggleFlashcardFlip() {
+    if (navigator.vibrate) try { navigator.vibrate(10); } catch(e) {}
     isCardFlipped = !isCardFlipped;
     renderFlashcardsView();
 }
 
 function nextFlashcard() {
     if (currentCardIdx < currentFlashcards.length - 1) {
+        if (navigator.vibrate) try { navigator.vibrate(8); } catch(e) {}
         currentCardIdx++;
         isCardFlipped = false;
         renderFlashcardsView();
@@ -2513,6 +2519,7 @@ function nextFlashcard() {
 
 function prevFlashcard() {
     if (currentCardIdx > 0) {
+        if (navigator.vibrate) try { navigator.vibrate(8); } catch(e) {}
         currentCardIdx--;
         isCardFlipped = false;
         renderFlashcardsView();
@@ -2970,11 +2977,20 @@ function renderWizardStep(step) {
             : '<span>Далее ➔</span>';
     }
 
+    if (navigator.vibrate) {
+        try { navigator.vibrate(8); } catch(e) {}
+    }
+
     for (let i = 1; i <= 6; i++) {
         const stepDiv = document.getElementById(`wizardStep${i}`);
         if (stepDiv) {
-            if (i === step) stepDiv.classList.remove('hidden');
-            else stepDiv.classList.add('hidden');
+            if (i === step) {
+                stepDiv.classList.remove('hidden');
+                stepDiv.classList.add('msg-bubble-enter');
+            } else {
+                stepDiv.classList.add('hidden');
+                stepDiv.classList.remove('msg-bubble-enter');
+            }
         }
     }
 

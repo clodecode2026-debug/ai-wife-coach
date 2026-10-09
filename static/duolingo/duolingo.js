@@ -584,7 +584,7 @@ class LingoGameEngine {
                     ${this.wordBankSelected.length === 0 ? '<span class="text-xs text-slate-400 italic">Нажимайте на слова внизу, чтобы собрать фразу...</span>' : ''}
                     ${this.wordBankSelected.map((token, idx) => `
                         <button onclick="${!isLocked ? `lingoEngine.returnWordBankToken('${token.id}')` : ''}"
-                                class="px-3 py-2 bg-white text-slate-800 border-2 border-b-4 border-slate-300 active:border-b-2 rounded-xl text-xs sm:text-sm font-bold shadow-sm transition hover:bg-slate-100">
+                                class="px-3 py-2 bg-white text-slate-800 border-2 border-b-4 border-slate-300 active:border-b-2 rounded-xl text-xs sm:text-sm font-bold shadow-sm transition hover:bg-slate-100 token-pop-enter cursor-pointer">
                             ${escapeHtml(token.text)}
                         </button>
                     `).join('')}
@@ -594,7 +594,7 @@ class LingoGameEngine {
                 <div class="flex flex-wrap gap-2 justify-center pt-2">
                     ${this.wordBankAvailable.map((token) => `
                         <button onclick="${!isLocked ? `lingoEngine.selectWordBankToken('${token.id}')` : ''}"
-                                class="px-3.5 py-2.5 bg-white text-slate-800 border-2 border-b-4 border-slate-300 active:border-b-2 rounded-xl text-xs sm:text-sm font-bold shadow-sm transition hover:border-sky-400 hover:text-sky-700">
+                                class="px-3.5 py-2.5 bg-white text-slate-800 border-2 border-b-4 border-slate-300 active:border-b-2 rounded-xl text-xs sm:text-sm font-bold shadow-sm transition hover:border-sky-400 hover:text-sky-700 cursor-pointer">
                             ${escapeHtml(token.text)}
                         </button>
                     `).join('')}
@@ -605,6 +605,7 @@ class LingoGameEngine {
 
     selectWordBankToken(tokenId) {
         if (this.status !== 'none') return;
+        if (navigator.vibrate) try { navigator.vibrate(8); } catch(e) {}
         const idx = this.wordBankAvailable.findIndex(t => t.id === tokenId);
         if (idx !== -1) {
             const token = this.wordBankAvailable.splice(idx, 1)[0];
@@ -615,6 +616,7 @@ class LingoGameEngine {
 
     returnWordBankToken(tokenId) {
         if (this.status !== 'none') return;
+        if (navigator.vibrate) try { navigator.vibrate(8); } catch(e) {}
         const idx = this.wordBankSelected.findIndex(t => t.id === tokenId);
         if (idx !== -1) {
             const token = this.wordBankSelected.splice(idx, 1)[0];
@@ -889,6 +891,9 @@ class LingoGameEngine {
             if (navigator.vibrate) {
                 try { navigator.vibrate([40, 30, 60]); } catch(e){}
             }
+            if (window.confetti) {
+                try { window.confetti({ particleCount: 35, spread: 60, origin: { y: 0.85 } }); } catch(e){}
+            }
         } else {
             this.status = 'wrong';
             this.hearts = Math.max(0, this.hearts - 1);
@@ -942,7 +947,7 @@ class LingoGameEngine {
                     <button onclick="lingoEngine.checkAnswer()" 
                             ${!canCheck ? 'disabled' : ''}
                             class="w-full sm:w-auto px-8 py-3.5 rounded-2xl font-extrabold text-sm uppercase tracking-wider transition-all duration-150 shadow-sm
-                                   ${canCheck ? 'bg-emerald-500 hover:bg-emerald-600 text-white border-b-4 border-emerald-600 active:border-b-0 cursor-pointer' : 'bg-slate-200 text-slate-400 cursor-not-allowed border-b-4 border-slate-300'}">
+                                   ${canCheck ? 'bg-emerald-500 hover:bg-emerald-600 text-white border-b-4 border-emerald-600 active:border-b-0 cursor-pointer active:translate-y-1' : 'bg-slate-200 text-slate-400 cursor-not-allowed border-b-4 border-slate-300'}">
                         Проверить
                     </button>
                 </footer>
@@ -952,25 +957,25 @@ class LingoGameEngine {
         if (this.status === 'correct') {
             const listenBtn = challenge.voiceHint ? `
                 <button onclick="playTTS(this, '${escapeQuotes(challenge.correctFull || challenge.correctOptionText || challenge.listenText)}', '${challenge.voiceHint}')"
-                        class="px-3 py-1 bg-white text-emerald-800 rounded-lg text-xs font-bold shadow-sm hover:bg-emerald-50 transition border border-emerald-200 flex items-center gap-1">
+                        class="px-3 py-1 bg-white text-emerald-800 rounded-lg text-xs font-bold shadow-sm hover:bg-emerald-50 transition border border-emerald-200 flex items-center gap-1 cursor-pointer">
                     <span>🔊</span> <span>Послушать произношение</span>
                 </button>
             ` : '';
 
             return `
-                <footer class="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] border-t-2 border-emerald-300 bg-emerald-100/90 flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in shrink-0">
-                    <div class="flex items-center gap-3 text-emerald-800 w-full sm:w-auto">
-                        <div class="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center font-black text-xl shadow-sm shrink-0">
+                <footer class="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] border-t-2 border-emerald-300 bg-emerald-50/95 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in shrink-0 shadow-lg">
+                    <div class="flex items-center gap-3 text-emerald-900 w-full sm:w-auto">
+                        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 text-white flex items-center justify-center font-black text-2xl shadow-md shrink-0 border border-emerald-300">
                             ✓
                         </div>
                         <div class="flex-1">
-                            <h4 class="font-extrabold text-base">Великолепно, Алина! ✨</h4>
+                            <h4 class="font-extrabold text-base text-emerald-900">Великолепно, Алина! ✨</h4>
                             <p class="text-xs text-emerald-700 font-medium">${escapeHtml(challenge.correctExplanation || '')}</p>
                             ${listenBtn}
                         </div>
                     </div>
                     <button onclick="lingoEngine.nextChallenge()" 
-                            class="w-full sm:w-auto px-8 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-extrabold text-sm uppercase tracking-wider border-b-4 border-emerald-600 active:border-b-0 transition shadow-sm shrink-0">
+                            class="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:opacity-95 text-white rounded-2xl font-extrabold text-sm uppercase tracking-wider border-b-4 border-emerald-700 active:border-b-0 transition shadow-md shrink-0 cursor-pointer active:translate-y-1">
                         Далее ➔
                     </button>
                 </footer>
@@ -979,19 +984,19 @@ class LingoGameEngine {
 
         if (this.status === 'wrong') {
             return `
-                <footer class="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] border-t-2 border-rose-300 bg-rose-100/90 flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in shrink-0">
-                    <div class="flex items-center gap-3 text-rose-800 w-full sm:w-auto">
-                        <div class="w-10 h-10 rounded-full bg-rose-500 text-white flex items-center justify-center font-black text-xl shadow-sm shrink-0">
+                <footer class="p-4 sm:p-5 pb-[max(1rem,env(safe-area-inset-bottom))] border-t-2 border-rose-300 bg-rose-50/95 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in shrink-0 shadow-lg">
+                    <div class="flex items-center gap-3 text-rose-900 w-full sm:w-auto">
+                        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-rose-600 to-pink-500 text-white flex items-center justify-center font-black text-2xl shadow-md shrink-0 border border-rose-300">
                             ✕
                         </div>
                         <div class="flex-1">
-                            <h4 class="font-extrabold text-base">Правильный ответ:</h4>
-                            <p class="text-xs sm:text-sm text-rose-900 font-bold">${escapeHtml(challenge.targetSentence || challenge.correctOptionText || '')}</p>
+                            <h4 class="font-extrabold text-base text-rose-900">Правильный ответ:</h4>
+                            <p class="text-xs sm:text-sm text-rose-950 font-bold">${escapeHtml(challenge.targetSentence || challenge.correctOptionText || '')}</p>
                             <p class="text-[11px] text-rose-700">${escapeHtml(challenge.correctExplanation || '')}</p>
                         </div>
                     </div>
                     <button onclick="lingoEngine.nextChallenge()" 
-                            class="w-full sm:w-auto px-8 py-3.5 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl font-extrabold text-sm uppercase tracking-wider border-b-4 border-rose-600 active:border-b-0 transition shadow-sm shrink-0">
+                            class="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-rose-500 to-pink-600 hover:opacity-95 text-white rounded-2xl font-extrabold text-sm uppercase tracking-wider border-b-4 border-rose-700 active:border-b-0 transition shadow-md shrink-0 cursor-pointer active:translate-y-1">
                         Понятно ➔
                     </button>
                 </footer>

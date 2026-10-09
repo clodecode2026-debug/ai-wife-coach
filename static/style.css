@@ -404,4 +404,185 @@ button, .touch-btn {
     box-shadow: 0 1px 0 rgba(0, 0, 0, 0.15);
 }
 
+/* ==========================================================================
+   MOBILE BOTTOM NAVIGATION: 3D ICONS & TACTILE ACTIVE PILL
+   ========================================================================== */
+.nav-tab-btn {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: 3px 0 2px;
+    border-radius: 16px;
+    transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.18s ease;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    outline: none;
+}
+
+.nav-tab-btn:active {
+    transform: scale(0.9);
+}
+
+.nav-tab-icon-wrap {
+    position: relative;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.22s ease;
+}
+
+.nav-tab-btn.nav-tab-active .nav-tab-icon-wrap {
+    transform: translateY(-2px) scale(1.1);
+    filter: drop-shadow(0 4px 8px rgba(244, 63, 94, 0.32));
+}
+
+.nav-tab-label {
+    font-size: 10px;
+    line-height: 12px;
+    margin-top: 1px;
+    font-weight: 600;
+    transition: color 0.18s ease, font-weight 0.18s ease;
+    color: #94a3b8;
+}
+
+.nav-tab-btn.nav-tab-active .nav-tab-label {
+    color: #e11d48;
+    font-weight: 800;
+}
+
+/* Светящаяся живая точка под активной вкладкой */
+.nav-tab-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 9999px;
+    background: #f43f5e;
+    margin-top: 2px;
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 0 6px #f43f5e;
+}
+
+.nav-tab-btn.nav-tab-active .nav-tab-dot {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* ==========================================================================
+   CHAT & INPUT BAR: TACTILE 3D PUSH & LIVING AURORA TYPING
+   ========================================================================== */
+.btn-tactile-send {
+    transition: transform 0.12s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.12s cubic-bezier(0.2, 0, 0, 1), opacity 0.15s ease;
+    box-shadow: 0 4px 0 #be123c, 0 8px 14px rgba(244, 63, 94, 0.25);
+}
+
+.btn-tactile-send:active {
+    transform: translateY(3px) scale(0.97) !important;
+    box-shadow: 0 1px 0 #be123c, 0 2px 6px rgba(244, 63, 94, 0.15) !important;
+}
+
+.btn-tactile-mic {
+    transition: transform 0.12s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.12s cubic-bezier(0.2, 0, 0, 1), background-color 0.15s ease;
+    box-shadow: 0 3px 0 #fecdd3, 0 4px 8px rgba(244, 63, 94, 0.1);
+}
+
+.btn-tactile-mic:active {
+    transform: translateY(2px) scale(0.96) !important;
+    box-shadow: 0 1px 0 #fecdd3, 0 2px 4px rgba(244, 63, 94, 0.1) !important;
+}
+
+/* Living Aurora Typing Indicator */
+@keyframes auroraPulse {
+    0%, 100% {
+        transform: scale(0.85);
+        opacity: 0.55;
+        background-color: #fb7185;
+    }
+    50% {
+        transform: scale(1.25);
+        opacity: 1;
+        background-color: #ec4899;
+        box-shadow: 0 0 10px rgba(236, 72, 153, 0.6);
+    }
+}
+
+.aurora-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 9999px;
+    display: inline-block;
+    animation: auroraPulse 1.3s ease-in-out infinite;
+}
+.aurora-dot:nth-child(2) { animation-delay: 0.2s; }
+.aurora-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* Плавное всплытие сообщений */
+@keyframes msgSlideUpSoft {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+.msg-bubble-enter {
+    animation: msgSlideUpSoft 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ==========================================================================
+   EXERCISES & FLASHCARDS 3D POLISH
+   ========================================================================== */
+/* Word Bank Token Pop Animation */
+@keyframes tokenPopIn {
+    0% {
+        transform: scale(0.85);
+        opacity: 0.5;
+    }
+    60% {
+        transform: scale(1.08);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+.token-pop-enter {
+    animation: tokenPopIn 0.18s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Gentle Error Shake */
+@keyframes softWobble {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-4px) rotate(-0.5deg); }
+    40%, 80% { transform: translateX(4px) rotate(0.5deg); }
+}
+.quiz-wobble-error {
+    animation: softWobble 0.35s ease-in-out;
+}
+
+/* 3D Card Flip Animation */
+@keyframes cardFlipIn {
+    0% {
+        transform: rotateY(70deg) scale(0.96);
+        opacity: 0.35;
+    }
+    100% {
+        transform: rotateY(0deg) scale(1);
+        opacity: 1;
+    }
+}
+.animate-card-flip {
+    animation: cardFlipIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+
+
 

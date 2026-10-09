@@ -19,7 +19,7 @@
     <title>Коуч 💖 — Личный психолог & Немецкий B1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css?v=24">
+    <link rel="stylesheet" href="/static/style.css?v=25">
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -360,20 +360,20 @@
         </section>
 
         <!-- ВКЛАДКА 3: НЕМЕЦКИЙ ЯЗЫК (ПОРТАЛ И ХАБ ДЛЯ АЛИНЫ) -->
-        <section id="tab-german" class="tab-content hidden flex-1 flex flex-col bg-white sm:bg-white/95 sm:backdrop-blur rounded-none sm:rounded-2xl sm:shadow-xl sm:border sm:border-rose-100 p-2 sm:p-4 overflow-hidden h-full">
+        <section id="tab-german" class="tab-content hidden flex-1 flex flex-col rounded-none sm:rounded-2xl sm:shadow-xl sm:border sm:border-white/60 p-2 sm:p-4 overflow-hidden h-full">
             <!-- 1. ГЛАВНЫЙ ЭКРАН: НЕМЕЦКИЙ ХАБ (КОНЦЕПТ 1: GLASSMORPHISM & 3D НЕОН) -->
-            <div id="germanHubContainer" class="flex-1 flex flex-col overflow-y-auto space-y-3.5 pr-1 pb-4">
+            <div id="germanHubContainer" class="flex-1 flex flex-col overflow-y-auto space-y-3.5 pb-4">
                 <!-- Карточка профиля и прогресса Алины -->
-                <div class="hub-glass-card rounded-3xl p-3.5 sm:p-4 shadow-sm shrink-0 border border-slate-200/80">
-                    <div class="flex items-center justify-between gap-3 mb-2.5">
+                <div class="hub-glass-card rounded-3xl p-3.5 sm:p-4 shadow-sm shrink-0 border border-white/80">
+                    <div class="flex items-center justify-between gap-3 mb-3">
                         <div class="flex items-center gap-3 min-w-0">
-                            <div class="relative">
-                                <img src="/static/img/alina_avatar.jpg" class="alina-profile-avatar w-12 h-12 rounded-2xl object-cover border-2 border-emerald-400 shadow-md shrink-0 cursor-pointer active:scale-95 transition" onclick="switchTab('dossier')" alt="Алина">
+                            <div class="relative shrink-0">
+                                <img src="/static/img/alina_avatar.jpg" class="alina-profile-avatar w-12 h-12 rounded-full object-cover border-2 border-white shadow-md ring-2 ring-emerald-300/50 shrink-0 cursor-pointer active:scale-95 transition" onclick="switchTab('dossier')" alt="Алина">
                                 <span class="absolute -bottom-1 -right-1 text-xs">✨</span>
                             </div>
                             <div class="min-w-0">
-                                <h3 class="font-extrabold text-slate-800 text-sm sm:text-base leading-tight truncate">Guten Tag, Alina! ✨</h3>
-                                <p class="text-xs text-slate-500 mt-0.5 truncate">Твой немецкий: от базы к свободному B1</p>
+                                <h3 class="font-black text-slate-800 text-sm sm:text-base leading-tight truncate">Guten Tag, Alina! ✨</h3>
+                                <p class="text-xs text-slate-500 mt-0.5 truncate font-medium">От базы к свободному B1</p>
                             </div>
                         </div>
                         <span id="hubActiveLevelBadge" class="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-xs px-2.5 py-1 rounded-xl shadow-xs shrink-0">
@@ -381,190 +381,109 @@
                         </span>
                     </div>
 
-                    <!-- Статус-бар: Серия, Опыт, Сердечки -->
-                    <div class="grid grid-cols-3 gap-2 pt-2.5 border-t border-slate-100 text-xs font-bold text-center">
-                        <div class="bg-white/90 rounded-xl py-1.5 px-2 border border-slate-200/60 flex items-center justify-center gap-1.5 shadow-2xs">
-                            <span class="text-base">🔥</span>
-                            <span id="courseStreakDisplay" class="text-amber-700">1 дн.</span>
+                    <!-- Статус-бар: Серия, Опыт, Сердечки (Единая стеклянная капсула из Concept 1) -->
+                    <div class="bg-white/85 backdrop-blur-md rounded-2xl py-2 px-3 border border-white/90 shadow-2xs flex items-center justify-around text-xs font-bold text-slate-700">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-base leading-none">🔥</span>
+                            <span id="courseStreakDisplay" class="text-slate-800 font-black">1 дн.</span>
                         </div>
-                        <div class="bg-white/90 rounded-xl py-1.5 px-2 border border-slate-200/60 flex items-center justify-center gap-1.5 shadow-2xs">
-                            <img src="/static/duolingo/points.svg" class="w-4 h-4" alt="XP">
-                            <span id="courseXpDisplay" class="text-sky-700">0 XP</span>
+                        <div class="w-px h-3.5 bg-slate-200/90"></div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-amber-500 text-base leading-none">⭐</span>
+                            <span id="courseXpDisplay" class="text-slate-800 font-black">0 XP</span>
                         </div>
-                        <div onclick="lingoEngine.openHeartRefillModal()" class="bg-white/90 hover:bg-rose-50 rounded-xl py-1.5 px-2 border border-slate-200/60 flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer transition active:scale-95" title="Пополнить сердечки">
-                            <img src="/static/duolingo/heart.svg" class="w-4 h-4" alt="Hearts">
-                            <span id="courseHeartsDisplay" class="text-rose-600">5</span>
+                        <div class="w-px h-3.5 bg-slate-200/90"></div>
+                        <div onclick="lingoEngine.openHeartRefillModal()" class="flex items-center gap-1.5 cursor-pointer active:scale-95 transition" title="Пополнить сердечки">
+                            <span class="text-rose-500 text-base leading-none">❤️</span>
+                            <span id="courseHeartsDisplay" class="text-slate-800 font-black">5</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Блок выбора уровня (A1+, A2, B1) -->
                 <div class="space-y-1.5 shrink-0">
-                    <div class="flex items-center justify-between px-1">
-                        <span class="text-xs font-bold text-slate-700">Выбор уровня:</span>
-                        <span class="text-[11px] text-slate-400">Нажми для смены</span>
-                    </div>
+                    <span class="text-xs font-bold text-slate-700 block px-1">Выбор уровня:</span>
                     <!-- Стеклянный сегментированный переключатель уровней в стиле Concept 1 -->
-                    <div class="bg-slate-100/90 backdrop-blur-md p-1 rounded-2xl flex items-center gap-1 border border-slate-200/70 shadow-inner">
-                        <button onclick="setGermanLevel('A1+')" id="hub-level-card-a1" class="flex-1 py-2 px-1 rounded-xl transition-all duration-200 text-center flex flex-col items-center justify-center active:scale-95 bg-white shadow-sm border border-white text-emerald-800 ring-2 ring-emerald-400/40">
+                    <div class="bg-slate-200/50 backdrop-blur-md p-1 rounded-2xl flex items-center gap-1 border border-white/70 shadow-inner">
+                        <button onclick="setGermanLevel('A1+')" id="hub-level-card-a1" class="flex-1 py-2 px-1 rounded-xl transition-all duration-200 text-center flex flex-col items-center justify-center active:scale-95 bg-white shadow-[0_3px_10px_rgba(0,0,0,0.06)] text-slate-900 border border-white">
                             <span class="font-black text-xs">A1+</span>
                             <span class="text-[10px] text-slate-500 font-medium">База</span>
                         </button>
-                        <button onclick="setGermanLevel('A2')" id="hub-level-card-a2" class="flex-1 py-2 px-1 rounded-xl transition-all duration-200 text-center flex flex-col items-center justify-center active:scale-95 text-slate-600 hover:bg-white/50 border border-transparent">
+                        <button onclick="setGermanLevel('A2')" id="hub-level-card-a2" class="flex-1 py-2 px-1 rounded-xl transition-all duration-200 text-center flex flex-col items-center justify-center active:scale-95 text-slate-600 hover:bg-white/40 border border-transparent">
                             <span class="font-black text-xs">A2</span>
                             <span class="text-[10px] text-slate-400 font-medium">Быт</span>
                         </button>
-                        <button onclick="setGermanLevel('B1')" id="hub-level-card-b1" class="flex-1 py-2 px-1 rounded-xl transition-all duration-200 text-center flex flex-col items-center justify-center active:scale-95 text-slate-600 hover:bg-white/50 border border-transparent">
+                        <button onclick="setGermanLevel('B1')" id="hub-level-card-b1" class="flex-1 py-2 px-1 rounded-xl transition-all duration-200 text-center flex flex-col items-center justify-center active:scale-95 text-slate-600 hover:bg-white/40 border border-transparent">
                             <span class="font-black text-xs">B1</span>
                             <span class="text-[10px] text-slate-400 font-medium">Свобода</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- Блок выбора режимов тренировки (Сетка 2×2 из Concept 1 с 3D-иконками и неоном) -->
+                <!-- Блок выбора режимов тренировки (Сетка 2×2 из Concept 1 с 3D-рендер иллюстрациями и неоновым сиянием) -->
                 <div class="space-y-2">
                     <span class="text-xs font-bold text-slate-700 block px-1">Режимы тренировки:</span>
 
                     <div class="grid grid-cols-2 gap-2.5 sm:gap-3.5 pt-0.5">
-                        <!-- Карточка 1: Дорожка уроков Duolingo (3D Изумрудный компас с дорожкой) -->
-                        <div onclick="setGermanViewMode('path')" class="hub-glass-card hub-card-emerald rounded-3xl p-3.5 sm:p-4 cursor-pointer active:scale-95 transition-all duration-200 flex flex-col items-center text-center justify-between min-h-[175px] group relative overflow-hidden">
-                            <div class="relative w-16 h-16 flex items-center justify-center mb-1">
-                                <div class="absolute inset-0 rounded-full bg-emerald-400/30 blur-lg animate-aura-pulse"></div>
-                                <svg class="w-14 h-14 relative z-10 animate-hub-float transition-transform group-hover:scale-110 duration-300" viewBox="0 0 64 64" fill="none">
-                                    <defs>
-                                        <linearGradient id="roadGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" stop-color="#6ee7b7"/>
-                                            <stop offset="50%" stop-color="#10b981"/>
-                                            <stop offset="100%" stop-color="#047857"/>
-                                        </linearGradient>
-                                        <linearGradient id="compassGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" stop-color="#a7f3d0"/>
-                                            <stop offset="100%" stop-color="#059669"/>
-                                        </linearGradient>
-                                    </defs>
-                                    <path d="M48 14 C48 24 16 22 16 34 C16 44 44 42 44 54" stroke="url(#roadGrad)" stroke-width="8.5" stroke-linecap="round"/>
-                                    <path d="M48 14 C48 24 16 22 16 34 C16 44 44 42 44 54" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3 4" opacity="0.9"/>
-                                    <circle cx="48" cy="14" r="5" fill="#10b981" stroke="#ffffff" stroke-width="2"/>
-                                    <g transform="translate(13, 28)">
-                                        <circle cx="13" cy="13" r="13" fill="#ffffff" filter="drop-shadow(0 4px 6px rgba(5,150,105,0.3))"/>
-                                        <circle cx="13" cy="13" r="11" fill="url(#compassGrad)"/>
-                                        <circle cx="13" cy="13" r="8.5" fill="#ecfdf5"/>
-                                        <polygon points="13,6 16,13 13,12" fill="#047857"/>
-                                        <polygon points="13,20 16,13 13,12" fill="#a7f3d0"/>
-                                        <polygon points="13,6 10,13 13,12" fill="#10b981"/>
-                                        <polygon points="13,20 10,13 13,12" fill="#6ee7b7"/>
-                                        <circle cx="13" cy="13" r="2" fill="#ffffff"/>
-                                    </g>
-                                </svg>
+                        <!-- Карточка 1: Дорожка уроков Duolingo (3D Изумрудная дорожка с компасом) -->
+                        <div onclick="setGermanViewMode('path')" class="hub-glass-card hub-card-emerald rounded-3xl p-3.5 sm:p-4 cursor-pointer active:scale-95 transition-all duration-200 flex flex-col items-center text-center justify-between min-h-[180px] group relative overflow-hidden">
+                            <div class="relative w-20 h-20 flex items-center justify-center mb-1">
+                                <div class="absolute inset-0 rounded-full bg-emerald-400/25 blur-xl animate-aura-pulse"></div>
+                                <picture class="relative z-10 animate-hub-float transition-transform group-hover:scale-110 duration-300">
+                                    <source srcset="/static/img/hub_duolingo_3d.webp" type="image/webp">
+                                    <img src="/static/img/hub_duolingo_3d.png" alt="Дорожка Duolingo" class="w-20 h-20 object-contain drop-shadow-md">
+                                </picture>
                             </div>
                             <div class="w-full">
-                                <h4 class="font-extrabold text-slate-800 text-xs sm:text-sm leading-tight">Дорожка Duolingo</h4>
+                                <h4 class="font-black text-slate-800 text-xs sm:text-sm leading-tight">Дорожка Duolingo</h4>
                                 <span id="hubPathSubtitle" class="text-[11px] text-emerald-700 font-semibold mt-1 block truncate">Интерактивные уроки</span>
                             </div>
                         </div>
 
                         <!-- Карточка 2: Словарные карточки (3D Розовая стеклянная колода) -->
-                        <div onclick="setGermanViewMode('flashcards')" class="hub-glass-card hub-card-rose rounded-3xl p-3.5 sm:p-4 cursor-pointer active:scale-95 transition-all duration-200 flex flex-col items-center text-center justify-between min-h-[175px] group relative overflow-hidden">
-                            <div class="relative w-16 h-16 flex items-center justify-center mb-1">
-                                <div class="absolute inset-0 rounded-full bg-rose-400/30 blur-lg animate-aura-pulse"></div>
-                                <svg class="w-14 h-14 relative z-10 animate-hub-float transition-transform group-hover:scale-110 duration-300" style="animation-delay: 0.3s;" viewBox="0 0 64 64" fill="none">
-                                    <defs>
-                                        <linearGradient id="cardFrontGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" stop-color="#ffffff"/>
-                                            <stop offset="100%" stop-color="#ffe4e6"/>
-                                        </linearGradient>
-                                    </defs>
-                                    <rect x="18" y="8" width="34" height="26" rx="6" fill="#fecdd3" opacity="0.6" transform="rotate(8 35 21)"/>
-                                    <rect x="15" y="14" width="34" height="26" rx="6" fill="#fda4af" opacity="0.8" transform="rotate(-4 32 27)"/>
-                                    <g filter="drop-shadow(0 6px 8px rgba(244,63,94,0.25))">
-                                        <rect x="12" y="22" width="38" height="28" rx="7" fill="url(#cardFrontGrad)" stroke="#f43f5e" stroke-width="1.5"/>
-                                        <rect x="17" y="28" width="16" height="3" rx="1.5" fill="#f43f5e"/>
-                                        <rect x="17" y="34" width="28" height="2.5" rx="1" fill="#cbd5e1"/>
-                                        <rect x="17" y="39" width="20" height="2.5" rx="1" fill="#e2e8f0"/>
-                                        <circle cx="43" cy="29" r="3.5" fill="#f43f5e"/>
-                                        <path d="M42 29 L44 29" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round"/>
-                                    </g>
-                                </svg>
+                        <div onclick="setGermanViewMode('flashcards')" class="hub-glass-card hub-card-rose rounded-3xl p-3.5 sm:p-4 cursor-pointer active:scale-95 transition-all duration-200 flex flex-col items-center text-center justify-between min-h-[180px] group relative overflow-hidden">
+                            <div class="relative w-20 h-20 flex items-center justify-center mb-1">
+                                <div class="absolute inset-0 rounded-full bg-rose-400/25 blur-xl animate-aura-pulse"></div>
+                                <picture class="relative z-10 animate-hub-float transition-transform group-hover:scale-110 duration-300" style="animation-delay: 0.3s;">
+                                    <source srcset="/static/img/hub_flashcards_3d.webp" type="image/webp">
+                                    <img src="/static/img/hub_flashcards_3d.png" alt="Карточки слов" class="w-20 h-20 object-contain drop-shadow-md">
+                                </picture>
                             </div>
                             <div class="w-full">
-                                <h4 class="font-extrabold text-slate-800 text-xs sm:text-sm leading-tight">Карточки слов</h4>
-                                <span id="hubCardsBadge" class="text-[11px] text-rose-600 font-semibold mt-1 block">525 слов (Anki)</span>
+                                <h4 class="font-black text-slate-800 text-xs sm:text-sm leading-tight">Карточки слов</h4>
+                                <span id="hubCardsBadge" class="text-[11px] text-rose-600/90 font-semibold mt-1 block">525 слов (Anki)</span>
                             </div>
                         </div>
 
                         <!-- Карточка 3: Live Voice коуч (3D Микрофон со звуковыми волнами) -->
-                        <div onclick="startLiveGermanCoach(currentCourseDay)" class="hub-glass-card hub-card-purple rounded-3xl p-3.5 sm:p-4 cursor-pointer active:scale-95 transition-all duration-200 flex flex-col items-center text-center justify-between min-h-[175px] group relative overflow-hidden">
-                            <div class="relative w-16 h-16 flex items-center justify-center mb-1">
-                                <div class="absolute inset-0 rounded-full bg-fuchsia-400/30 blur-lg animate-aura-pulse"></div>
-                                <svg class="w-14 h-14 relative z-10 animate-hub-float transition-transform group-hover:scale-110 duration-300" style="animation-delay: 0.6s;" viewBox="0 0 64 64" fill="none">
-                                    <defs>
-                                        <linearGradient id="micGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" stop-color="#fdf4ff"/>
-                                            <stop offset="50%" stop-color="#f0abfc"/>
-                                            <stop offset="100%" stop-color="#c026d3"/>
-                                        </linearGradient>
-                                        <linearGradient id="waveGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                                            <stop offset="0%" stop-color="#f472b6"/>
-                                            <stop offset="100%" stop-color="#c026d3"/>
-                                        </linearGradient>
-                                    </defs>
-                                    <g transform="translate(10, 24)">
-                                        <rect x="0" y="4" width="2.5" height="12" rx="1.25" fill="url(#waveGrad)" class="live-wave-bar"/>
-                                        <rect x="4" y="0" width="2.5" height="20" rx="1.25" fill="url(#waveGrad)" class="live-wave-bar"/>
-                                    </g>
-                                    <g transform="translate(47, 24)">
-                                        <rect x="0" y="0" width="2.5" height="20" rx="1.25" fill="url(#waveGrad)" class="live-wave-bar"/>
-                                        <rect x="4" y="4" width="2.5" height="12" rx="1.25" fill="url(#waveGrad)" class="live-wave-bar"/>
-                                    </g>
-                                    <g filter="drop-shadow(0 6px 8px rgba(192,38,211,0.25))">
-                                        <rect x="25" y="10" width="14" height="24" rx="7" fill="url(#micGrad)" stroke="#a21caf" stroke-width="1.2"/>
-                                        <line x1="28" y1="16" x2="36" y2="16" stroke="#ffffff" stroke-width="1" opacity="0.8"/>
-                                        <line x1="28" y1="21" x2="36" y2="21" stroke="#ffffff" stroke-width="1" opacity="0.8"/>
-                                        <line x1="28" y1="26" x2="36" y2="26" stroke="#ffffff" stroke-width="1" opacity="0.8"/>
-                                        <path d="M22 24 C22 33 42 33 42 24" stroke="#a21caf" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-                                        <line x1="32" y1="33" x2="32" y2="44" stroke="#a21caf" stroke-width="3" stroke-linecap="round"/>
-                                        <ellipse cx="32" cy="46" rx="9" ry="3.5" fill="#c026d3"/>
-                                    </g>
-                                </svg>
+                        <div onclick="startLiveGermanCoach(currentCourseDay)" class="hub-glass-card hub-card-purple rounded-3xl p-3.5 sm:p-4 cursor-pointer active:scale-95 transition-all duration-200 flex flex-col items-center text-center justify-between min-h-[180px] group relative overflow-hidden">
+                            <div class="relative w-20 h-20 flex items-center justify-center mb-1">
+                                <div class="absolute inset-0 rounded-full bg-fuchsia-400/25 blur-xl animate-aura-pulse"></div>
+                                <picture class="relative z-10 animate-hub-float transition-transform group-hover:scale-110 duration-300" style="animation-delay: 0.6s;">
+                                    <source srcset="/static/img/hub_voice_3d.webp" type="image/webp">
+                                    <img src="/static/img/hub_voice_3d.png" alt="Live Voice коуч" class="w-20 h-20 object-contain drop-shadow-md">
+                                </picture>
                             </div>
                             <div class="w-full">
-                                <h4 class="font-extrabold text-slate-800 text-xs sm:text-sm leading-tight">Live Voice коуч</h4>
-                                <span class="text-[11px] text-fuchsia-700 font-semibold mt-1 block">Разговор 5 минут</span>
+                                <h4 class="font-black text-slate-800 text-xs sm:text-sm leading-tight">Live Voice коуч</h4>
+                                <span class="text-[11px] text-fuchsia-600/90 font-semibold mt-1 block">Разговор 5 минут</span>
                             </div>
                         </div>
 
                         <!-- Карточка 4: Банк ошибок (3D Золотая мишень) -->
-                        <div onclick="openMistakesModal()" class="hub-glass-card hub-card-amber rounded-3xl p-3.5 sm:p-4 cursor-pointer active:scale-95 transition-all duration-200 flex flex-col items-center text-center justify-between min-h-[175px] group relative overflow-hidden">
-                            <div class="relative w-16 h-16 flex items-center justify-center mb-1">
-                                <div class="absolute inset-0 rounded-full bg-amber-400/30 blur-lg animate-aura-pulse"></div>
-                                <svg class="w-14 h-14 relative z-10 animate-hub-float transition-transform group-hover:scale-110 duration-300" style="animation-delay: 0.9s;" viewBox="0 0 64 64" fill="none">
-                                    <defs>
-                                        <radialGradient id="targetRing1" cx="45%" cy="40%" r="55%">
-                                            <stop offset="0%" stop-color="#fef3c7"/>
-                                            <stop offset="60%" stop-color="#f59e0b"/>
-                                            <stop offset="100%" stop-color="#b45309"/>
-                                        </radialGradient>
-                                        <radialGradient id="targetRing2" cx="45%" cy="40%" r="55%">
-                                            <stop offset="0%" stop-color="#fffbeb"/>
-                                            <stop offset="100%" stop-color="#fde68a"/>
-                                        </radialGradient>
-                                    </defs>
-                                    <g filter="drop-shadow(0 6px 8px rgba(180,83,9,0.25))">
-                                        <circle cx="32" cy="34" r="22" fill="url(#targetRing1)" stroke="#b45309" stroke-width="1.5"/>
-                                        <circle cx="32" cy="34" r="16" fill="url(#targetRing2)" stroke="#d97706" stroke-width="1.2"/>
-                                        <circle cx="32" cy="34" r="10" fill="url(#targetRing1)" stroke="#b45309" stroke-width="1.2"/>
-                                        <circle cx="32" cy="34" r="4.5" fill="#b91c1c" stroke="#ffffff" stroke-width="1"/>
-                                        <g transform="rotate(35 32 34)">
-                                            <line x1="32" y1="34" x2="32" y2="12" stroke="#78350f" stroke-width="2.5" stroke-linecap="round"/>
-                                            <polygon points="32,10 27,4 32,7" fill="#f59e0b"/>
-                                            <polygon points="32,10 37,4 32,7" fill="#d97706"/>
-                                        </g>
-                                    </g>
-                                </svg>
+                        <div onclick="openMistakesModal()" class="hub-glass-card hub-card-amber rounded-3xl p-3.5 sm:p-4 cursor-pointer active:scale-95 transition-all duration-200 flex flex-col items-center text-center justify-between min-h-[180px] group relative overflow-hidden">
+                            <div class="relative w-20 h-20 flex items-center justify-center mb-1">
+                                <div class="absolute inset-0 rounded-full bg-amber-400/25 blur-xl animate-aura-pulse"></div>
+                                <picture class="relative z-10 animate-hub-float transition-transform group-hover:scale-110 duration-300" style="animation-delay: 0.9s;">
+                                    <source srcset="/static/img/hub_mistakes_3d.webp" type="image/webp">
+                                    <img src="/static/img/hub_mistakes_3d.png" alt="Банк ошибок" class="w-20 h-20 object-contain drop-shadow-md">
+                                </picture>
                             </div>
                             <div class="w-full">
-                                <h4 class="font-extrabold text-slate-800 text-xs sm:text-sm leading-tight">Банк ошибок</h4>
-                                <span class="text-[11px] text-amber-700 font-semibold mt-1 block"><b id="hubMistakesBadgeCount" class="text-amber-900">0</b> к повторению</span>
+                                <h4 class="font-black text-slate-800 text-xs sm:text-sm leading-tight">Банк ошибок</h4>
+                                <span class="inline-block bg-amber-100/80 border border-amber-200/60 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full mt-1">
+                                    <b id="hubMistakesBadgeCount" class="text-amber-900">0</b> к повторению
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -1059,6 +978,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <script src="/static/duolingo/duolingo.js?v=24"></script>
-    <script src="/static/app.js?v=24"></script>
+    <script src="/static/app.js?v=25"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ai-coach-alina-v24';
+const CACHE_NAME = 'ai-coach-alina-v25';
 const ASSETS = [
   '/',
   '/static/index.html',
@@ -11,6 +11,14 @@ const ASSETS = [
   '/static/img/alina_portrait.jpg',
   '/static/img/alina_studio_avatar.jpg',
   '/static/img/alina_studio_portrait.jpg',
+  '/static/img/hub_duolingo_3d.webp',
+  '/static/img/hub_duolingo_3d.png',
+  '/static/img/hub_flashcards_3d.webp',
+  '/static/img/hub_flashcards_3d.png',
+  '/static/img/hub_voice_3d.webp',
+  '/static/img/hub_voice_3d.png',
+  '/static/img/hub_mistakes_3d.webp',
+  '/static/img/hub_mistakes_3d.png',
   '/static/icons/apple-touch-icon.png',
   '/static/icons/icon-192.png',
   '/static/icons/icon-512.png',

@@ -2170,9 +2170,9 @@ function renderGermanPlatform() {
         const card = document.getElementById('hub-level-card-' + lvl);
         if (card) {
             if (lvl === activeLevelKey) {
-                card.className = 'flex-1 py-2 px-1 rounded-xl transition-all duration-200 text-center flex flex-col items-center justify-center active:scale-95 bg-white shadow-sm border border-white text-emerald-800 ring-2 ring-emerald-400/40';
+                card.className = 'flex-1 py-2 px-1 rounded-xl transition-all duration-200 text-center flex flex-col items-center justify-center active:scale-95 bg-white shadow-[0_3px_10px_rgba(0,0,0,0.06)] border border-white text-slate-900';
             } else {
-                card.className = 'flex-1 py-2 px-1 rounded-xl transition-all duration-200 text-center flex flex-col items-center justify-center active:scale-95 text-slate-600 hover:bg-white/50 border border-transparent';
+                card.className = 'flex-1 py-2 px-1 rounded-xl transition-all duration-200 text-center flex flex-col items-center justify-center active:scale-95 text-slate-600 hover:bg-white/40 border border-transparent';
             }
         }
     });
@@ -2192,12 +2192,13 @@ function renderGermanPlatform() {
         let totalVocab = 0;
         levelLessons.forEach(l => { totalVocab += (l.vocabulary || []).length; });
         const cardsBadge = document.getElementById('hubCardsBadge');
-        if (cardsBadge) cardsBadge.textContent = `${totalVocab} слов`;
+        if (cardsBadge) cardsBadge.textContent = `${totalVocab} слов (Anki)`;
 
         const curLesson = allGermanCourseData.lessons.find(l => (l.day == currentCourseDay || l.id == currentCourseDay)) || levelLessons[0];
         const pathSub = document.getElementById('hubPathSubtitle');
         if (pathSub && curLesson) {
-            pathSub.textContent = `День ${curLesson.day || curLesson.id}: ${curLesson.title}`;
+            let cleanTitle = (curLesson.title || '').replace(/^День\s*\d+\s*:\s*/i, '').trim();
+            pathSub.textContent = cleanTitle ? `День ${curLesson.day || curLesson.id}: ${cleanTitle}` : `Урок ${curLesson.day || curLesson.id}`;
         }
     }
 

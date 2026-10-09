@@ -1098,8 +1098,209 @@ class LingoGameEngine {
     }
 
     // =========================================================================
-    // 11. КАРТА ОБУЧЕНИЯ DUOLINGO (THE LEARNING PATH / ROADMAP)
+    // 11. 3D ИКОНКИ И КАРТА ОБУЧЕНИЯ DUOLINGO (THE LEARNING PATH / ROADMAP)
     // =========================================================================
+    getNode3DIcon(type) {
+        if (type === 'crown') {
+            return `
+            <svg class="w-8 h-8 sm:w-10 sm:h-10 drop-shadow-md duo-icon-shimmer" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="crownGold" x1="12" y1="14" x2="52" y2="52" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#FEF08A"/>
+                  <stop offset="25%" stop-color="#FBBF24"/>
+                  <stop offset="65%" stop-color="#F59E0B"/>
+                  <stop offset="100%" stop-color="#B45309"/>
+                </linearGradient>
+                <linearGradient id="crownBase" x1="16" y1="42" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#D97706"/>
+                  <stop offset="100%" stop-color="#78350F"/>
+                </linearGradient>
+                <radialGradient id="rubyGem" cx="50%" cy="40%" r="50%">
+                  <stop offset="0%" stop-color="#FCA5A5"/>
+                  <stop offset="40%" stop-color="#EF4444"/>
+                  <stop offset="100%" stop-color="#991B1B"/>
+                </radialGradient>
+                <radialGradient id="emeraldGem" cx="50%" cy="40%" r="50%">
+                  <stop offset="0%" stop-color="#6EE7B7"/>
+                  <stop offset="40%" stop-color="#10B981"/>
+                  <stop offset="100%" stop-color="#064E3B"/>
+                </radialGradient>
+                <linearGradient id="laurelLeaf" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#A7F3D0"/>
+                  <stop offset="100%" stop-color="#059669"/>
+                </linearGradient>
+              </defs>
+              <path d="M12 44C10 40 11 34 14 31C14 34 15 37 18 39C15 42 13 44 12 44Z" fill="url(#laurelLeaf)" opacity="0.9"/>
+              <path d="M52 44C54 40 53 34 50 31C50 34 49 37 46 39C49 42 51 44 52 44Z" fill="url(#laurelLeaf)" opacity="0.9"/>
+              <path d="M10 36C8 32 10 27 13 25C13 28 14 31 17 32C14 35 11 36 10 36Z" fill="url(#laurelLeaf)" opacity="0.8"/>
+              <path d="M54 36C56 32 54 27 51 25C51 28 50 31 47 32C50 35 53 36 54 36Z" fill="url(#laurelLeaf)" opacity="0.8"/>
+              <path d="M14 44L11 23L22 30L32 15L42 30L53 23L50 44H14Z" fill="url(#crownGold)" filter="drop-shadow(0 3px 2px rgba(0,0,0,0.25))"/>
+              <path d="M32 15L22 30H42L32 15Z" fill="#FEF08A" opacity="0.45"/>
+              <path d="M11 23L22 30H14L11 23Z" fill="#F59E0B" opacity="0.5"/>
+              <path d="M53 23L42 30H50L53 23Z" fill="#B45309" opacity="0.5"/>
+              <circle cx="11" cy="22" r="3.2" fill="#FEF9C3" stroke="#D97706" stroke-width="1"/>
+              <circle cx="32" cy="14" r="4" fill="#FEF9C3" stroke="#D97706" stroke-width="1.2"/>
+              <circle cx="53" cy="22" r="3.2" fill="#FEF9C3" stroke="#D97706" stroke-width="1"/>
+              <rect x="13" y="42" width="38" height="7" rx="3.5" fill="url(#crownBase)"/>
+              <rect x="14" y="42.5" width="36" height="3" rx="1.5" fill="#FEF08A" opacity="0.5"/>
+              <circle cx="32" cy="45.5" r="3" fill="url(#rubyGem)" stroke="#FEF08A" stroke-width="0.8"/>
+              <circle cx="21" cy="45.5" r="2.2" fill="url(#emeraldGem)"/>
+              <circle cx="43" cy="45.5" r="2.2" fill="url(#emeraldGem)"/>
+              <path d="M32 9L33.2 12.5L36.5 13.5L33.2 14.5L32 18L30.8 14.5L27.5 13.5L30.8 12.5L32 9Z" fill="#FFFFFF"/>
+            </svg>`;
+        }
+        if (type === 'star') {
+            return `
+            <svg class="w-9 h-9 sm:w-11 sm:h-11 drop-shadow-lg duo-icon-shimmer" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <radialGradient id="starCenterGlow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#FFFBEB"/>
+                  <stop offset="50%" stop-color="#FDE047"/>
+                  <stop offset="100%" stop-color="#F59E0B"/>
+                </radialGradient>
+                <linearGradient id="facetLight" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#FEF9C3"/>
+                  <stop offset="100%" stop-color="#FCD34D"/>
+                </linearGradient>
+                <linearGradient id="facetMid" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#FBBF24"/>
+                  <stop offset="100%" stop-color="#F59E0B"/>
+                </linearGradient>
+                <linearGradient id="facetDark" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#D97706"/>
+                  <stop offset="100%" stop-color="#92400E"/>
+                </linearGradient>
+              </defs>
+              <circle cx="32" cy="32" r="22" fill="#FEF08A" opacity="0.3" filter="blur(6px)"/>
+              <polygon points="32,32 32,8 24,24" fill="url(#facetLight)"/>
+              <polygon points="32,32 32,8 40,24" fill="url(#facetMid)"/>
+              <polygon points="32,32 40,24 54,25" fill="url(#facetLight)"/>
+              <polygon points="32,32 54,25 43,38" fill="url(#facetDark)"/>
+              <polygon points="32,32 43,38 46,52" fill="url(#facetMid)"/>
+              <polygon points="32,32 46,52 32,45" fill="url(#facetDark)"/>
+              <polygon points="32,32 32,45 18,52" fill="url(#facetDark)"/>
+              <polygon points="32,32 18,52 21,38" fill="url(#facetMid)"/>
+              <polygon points="32,32 21,38 10,25" fill="url(#facetMid)"/>
+              <polygon points="32,32 10,25 24,24" fill="url(#facetLight)"/>
+              <circle cx="32" cy="32" r="4.2" fill="url(#starCenterGlow)"/>
+              <circle cx="31" cy="30.5" r="1.6" fill="#FFFFFF"/>
+              <path d="M32 5L33 7.5L35.5 8.5L33 9.5L32 12L31 9.5L28.5 8.5L31 7.5L32 5Z" fill="#FFFFFF"/>
+            </svg>`;
+        }
+        if (type === 'chat') {
+            return `
+            <svg class="w-8 h-8 sm:w-10 sm:h-10 drop-shadow-md" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="chatBubbleGrad" x1="12" y1="10" x2="52" y2="52" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#FFE4E6"/>
+                  <stop offset="35%" stop-color="#FDA4AF"/>
+                  <stop offset="100%" stop-color="#F43F5E"/>
+                </linearGradient>
+                <linearGradient id="micMetal" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#FFFFFF"/>
+                  <stop offset="50%" stop-color="#E2E8F0"/>
+                  <stop offset="100%" stop-color="#64748B"/>
+                </linearGradient>
+                <linearGradient id="micGlow" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#FB7185"/>
+                  <stop offset="100%" stop-color="#E11D48"/>
+                </linearGradient>
+              </defs>
+              <path d="M12 28C12 18.0589 20.9543 10 32 10C43.0457 10 52 18.0589 52 28C52 37.9411 43.0457 46 32 46C28.2 46 24.6 45.0 21.6 43.3L12 47L14.2 38.6C12.8 35.5 12 31.9 12 28Z" fill="url(#chatBubbleGrad)" filter="drop-shadow(0 3px 3px rgba(0,0,0,0.2))"/>
+              <path d="M16 26C16 19 23 13 32 13C41 13 48 19 48 26C48 20 41 15 32 15C23 15 16 20 16 26Z" fill="#FFFFFF" opacity="0.55"/>
+              <path d="M26 31C26 34.3 28.7 37 32 37C35.3 37 38 31 38 31" stroke="url(#micMetal)" stroke-width="2.5" stroke-linecap="round"/>
+              <path d="M32 37V42M28 42H36" stroke="url(#micMetal)" stroke-width="2.5" stroke-linecap="round"/>
+              <rect x="27.5" y="19" width="9" height="13" rx="4.5" fill="url(#micMetal)" stroke="#334155" stroke-width="0.8"/>
+              <line x1="28.5" y1="23" x2="35.5" y2="23" stroke="#64748B" stroke-width="0.8"/>
+              <line x1="28.5" y1="25.5" x2="35.5" y2="25.5" stroke="#64748B" stroke-width="0.8"/>
+              <rect x="28" y="27" width="8" height="1.8" rx="0.9" fill="url(#micGlow)"/>
+              <path d="M42 22C44 24 44 28 42 30" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
+              <path d="M45.5 19C48.5 22.5 48.5 29.5 45.5 33" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" opacity="0.75"/>
+            </svg>`;
+        }
+        if (type === 'book') {
+            return `
+            <svg class="w-8 h-8 sm:w-10 sm:h-10 drop-shadow-md" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="bookPages" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#FFFBEB"/>
+                  <stop offset="100%" stop-color="#FEF3C7"/>
+                </linearGradient>
+                <linearGradient id="goldRibbon" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#FDE047"/>
+                  <stop offset="100%" stop-color="#D97706"/>
+                </linearGradient>
+              </defs>
+              <path d="M14 46L32 52L50 46V18L32 24L14 18V46Z" fill="#0369A1" filter="drop-shadow(0 3px 3px rgba(0,0,0,0.22))"/>
+              <path d="M15 19C20 20 26 21 32 24V50C26 47 20 46 15 45V19Z" fill="url(#bookPages)"/>
+              <path d="M15 45C20 46 26 47 32 50C26 48.5 20 47.5 15 46.5V45Z" fill="#CBD5E1"/>
+              <path d="M49 19C44 20 38 21 32 24V50C38 47 44 46 49 45V19Z" fill="url(#bookPages)"/>
+              <path d="M49 45C44 46 38 47 32 50C38 48.5 44 47.5 49 46.5V45Z" fill="#CBD5E1"/>
+              <line x1="32" y1="24" x2="32" y2="51" stroke="#D97706" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M30 25C30 35 34 38 34 48L32 46L30 48C30 43 28 35 28 25H30Z" fill="url(#goldRibbon)"/>
+              <path d="M13 18C19 19.2 25.5 20.5 32 23.5C38.5 20.5 45 19.2 51 18" stroke="#38BDF8" stroke-width="2.5" stroke-linecap="round"/>
+              <path d="M13 46C19 47.2 25.5 48.5 32 51.5C38.5 48.5 45 47.2 51 46" stroke="#075985" stroke-width="3" stroke-linecap="round"/>
+              <path d="M21 32L24 26L27 32M22 30H26" stroke="#0284C7" stroke-width="1.2" stroke-linecap="round"/>
+              <path d="M37 27H43M37 30H42M37 33H40" stroke="#0284C7" stroke-width="1.2" stroke-linecap="round" opacity="0.7"/>
+            </svg>`;
+        }
+        if (type === 'chest') {
+            return `
+            <svg class="w-9 h-9 sm:w-11 sm:h-11 drop-shadow-lg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="chestWood" x1="12" y1="18" x2="52" y2="52" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#C084FC"/>
+                  <stop offset="40%" stop-color="#9333EA"/>
+                  <stop offset="100%" stop-color="#581C87"/>
+                </linearGradient>
+                <linearGradient id="chestGold" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#FEF08A"/>
+                  <stop offset="50%" stop-color="#F59E0B"/>
+                  <stop offset="100%" stop-color="#B45309"/>
+                </linearGradient>
+              </defs>
+              <rect x="13" y="28" width="38" height="22" rx="4" fill="url(#chestWood)" filter="drop-shadow(0 3px 3px rgba(0,0,0,0.25))"/>
+              <path d="M12 28C12 18 19 14 32 14C45 14 52 18 52 28H12Z" fill="url(#chestWood)"/>
+              <path d="M14 26C14 19 20 16 32 16C44 16 50 19 50 26H14Z" fill="#E9D5FF" opacity="0.3"/>
+              <rect x="13" y="26" width="38" height="4" fill="url(#chestGold)"/>
+              <path d="M19 15V50M45 15V50" stroke="url(#chestGold)" stroke-width="4.5"/>
+              <circle cx="19" cy="18" r="1.2" fill="#FEF9C3"/>
+              <circle cx="19" cy="36" r="1.2" fill="#FEF9C3"/>
+              <circle cx="19" cy="46" r="1.2" fill="#FEF9C3"/>
+              <circle cx="45" cy="18" r="1.2" fill="#FEF9C3"/>
+              <circle cx="45" cy="36" r="1.2" fill="#FEF9C3"/>
+              <circle cx="45" cy="46" r="1.2" fill="#FEF9C3"/>
+              <rect x="29" y="24" width="6" height="8" rx="2" fill="url(#chestGold)" stroke="#78350F" stroke-width="0.8"/>
+              <circle cx="32" cy="27" r="1.2" fill="#3B0764"/>
+              <path d="M31.5 27.5L31 30H33L32.5 27.5Z" fill="#3B0764"/>
+              <path d="M32 8L33 10.5L35.5 11.5L33 12.5L32 15L31 12.5L28.5 11.5L31 10.5L32 8Z" fill="#FEF08A"/>
+              <circle cx="48" cy="12" r="1.8" fill="#F472B6"/>
+              <circle cx="16" cy="12" r="1.5" fill="#38BDF8"/>
+            </svg>`;
+        }
+        // lock default
+        return `
+        <svg class="w-7 h-7 sm:w-9 sm:h-9 opacity-80" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="shackleMetal" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#F1F5F9"/>
+              <stop offset="40%" stop-color="#94A3B8"/>
+              <stop offset="100%" stop-color="#475569"/>
+            </linearGradient>
+            <linearGradient id="lockBody" x1="16" y1="26" x2="48" y2="52" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#94A3B8"/>
+              <stop offset="60%" stop-color="#64748B"/>
+              <stop offset="100%" stop-color="#334155"/>
+            </linearGradient>
+          </defs>
+          <path d="M22 28V19C22 13.5 26.5 9 32 9C37.5 9 42 13.5 42 19V28" stroke="url(#shackleMetal)" stroke-width="5" stroke-linecap="round"/>
+          <rect x="17" y="27" width="30" height="24" rx="5" fill="url(#lockBody)" filter="drop-shadow(0 3px 3px rgba(0,0,0,0.22))"/>
+          <rect x="18" y="28" width="28" height="2.5" rx="1" fill="#E2E8F0" opacity="0.45"/>
+          <circle cx="32" cy="37" r="2.8" fill="#1E293B"/>
+          <path d="M30.8 38L30 43H34L33.2 38Z" fill="#1E293B"/>
+        </svg>`;
+    }
+
     renderPathView(container, allLessons) {
         if (!container) return;
 
@@ -1143,79 +1344,124 @@ class LingoGameEngine {
             const unitTitle = firstLesson.unit_title || `Раздел ${unitId}`;
             const colorClass = unitColors[(unitId - 1) % unitColors.length];
 
+            const unitCompletedCount = uLessons.filter(l => this.completedLessons.includes(l.day || l.id)).length;
+            const unitTotal = uLessons.length;
+            const unitPct = Math.round((unitCompletedCount / unitTotal) * 100);
+
             let nodesHtml = '';
             uLessons.forEach((l, idx) => {
                 const isCompleted = this.completedLessons.includes(l.day || l.id);
                 const isCurrent = (l.day || l.id) === this.currentLessonId;
                 const offsetClass = offsets[idx % offsets.length];
 
-                let buttonClass = 'bg-slate-200 border-slate-300 text-slate-400';
-                let icon = '🔒';
+                let puckTheme = 'duo-puck-locked';
+                let iconType = 'lock';
+
                 if (isCompleted) {
-                    buttonClass = 'bg-emerald-500 border-emerald-600 text-white shadow-emerald-200';
-                    icon = '✓';
+                    puckTheme = 'duo-puck-emerald';
+                    iconType = 'crown';
                 } else if (isCurrent) {
-                    buttonClass = 'bg-amber-400 border-amber-500 text-white ring-4 ring-amber-200 animate-pulse';
-                    icon = '⭐';
+                    puckTheme = 'duo-puck-gold duo-puck-active-pulse';
+                    iconType = 'star';
                 } else {
                     if ((idx + 1) % 5 === 0) {
-                        buttonClass = 'bg-purple-500 border-purple-600 text-white hover:bg-purple-600';
-                        icon = '🎁';
+                        puckTheme = 'duo-puck-purple';
+                        iconType = 'chest';
                     } else if (idx % 3 === 0) {
-                        buttonClass = 'bg-sky-500 border-sky-600 text-white hover:bg-sky-600';
-                        icon = '📖';
+                        puckTheme = 'duo-puck-sky';
+                        iconType = 'book';
                     } else if (idx % 3 === 1) {
-                        buttonClass = 'bg-amber-500 border-amber-600 text-white hover:bg-amber-600';
-                        icon = '⭐';
+                        puckTheme = 'duo-puck-gold';
+                        iconType = 'star';
                     } else {
-                        buttonClass = 'bg-rose-500 border-rose-600 text-white hover:bg-rose-600';
-                        icon = '💬';
+                        puckTheme = 'duo-puck-rose';
+                        iconType = 'chat';
                     }
                 }
 
-                nodesHtml += `
-                    ${idx > 0 ? `<div class="w-1.5 h-6 border-l-2 border-dashed border-slate-300 opacity-70"></div>` : ''}
+                const iconSvg = this.getNode3DIcon(iconType);
 
-                    <div class="flex flex-col items-center my-1 transition-transform ${offsetClass} relative group">
+                nodesHtml += `
+                    ${idx > 0 ? `
+                        <div class="duo-connector my-2">
+                            <span class="duo-step duo-step-1 ${isCompleted ? 'duo-step-done' : ''}"></span>
+                            <span class="duo-step duo-step-2 ${isCompleted ? 'duo-step-done' : ''}"></span>
+                            <span class="duo-step duo-step-3 ${isCompleted ? 'duo-step-done' : ''}"></span>
+                        </div>
+                    ` : ''}
+
+                    <div class="flex flex-col items-center my-1.5 transition-transform ${offsetClass} relative group">
                         ${isCurrent ? `
-                            <div class="absolute -left-16 sm:-left-20 top-0 flex flex-col items-center animate-bounce z-20">
+                            <div class="absolute -left-20 sm:-left-24 -top-2 flex flex-col items-center z-20 duo-avatar-floating pointer-events-auto">
                                 <div class="relative cursor-pointer group/avatar" onclick="if(typeof switchTab==='function') switchTab('dossier')" title="Алина — Твой текущий урок! (Нажми для перехода в профиль)">
                                     <img src="${(typeof getAlinaAvatar === 'function') ? getAlinaAvatar() : (localStorage.getItem('alina_custom_avatar') || localStorage.getItem('alina_active_avatar') || '/static/img/alina_avatar.jpg')}" 
-                                         class="duolingo-hero-avatar w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover border-2 border-amber-400 ring-4 ring-amber-200/90 shadow-lg group-hover/avatar:scale-105 transition" alt="Алина">
+                                         class="duolingo-hero-avatar w-13 h-13 sm:w-15 sm:h-15 rounded-full object-cover border-2 border-amber-300 duo-avatar-glow shadow-xl group-hover/avatar:scale-105 transition" alt="Алина">
                                     <span class="absolute -bottom-1 -right-1 text-xs">✨</span>
                                 </div>
-                                <span class="text-[9px] bg-gradient-to-r from-amber-500 to-rose-500 text-white font-black px-2 py-0.5 rounded-full mt-1 shadow-xs tracking-wide">
-                                    Алина 🎯
-                                </span>
+                                <div class="duo-pill-label px-2 py-0.5 rounded-full mt-1.5 shadow-md flex items-center gap-1 border border-amber-200/80">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                                    <span class="text-[9px] font-black bg-gradient-to-r from-amber-600 to-rose-600 bg-clip-text text-transparent tracking-wide">
+                                        Алина 🎯
+                                    </span>
+                                </div>
                             </div>
                         ` : ''}
 
                         <button onclick="lingoEngine.openLessonModal(${l.day || l.id})"
-                                class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-b-6 active:border-b-2 flex items-center justify-center text-2xl sm:text-3xl font-black shadow-lg transition active:scale-95 cursor-pointer ${buttonClass}">
-                            <span>${icon}</span>
+                                class="duo-node-puck ${puckTheme}"
+                                title="День ${l.day || l.id}: ${escapeHtml(l.title)}">
+                            <div class="duo-puck-gloss"></div>
+                            <div class="relative z-10 flex items-center justify-center">
+                                ${iconSvg}
+                            </div>
                         </button>
 
-                        <div class="mt-1 text-center max-w-[140px]">
-                            <span class="text-[10px] font-black text-slate-700 bg-white/95 px-2 py-0.5 rounded-md border border-slate-200 shadow-2xs block truncate">
-                                День ${l.day || l.id}: ${escapeHtml(l.title.replace(/^День \d+:\s*/, ''))}
-                            </span>
+                        <div class="mt-2 text-center max-w-[155px]">
+                            <div class="duo-pill-label inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-slate-800 shadow-2xs">
+                                <span class="text-[9px] font-black ${isCompleted ? 'bg-emerald-100 text-emerald-800' : (isCurrent ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600')} px-1.5 py-0.5 rounded-md shrink-0">
+                                    День ${l.day || l.id}
+                                </span>
+                                <span class="text-[10px] font-bold text-slate-700 truncate max-w-[85px] sm:max-w-[100px] text-left">
+                                    ${escapeHtml(l.title.replace(/^День \d+:\s*/, ''))}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 `;
             });
 
             sectionsHtml += `
-                <div class="mb-8 space-y-4">
+                <div class="mb-8 space-y-3">
                     <!-- БАННЕР РАЗДЕЛА (GUIDEBOOK) -->
-                    <div class="bg-gradient-to-r ${colorClass} text-white rounded-2xl px-4 py-2.5 shadow-md border-b-2 flex items-center justify-between gap-3">
-                        <div class="min-w-0 flex-1">
-                            <span class="text-[10px] font-black uppercase tracking-wider opacity-90">${escapeHtml(currentLevel)} • РАЗДЕЛ ${unitId}</span>
-                            <h3 class="text-sm sm:text-base font-black truncate leading-tight mt-0.5">${escapeHtml(unitTitle.replace(/^Unit \d+:\s*/, ''))}</h3>
-                            <p class="text-[10px] opacity-85 truncate mt-0.5">${escapeHtml(firstLesson.grammar || '')}</p>
+                    <div class="bg-gradient-to-r ${colorClass} text-white rounded-2xl p-4 shadow-lg border-b-4 border-black/15 flex items-center justify-between gap-3 relative overflow-hidden">
+                        <!-- Декоративный блик -->
+                        <div class="absolute -right-8 -top-8 w-28 h-28 rounded-full bg-white/10 blur-xl pointer-events-none"></div>
+
+                        <div class="min-w-0 flex-1 relative z-10">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[9px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full backdrop-blur-sm border border-white/20">
+                                    ${escapeHtml(currentLevel)} • РАЗДЕЛ ${unitId}
+                                </span>
+                                <span class="text-[10px] font-bold opacity-90">
+                                    ${unitCompletedCount}/${unitTotal} завершено
+                                </span>
+                            </div>
+                            <h3 class="text-sm sm:text-base font-black truncate leading-tight mt-1 text-white drop-shadow-xs">
+                                ${escapeHtml(unitTitle.replace(/^Unit \d+:\s*/, ''))}
+                            </h3>
+                            <p class="text-[10px] opacity-90 truncate mt-0.5">${escapeHtml(firstLesson.grammar || '')}</p>
+                            <!-- Мини-индикатор прогресса юнита -->
+                            <div class="w-full max-w-[200px] h-1.5 bg-black/20 rounded-full mt-2 overflow-hidden">
+                                <div class="h-full bg-white rounded-full transition-all duration-500" style="width: ${unitPct}%"></div>
+                            </div>
                         </div>
+
                         <button onclick="lingoEngine.openGuidebookModal(${unitId})"
-                                class="px-2.5 py-1.5 bg-white/20 hover:bg-white/30 active:scale-95 backdrop-blur rounded-xl font-extrabold text-xs shrink-0 border border-white/30 flex items-center gap-1 transition cursor-pointer">
-                            <span>📖</span>
+                                class="duo-guidebook-btn px-3 py-2 active:scale-95 backdrop-blur-md rounded-xl font-black text-xs shrink-0 flex items-center gap-1.5 transition cursor-pointer text-white relative z-10">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                            </svg>
                             <span>Теория</span>
                         </button>
                     </div>

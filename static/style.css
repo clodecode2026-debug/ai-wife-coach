@@ -184,3 +184,224 @@ button, .touch-btn {
 .live-wave-bar:nth-child(4) { animation-delay: 0.45s; }
 .live-wave-bar:nth-child(5) { animation-delay: 0.2s; }
 
+/* ==========================================================================
+   3D TACTILE DUOLINGO PATH, GAME NODES & STEPPING STONES
+   ========================================================================== */
+.duo-node-puck {
+    position: relative;
+    width: 68px;
+    height: 68px;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.12s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.12s cubic-bezier(0.2, 0, 0, 1), filter 0.2s ease;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+}
+
+@media (min-width: 640px) {
+    .duo-node-puck {
+        width: 76px;
+        height: 76px;
+    }
+}
+
+/* 3D Push-down physical click effect */
+.duo-node-puck:active {
+    transform: translateY(6px) scale(0.98) !important;
+}
+
+/* Glossy dome reflection on top half of puck */
+.duo-puck-gloss {
+    position: absolute;
+    top: 3px;
+    left: 8px;
+    right: 8px;
+    height: 40%;
+    border-radius: 9999px 9999px 60% 60%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.04) 100%);
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* 1. Emerald (Completed Lesson) */
+.duo-puck-emerald {
+    background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 8px 0 #047857, 0 14px 22px rgba(5, 150, 105, 0.35);
+    border: 2px solid #34d399;
+}
+.duo-puck-emerald:active {
+    box-shadow: 0 2px 0 #047857, 0 6px 10px rgba(5, 150, 105, 0.25);
+}
+
+/* 2. Gold / Amber (Current Active Lesson) */
+.duo-puck-gold {
+    background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+    box-shadow: 0 8px 0 #b45309, 0 16px 28px rgba(245, 158, 11, 0.45);
+    border: 2px solid #fde68a;
+}
+.duo-puck-gold:active {
+    box-shadow: 0 2px 0 #b45309, 0 6px 12px rgba(245, 158, 11, 0.3);
+}
+
+/* 3. Rose / Dialogue */
+.duo-puck-rose {
+    background: linear-gradient(180deg, #fb7185 0%, #f43f5e 100%);
+    box-shadow: 0 8px 0 #be123c, 0 14px 22px rgba(244, 63, 94, 0.35);
+    border: 2px solid #fecdd3;
+}
+.duo-puck-rose:active {
+    box-shadow: 0 2px 0 #be123c, 0 6px 10px rgba(244, 63, 94, 0.25);
+}
+
+/* 4. Sky / Book (Grammar) */
+.duo-puck-sky {
+    background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+    box-shadow: 0 8px 0 #0369a1, 0 14px 22px rgba(2, 132, 199, 0.35);
+    border: 2px solid #bae6fd;
+}
+.duo-puck-sky:active {
+    box-shadow: 0 2px 0 #0369a1, 0 6px 10px rgba(2, 132, 199, 0.25);
+}
+
+/* 5. Purple / Chest (Milestone) */
+.duo-puck-purple {
+    background: linear-gradient(180deg, #c084fc 0%, #9333ea 100%);
+    box-shadow: 0 8px 0 #6b21a8, 0 14px 22px rgba(147, 51, 234, 0.35);
+    border: 2px solid #e9d5ff;
+}
+.duo-puck-purple:active {
+    box-shadow: 0 2px 0 #6b21a8, 0 6px 10px rgba(147, 51, 234, 0.25);
+}
+
+/* 6. Locked (Slate / Matte) */
+.duo-puck-locked {
+    background: linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%);
+    box-shadow: 0 6px 0 #64748b, 0 10px 14px rgba(100, 116, 139, 0.2);
+    border: 2px solid #e2e8f0;
+}
+.duo-puck-locked:active {
+    box-shadow: 0 2px 0 #64748b, 0 4px 8px rgba(100, 116, 139, 0.15);
+}
+
+/* Дышащее свечение и аура активного урока */
+@keyframes duoActiveHalo {
+    0% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.65), 0 8px 0 #b45309, 0 16px 28px rgba(245, 158, 11, 0.45);
+    }
+    70% {
+        box-shadow: 0 0 0 14px rgba(245, 158, 11, 0), 0 8px 0 #b45309, 0 16px 28px rgba(245, 158, 11, 0.45);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0), 0 8px 0 #b45309, 0 16px 28px rgba(245, 158, 11, 0.45);
+    }
+}
+.duo-puck-active-pulse {
+    animation: duoActiveHalo 2.4s infinite;
+}
+
+/* Периодический блик на золотых иконках */
+@keyframes duoIconShimmer {
+    0%, 82%, 100% {
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.22)) brightness(1);
+    }
+    91% {
+        filter: drop-shadow(0 2px 10px rgba(255,255,255,0.9)) brightness(1.28);
+    }
+}
+.duo-icon-shimmer {
+    animation: duoIconShimmer 4.5s ease-in-out infinite;
+}
+
+/* 3D Каменные тропинки (Stepping Stones) вместо плоского пунктира */
+.duo-connector {
+    width: 24px;
+    height: 38px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 0;
+}
+.duo-step {
+    border-radius: 9999px;
+    background: #cbd5e1;
+    box-shadow: 0 2.5px 0 #94a3b8, 0 4px 6px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    display: block;
+}
+.duo-step-1 {
+    width: 14px;
+    height: 7px;
+    transform: rotate(-6deg);
+}
+.duo-step-2 {
+    width: 17px;
+    height: 8px;
+    transform: rotate(0deg);
+}
+.duo-step-3 {
+    width: 15px;
+    height: 7px;
+    transform: rotate(6deg);
+}
+.duo-step-done {
+    background: linear-gradient(180deg, #34d399 0%, #10b981 100%);
+    box-shadow: 0 2.5px 0 #059669, 0 4px 8px rgba(5, 150, 105, 0.28);
+}
+
+/* Плавное парение аватара Алины над активным уроком */
+@keyframes duoAvatarFloat {
+    0%, 100% {
+        transform: translateY(0px) rotate(0deg);
+    }
+    50% {
+        transform: translateY(-6px) rotate(-1.5deg);
+    }
+}
+.duo-avatar-floating {
+    animation: duoAvatarFloat 3.2s ease-in-out infinite;
+}
+
+@keyframes duoAvatarGlowRing {
+    0%, 100% {
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.4), 0 8px 16px rgba(245, 158, 11, 0.25);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.8), 0 12px 24px rgba(245, 158, 11, 0.4);
+    }
+}
+.duo-avatar-glow {
+    animation: duoAvatarGlowRing 2.2s ease-in-out infinite;
+}
+
+/* Glassmorphism плашки названий уроков */
+.duo-pill-label {
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1.5px solid rgba(226, 232, 240, 0.85);
+    box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.08), 0 2px 4px -1px rgba(15, 23, 42, 0.04);
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+.duo-pill-label:hover {
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 8px 18px -2px rgba(15, 23, 42, 0.12);
+}
+
+/* Тактильная 3D кнопка теории */
+.duo-guidebook-btn {
+    background: rgba(255, 255, 255, 0.22);
+    border: 1.5px solid rgba(255, 255, 255, 0.45);
+    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.15);
+    transition: all 0.12s ease;
+}
+.duo-guidebook-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.15);
+}
+
+

@@ -202,6 +202,102 @@ class LingoGameEngine {
         };
     }
 
+    buildWordBankChallenge(lesson, candidateItems, idPrefix, mascotText, excludeSentence = null) {
+        if (!candidateItems || candidateItems.length === 0) return null;
+
+        let selectedSentence = null;
+        let selectedQuestionRu = '';
+        let selectedVoice = 'de-DE-KatjaNeural';
+        let selectedExplanation = '';
+
+        // Приоритет 1: Ищем элемент, где german УЖЕ полноценное предложение (3–7 слов)
+        // В таком случае german и russian — это 100% выверенная идеальная пара без искажений!
+        for (const item of candidateItems) {
+            if (!item || !item.german) continue;
+            const cleanG = item.german.replace(/[.!?]/g, '').trim();
+            const gWords = cleanG.split(/\s+/).filter(Boolean);
+            const rWords = (item.russian || '').trim().split(/\s+/).filter(Boolean);
+
+            if (gWords.length >= 3 && gWords.length <= 7 && rWords.length >= 2) {
+                if (excludeSentence && cleanG.toLowerCase() === excludeSentence.toLowerCase()) continue;
+                selectedSentence = cleanG;
+                selectedQuestionRu = item.russian.replace(/[.!?]/g, '').trim();
+                selectedVoice = item.voice_hint || 'de-DE-KatjaNeural';
+                selectedExplanation = `Правильно: ${item.german} (${item.russian})`;
+                break;
+            }
+        }
+
+        // Приоритет 2: Если german короткое слово (1-2 слова), берем item.example с проверенным переводом example_translation
+        if (!selectedSentence) {
+            for (const item of candidateItems) {
+                if (!item || !item.example) continue;
+                const cleanEx = item.example.replace(/[.!?]/g, '').trim();
+                const exWords = cleanEx.split(/\s+/).filter(Boolean);
+                const exTr = (item.example_translation || '').replace(/[.!?]/g, '').trim();
+                const exTrWords = exTr.split(/\s+/).filter(Boolean);
+
+                if (exWords.length >= 3 && exWords.length <= 8 && exTrWords.length >= 3) {
+                    const isDiff = item.russian ? (exTr.toLowerCase() !== item.russian.trim().toLowerCase()) || exTrWords.length >= 4 : true;
+                    if (isDiff) {
+                        if (excludeSentence && cleanEx.toLowerCase() === excludeSentence.toLowerCase()) continue;
+                        selectedSentence = cleanEx;
+                        selectedQuestionRu = exTr;
+                        selectedVoice = item.voice_hint || 'de-DE-ConradNeural';
+                        selectedExplanation = `Правильно: ${item.example} (${exTr})`;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Приоритет 3: Любое осмысленное предложение из всего словаря урока (3-7 слов)
+        if (!selectedSentence) {
+            const allLessonVocab = lesson.vocabulary || [];
+            for (const item of allLessonVocab) {
+                if (!item || !item.german) continue;
+                const cleanG = item.german.replace(/[.!?]/g, '').trim();
+                const gWords = cleanG.split(/\s+/).filter(Boolean);
+                if (gWords.length >= 3 && gWords.length <= 7 && item.russian) {
+                    if (excludeSentence && cleanG.toLowerCase() === excludeSentence.toLowerCase()) continue;
+                    selectedSentence = cleanG;
+                    selectedQuestionRu = item.russian.replace(/[.!?]/g, '').trim();
+                    selectedVoice = item.voice_hint || 'de-DE-KatjaNeural';
+                    selectedExplanation = `Правильно: ${item.german} (${item.russian})`;
+                    break;
+                }
+            }
+        }
+
+        if (!selectedSentence) return null;
+
+        const words = selectedSentence.replace(/[.,!?:;—"«»]/g, '').split(/\s+/).filter(Boolean);
+        const lowerTargetWords = words.map(w => w.toLowerCase());
+
+        // Дистракторы: берем 2 подходящих слова из других фраз урока, которых НЕТ в целевом предложении
+        const allVocabWords = (lesson.vocabulary || []).flatMap(v => 
+            ((v.example || '') + ' ' + (v.german || '')).replace(/[.,!?:;—"«»]/g, ' ').split(/\s+/)
+        ).map(w => w.trim()).filter(w => w.length >= 2 && !lowerTargetWords.includes(w.toLowerCase()));
+
+        const uniqueDistractors = [...new Set(allVocabWords)].slice(0, 2);
+
+        const allTokens = [...words, ...uniqueDistractors].map((word, idx) => ({
+            id: `${idPrefix}_${idx}_${word}`,
+            text: word
+        })).sort(() => 0.5 - Math.random());
+
+        return {
+            type: 'WORD_BANK',
+            question: `Соберите фразу: «${selectedQuestionRu}»`,
+            mascotText: mascotText || 'Вспомни железный порядок слов: глагол на 2-м месте в главном предложении!',
+            targetSentence: selectedSentence,
+            correctFull: selectedSentence + '.',
+            voiceHint: selectedVoice,
+            tokens: allTokens,
+            correctExplanation: selectedExplanation
+        };
+    }
+
     generateChallenges(lesson, allLessons) {
         const challenges = [];
         const vocab = lesson.vocabulary || [];
@@ -222,43 +318,14 @@ class LingoGameEngine {
         }
 
         // 2. ТИП: WORD BANK 1 (Собери фразу из слов — тренировка порядка слов)
-        if (vocab.length > 0) {
-            const item1 = vocab[0];
-            const cleanGerman = item1.german.replace(/[.!?]/g, '').trim();
-            let words = cleanGerman.split(/\s+/);
-            let targetSentence = cleanGerman;
-            let questionRu = item1.russian;
-            let correctFull = item1.german;
-
-            if (words.length < 3 && item1.example) {
-                const exClean = item1.example.replace(/[.!?]/g, '').trim();
-                const exWords = exClean.split(/\s+/);
-                if (exWords.length >= 3 && exWords.length <= 8) {
-                    words = exWords;
-                    targetSentence = exClean;
-                    questionRu = item1.example_translation || item1.russian;
-                    correctFull = item1.example;
-                }
-            }
-            
-            const otherWords = vocab.slice(1).flatMap(v => (v.example || v.german).replace(/[.!?]/g, '').split(/\s+/)).filter(w => !words.includes(w));
-            const extraWords = [...new Set(otherWords)].slice(0, 2);
-
-            const allTokens = [...words, ...extraWords].map((word, idx) => ({
-                id: `wb_${idx}_${word}`,
-                text: word
-            })).sort(() => 0.5 - Math.random());
-
-            challenges.push({
-                type: 'WORD_BANK',
-                question: `Соберите фразу: «${questionRu}»`,
-                mascotText: 'Вспомни железный порядок слов: глагол на 2-м месте в главном предложении!',
-                targetSentence: targetSentence,
-                correctFull: correctFull,
-                voiceHint: item1.voice_hint || 'de-DE-KatjaNeural',
-                tokens: allTokens,
-                correctExplanation: `Правильно: ${correctFull} ${item1.transcription ? `(${item1.transcription})` : ''}`
-            });
+        const wb1 = this.buildWordBankChallenge(
+            lesson, 
+            vocab.slice(0, 5), 
+            'wb1', 
+            'Вспомни железный порядок слов: глагол на 2-м месте в главном предложении!'
+        );
+        if (wb1) {
+            challenges.push(wb1);
         }
 
         // 3. ТИП: SMART SELECT (Осмысленный выбор перевода)
@@ -338,33 +405,15 @@ class LingoGameEngine {
         }
 
         // 7. ТИП: WORD BANK 2 (Второе предложение — сложный порядок слов / придаточное)
-        if (vocab.length > 5) {
-            const item4 = vocab[5];
-            const cleanGerman = (item4.example || item4.german).replace(/[.!?]/g, '').trim();
-            let words = cleanGerman.split(/\s+/);
-            if (words.length > 8) words = words.slice(0, 8);
-            const targetSentence = words.join(' ');
-            const questionRu = item4.example_translation || item4.russian;
-            const correctFull = targetSentence;
-
-            const otherWords = vocab.slice(0, 5).flatMap(v => (v.example || v.german).replace(/[.!?]/g, '').split(/\s+/)).filter(w => !words.includes(w));
-            const extraWords = [...new Set(otherWords)].slice(0, 2);
-
-            const allTokens = [...words, ...extraWords].map((word, idx) => ({
-                id: `wb2_${idx}_${word}`,
-                text: word
-            })).sort(() => 0.5 - Math.random());
-
-            challenges.push({
-                type: 'WORD_BANK',
-                question: `Соберите фразу: «${questionRu}»`,
-                mascotText: 'Собери предложение из плашек в правильном порядке:',
-                targetSentence: targetSentence,
-                correctFull: correctFull,
-                voiceHint: item4.voice_hint || 'de-DE-ConradNeural',
-                tokens: allTokens,
-                correctExplanation: `Отлично! ${correctFull} (${questionRu})`
-            });
+        const wb2 = this.buildWordBankChallenge(
+            lesson, 
+            vocab.slice(5), 
+            'wb2', 
+            'Собери предложение из плашек в правильном порядке:',
+            wb1 ? wb1.targetSentence : null
+        );
+        if (wb2) {
+            challenges.push(wb2);
         }
 
         // 8. ТИП: CLOZE 2 (Второй Lückentext из второй половины словаря)
@@ -869,8 +918,8 @@ class LingoGameEngine {
 
         if (challenge.type === 'WORD_BANK') {
             const assembled = this.wordBankSelected.map(t => t.text).join(' ').trim();
-            const cleanA = assembled.replace(/[,.!?]/g, '').trim().toLowerCase();
-            const cleanT = challenge.targetSentence.replace(/[,.!?]/g, '').trim().toLowerCase();
+            const cleanA = assembled.replace(/[.,!?:;—"«»]/g, '').trim().toLowerCase();
+            const cleanT = challenge.targetSentence.replace(/[.,!?:;—"«»]/g, '').trim().toLowerCase();
             isCorrect = cleanA === cleanT;
         } else if (challenge.type === 'MATCH_PAIRS') {
             // Для пар проверка автоматическая при кликах

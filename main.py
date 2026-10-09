@@ -535,19 +535,43 @@ def api_save_dossier(req: DossierUpdateRequest, _auth: bool = Depends(require_au
 
 class IntakeProfileRequest(BaseModel):
     current_challenges: List[str] = []
-    energy_level: str = "5/10"
+    energy_level: str = "6/10"
     inner_critic_triggers: str = ""
     somatic_stress_signs: str = ""
     restorative_resources: List[str] = []
     core_values: List[str] = []
     support_style: str = ""
     personal_growth_goal: str = ""
+    boundaries_taboos: List[str] = []
+    germany_specific_triggers: List[str] = []
+    custom_taboos: str = ""
 
 @app.post("/api/dossier/intake")
 def api_save_intake(req: IntakeProfileRequest, _auth: bool = Depends(require_auth)):
     data = req.dict()
     db_manager.save_intake_profile(data)
     return {"status": "ok", "message": "Персональная анкета успешно сохранена", "intake_profile": data}
+
+class EnergyUpdateRequest(BaseModel):
+    energy_level: str
+    note: Optional[str] = ""
+
+@app.post("/api/dossier/energy")
+def api_update_energy(req: EnergyUpdateRequest, _auth: bool = Depends(require_auth)):
+    updated = db_manager.update_daily_energy(req.energy_level, req.note)
+    return {"status": "ok", "energy_level": req.energy_level, "intake_profile": updated}
+
+class IntakeWelcomeRequest(BaseModel):
+    session_id: Optional[str] = "default_wife"
+
+@app.post("/api/dossier/intake/welcome")
+def api_intake_welcome(req: IntakeWelcomeRequest, _auth: bool = Depends(require_auth)):
+    dossier = db_manager.get_dossier()
+    intake = dossier.get("intake_profile", {})
+    welcome_letter = coach.generate_intake_welcome_letter(intake, dossier=dossier)
+    sess_id = req.session_id or "default_wife"
+    db_manager.save_message(sess_id, "assistant", welcome_letter)
+    return {"status": "ok", "welcome_letter": welcome_letter, "session_id": sess_id}
 
 class InsightRequest(BaseModel):
     text: str

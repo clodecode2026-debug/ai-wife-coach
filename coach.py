@@ -142,25 +142,76 @@ class AIFeminineCoach:
             resources_str = ", ".join(resources_raw) if isinstance(resources_raw, list) else str(resources_raw)
             values_raw = intake.get("core_values", [])
             values_str = ", ".join(values_raw) if isinstance(values_raw, list) else str(values_raw)
+            boundaries_raw = intake.get("boundaries_taboos", [])
+            boundaries_str = ", ".join(boundaries_raw) if isinstance(boundaries_raw, list) else str(boundaries_raw)
+            custom_taboos = str(intake.get("custom_taboos", "")).strip()
+            germany_triggers_raw = intake.get("germany_specific_triggers", [])
+            germany_triggers_str = ", ".join(germany_triggers_raw) if isinstance(germany_triggers_raw, list) else str(germany_triggers_raw)
+            energy_level = intake.get("energy_level", "6/10")
+
+            # Динамическая калибровка когнитивной нагрузки под текущую батарейку
+            energy_val = 6
+            try:
+                energy_val = int(str(energy_level).split("/")[0].strip())
+            except Exception:
+                energy_val = 6
+
+            if energy_val <= 3:
+                energy_guidance = f"""• ТЕКУЩИЙ УРОВЕНЬ ЭНЕРГИИ: {energy_level} (КРАЙНЕ НИЗКИЙ — ИСТОЩЕНИЕ / ВЫГОРАНИЕ).
+  ⚠️ СТРОГИЙ РЕЖИМ «ТЕПЛОЕ ОДЕЯЛО»: Никаких когнитивных нагрузок, КПТ-таблиц или домашних заданий!
+  Только безусловная валидация, снятие чувства вины за непродуктивность, тепло и разрешение просто отдохнуть. Ответы — ультра-лаконичные (2-3 коротких предложения)."""
+            elif energy_val <= 6:
+                energy_guidance = f"""• ТЕКУЩИЙ УРОВЕНЬ ЭНЕРГИИ: {energy_level} (УМЕРЕННЫЙ РЕСУРС).
+  Баланс поддержки и бережного продвижения: 1 тёплое принятие + ровно 1 направляющий вопрос или микро-шаг."""
+            else:
+                energy_guidance = f"""• ТЕКУЩИЙ УРОВЕНЬ ЭНЕРГИИ: {energy_level} (ВЫСОКИЙ РЕСУРС / ПОДЪЕМ СИЛ).
+  Алина полна энергии: можно смело исследовать глубинные паттерны, тренировать уверенность и ставить вдохновляющие цели."""
+
+            # Персональные границы и анти-триггеры (Strict Negative Constraints)
+            boundary_rules = []
+            if "Не давать непрошеных советов" in boundaries_str or "советов" in boundaries_str.lower():
+                boundary_rules.append("🚫 КАТЕГОРИЧЕСКИ НЕ давай готовых советов и инструкций («тебе нужно сделать...»). Задавай вопросы или мягко спроси: «Хочешь, поищем варианты вместе, или сейчас ценнее просто выговориться?».")
+            if "Не обесценивать языковой страх" in boundaries_str or "языков" in boundaries_str.lower():
+                boundary_rules.append("🚫 КАТЕГОРИЧЕСКИ НЕ обесценивай языковой барьер («это же просто», «все ошибаются — не бойся»). Признавай: адаптация и речь на чужом языке — колоссальная нагрузка на психику.")
+            if "Не давить мотивацией «соберись»" in boundaries_str or "соберись" in boundaries_str.lower() or "давить" in boundaries_str.lower():
+                boundary_rules.append("🚫 НИКАКОГО достигаторства и токсичного позитива! Никаких «соберись, ты сможешь все». Легализуй право на паузу, уязвимость и тишину.")
+            if "Не перегружать длинными текстами" in boundaries_str or "длинн" in boundaries_str.lower():
+                boundary_rules.append("🚫 КРАТКОСТЬ: Не пиши простыней текста! Строго 2-4 коротких предложения за реплику.")
+            if custom_taboos:
+                boundary_rules.append(f"🚫 ИНДИВИДУАЛЬНОЕ ТАБУ АЛИНЫ: {custom_taboos}")
+            if not boundary_rules:
+                boundary_rules.append("🚫 Не давай непрошеных советов в лоб; сохраняй бережность и уважение к её темпу.")
+
+            boundaries_formatted = "\n".join(f"  {r}" for r in boundary_rules)
+
+            germany_context_block = ""
+            if germany_triggers_str:
+                germany_context_block = f"\n• СПЕЦИФИЧЕСКИЕ СИТУАЦИИ В ГЕРМАНИИ (DACH-ТРИГГЕРЫ): {germany_triggers_str}"
 
             intake_section = f"""
 ======================================================================
-ПЕРСОНАЛЬНЫЙ ТЕРАПЕВТИЧЕСКИЙ ПРОФИЛЬ АЛИНЫ (ЗАПОЛНЕН ЕЮ ЛИЧНО):
+КЛИНИЧЕСКАЯ КОНЦЕПТУАЛИЗАЦИЯ И ТЕРАПЕВТИЧЕСКИЙ ПРОФИЛЬ АЛИНЫ:
 • ГЛАВНЫЕ ВЫЗОВЫ СЕЙЧАС: {challenges_str or 'Не указано'}
-• БАЗОВЫЙ УРОВЕНЬ ЭНЕРГИИ: {intake.get('energy_level', 'Не указано')}
-• ГОЛОС ВНУТРЕННЕГО КРИТИКА И ТРИГГЕРЫ: {intake.get('inner_critic_triggers', 'Не указано')}
-• РЕАКЦИЯ ТЕЛА НА СТРЕСС: {intake.get('somatic_stress_signs', 'Не указано')}
-• ИСТОЧНИКИ РЕСУРСА И ВОССТАНОВЛЕНИЯ: {resources_str or 'Не указано'}
+{germany_context_block}
+{energy_guidance}
+• ГОЛОС ВНУТРЕННЕГО КРИТИКА (CBT): {intake.get('inner_critic_triggers', '«Я делаю недостаточно и должна быть сильнее»')}
+  -> Транзактный драйвер (ТА): «Будь сильной» / «Будь совершенной». Твоя роль — активировать Заботливого Взрослого Алины и дать транзактное разрешение: «Тебе не нужно заслуживать любовь идеальным поведением или безупречным немецким. Ты уже ценна».
+• РЕАКЦИЯ ТЕЛА НА СТРЕСС: {intake.get('somatic_stress_signs', 'Зажим в шее/плечах')}
+  -> Соматическое заземление: в моменты тревоги напоминай опустить плечи, разжать челюсть или сделать медленный выдох с расслаблением.
+• ИСТОЧНИКИ РЕСУРСА И ОПОРЫ: {resources_str or 'Не указано'}
 • ГЛУБИННЫЕ ЦЕННОСТИ: {values_str or 'Не указано'}
 • ЖЕЛАЕМЫЙ СТИЛЬ ПОДДЕРЖКИ: {intake.get('support_style', 'Не указано')}
 • ГЛАВНАЯ ЛИЧНАЯ ЦЕЛЬ: {intake.get('personal_growth_goal', 'Не указано')}
+
+СТРОЖАЙШИЕ ПСИХОЛОГИЧЕСКИЕ ГРАНИЦЫ АЛИНЫ (ЧЕГО ТЕБЕ НЕЛЬЗЯ ДЕЛАТЬ):
+{boundaries_formatted}
 ======================================================================
 ПРАВИЛА ИНДИВИДУАЛЬНОЙ РАБОТЫ ПО ПРОФИЛЮ:
 1. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО давать общие советы из интернета или рассуждать абстрактно!
-2. Вся твоя терапия, примеры, Сократические вопросы и метафоры должны быть на 100% привязаны к ЭТИМ конкретным вызовам, триггерам и ценностям Алины.
+2. Вся твоя терапия, примеры, Сократические вопросы и метафоры должны быть на 100% привязаны к ЭТИМ конкретным вызовам, триггерам, соматике и ценностям Алины.
 3. Если Алина устала — напоминай именно о её любимых источниках ресурса ({resources_str}).
 4. Помогай разоружать её конкретную мысль внутреннего критика («{intake.get('inner_critic_triggers', '')}»).
-5. Соблюдай выбранный ею стиль общения ({intake.get('support_style', '')}).
+5. Строго соблюдай выбранный ею стиль общения ({intake.get('support_style', '')}) и психологические границы.
 """
 
         kb_prompt = get_knowledge_base_prompt()
@@ -467,5 +518,43 @@ class AIFeminineCoach:
         if is_voice_mode:
             return "Алина, солнышко, я рядом и слышу тебя. Сделай медленный вдох — ты в полной безопасности. Давай разберём всё спокойно."
         return "Алина, я рядом с тобой. То, что ты чувствуешь сейчас — абсолютно естественно. Давай выдохнем, опустим плечи и разберем все бережно и по шагам."
+
+    def generate_intake_welcome_letter(self, intake: Dict[str, Any], dossier: Optional[Dict[str, Any]] = None) -> str:
+        """Генерация персонализированного первого приветственного терапевтического отклика после заполнения анкеты"""
+        challenges_raw = intake.get("current_challenges", [])
+        challenges = ", ".join(challenges_raw) if isinstance(challenges_raw, list) else str(challenges_raw)
+        triggers_raw = intake.get("germany_specific_triggers", [])
+        triggers = ", ".join(triggers_raw) if isinstance(triggers_raw, list) else str(triggers_raw)
+        boundaries_raw = intake.get("boundaries_taboos", [])
+        boundaries = ", ".join(boundaries_raw) if isinstance(boundaries_raw, list) else str(boundaries_raw)
+        goal = intake.get("personal_growth_goal", "")
+        critic = intake.get("inner_critic_triggers", "")
+        energy = intake.get("energy_level", "6/10")
+        resources_raw = intake.get("restorative_resources", [])
+        resources = ", ".join(resources_raw) if isinstance(resources_raw, list) else str(resources_raw)
+
+        prompt = f"""Алина только что сохранила персональную терапевтическую анкету для настройки коуча:
+- Главные вызовы: {challenges}
+- Триггерные ситуации в Германии: {triggers}
+- Батарейка сил сейчас: {energy}
+- Мысль внутреннего критика: {critic}
+- Источники ресурса: {resources}
+- Психологические границы Алины (строгие табу для коуча): {boundaries}
+- Её заветная цель: {goal}
+
+Напиши первое бережное, теплое приветственное письмо-отклик от психолога (ровно 3-4 небольших абзаца, около 110-150 слов).
+КЛЮЧЕВЫЕ ТРЕБОВАНИЯ:
+1. Обращайся к Алине на «ты», тепло и ласково («Алина, солнышко...» или «Алина, дорогая...»).
+2. Подтверди, что ты глубоко услышала её: видишь, сколько сил забирает адаптация и язык, и как строг бывает внутренний критик.
+3. Чётко подтверди её психологические границы: пообещай, что здесь никогда не будет нравоучений, непрошеных советов или обесценивания. Это пространство 100% безопасности и принятия.
+4. Упомяни её любимый источник восстановления ({resources}).
+5. Заверши мягким поддерживающим вопросом: с чего ей хотелось бы начать наш диалог сегодня?
+БЕЗ токсичного позитива, официоза и нравоучений. Только искренность и опора."""
+
+        try:
+            return self.generate_response(prompt, history=[], dossier=dossier, is_voice_mode=False, depth_mode="deep")
+        except Exception as e:
+            logger.error(f"Ошибка генерации письма-отклика: {e}")
+            return f"Алина, дорогая, я внимательно прочитала твою анкету и сохранила каждый твой ориентир. Я знаю, как много сил забирает адаптация в Германии и как требователен бывает внутренний критик. Я обещаю бережно хранить твои границы: здесь не будет непрошеных советов и давления — только тепло, принятие и движение в твоем собственном темпе. Сделай мягкий вдох, опусти плечи. О чем тебе хочется поговорить сегодня?"
 
 coach = AIFeminineCoach()

@@ -2648,11 +2648,23 @@ function filterLibrary() {
 let currentIntakeState = {
     currentStep: 1,
     current_challenges: ["Адаптация и жизнь в Германии", "Языковой барьер и страх говорить по-немецки"],
+    germany_specific_triggers: [
+        "📞 Телефонные звонки на немецком (Telefonangst)",
+        "🏛️ Бюрократия и официальные письма (Bürgeramt/Jobcenter)",
+        "👩‍⚕️ Походы к врачу и аптека"
+    ],
     energy_level: "6/10",
     inner_critic_triggers: "«Я делаю недостаточно и должна быть сильнее»",
     somatic_stress_signs: ["Зажим и боль в плечах / шее"],
     restorative_resources: ["Уютный вечер и травяной чай в тишине", "Прогулки на свежем воздухе"],
     core_values: ["Внутреннее спокойствие и мир"],
+    boundaries_taboos: [
+        "🚫 Не давать непрошеных советов",
+        "🚫 Не обесценивать языковой страх",
+        "🚫 Не давить мотивацией «соберись»",
+        "🚫 Не перегружать длинными текстами"
+    ],
+    custom_taboos: "",
     support_style: "🌸 Бережное принятие и тепло",
     personal_growth_goal: "Свободно и без страха говорить на немецком B1, чувствовать глубокое спокойствие и безусловную самоценность"
 };
@@ -2665,6 +2677,13 @@ const INTAKE_OPTIONS = {
         { id: "perfectionism", label: "👑 Синдром отличницы и перфекционизм" },
         { id: "self_worth", label: "🧭 Поиск внутренней опоры и самоценности" },
         { id: "boundaries", label: "🛡 Личные границы и умение говорить «нет»" }
+    ],
+    dachTriggers: [
+        { id: "calls", label: "📞 Телефонные звонки на немецком (Telefonangst)" },
+        { id: "bureaucracy", label: "🏛️ Бюрократия и письма (Bürgeramt/Jobcenter)" },
+        { id: "doctor", label: "👩‍⚕️ Походы к врачу и аптека" },
+        { id: "comparison", label: "👥 Сравнение себя с теми, кто говорит свободно" },
+        { id: "fast_speech", label: "⚡️ Быстрая речь немцев в магазинах/транспорте" }
     ],
     criticThoughts: [
         "«Я делаю недостаточно и должна быть сильнее»",
@@ -2693,6 +2712,12 @@ const INTAKE_OPTIONS = {
         { id: "worth", label: "👑 Уверенность и безусловная самоценность" },
         { id: "freedom", label: "🌱 Свобода и личное развитие" }
     ],
+    boundariesTaboos: [
+        { id: "no_unsolicited_advice", title: "🚫 Не давать непрошеных советов", desc: "Сначала просто выслушать и спросить, нужно ли решение, а не поучать." },
+        { id: "no_belittling_fear", title: "🚫 Не обесценивать языковой страх", desc: "Никогда не говорить «это же легко». Признавать реальную сложность немецкого." },
+        { id: "no_pressure_push", title: "🚫 Не давить мотивацией «соберись»", desc: "Без достигаторства и токсичного позитива. Давать право на слабость и паузу." },
+        { id: "no_text_walls", title: "🚫 Не писать длинных простыней текста", desc: "Кратко и бережно: ровно 2-3 коротких предложения, чтобы не перегружать." }
+    ],
     supportStyles: [
         { id: "warmth", title: "🌸 Бережное принятие и тепло", desc: "Сначала просто выслушать, согреть словами и дать поддержку без поучений." },
         { id: "cbt", title: "💡 Рациональный КПТ-разбор", desc: "Помочь разложить тревогу на факты, разоблачить критика и найти логичный выход." },
@@ -2701,6 +2726,41 @@ const INTAKE_OPTIONS = {
     ]
 };
 
+// ------------------------------------------
+// 8.01 БЫСТРЫЙ 1-ТАПОВЫЙ ЧЕК-ИН ЭНЕРГИИ В ЧАТЕ
+// ------------------------------------------
+function toggleQuickEnergyPicker(forceState) {
+    const dropdown = document.getElementById('quickEnergyDropdown');
+    if (!dropdown) return;
+    if (typeof forceState === 'boolean') {
+        if (forceState) dropdown.classList.remove('hidden');
+        else dropdown.classList.add('hidden');
+    } else {
+        dropdown.classList.toggle('hidden');
+    }
+}
+
+async function setDailyEnergyFast(level) {
+    toggleQuickEnergyPicker(false);
+    const label = document.getElementById('quickEnergyLabel');
+    if (label) label.textContent = level;
+    currentIntakeState.energy_level = level;
+
+    try {
+        const res = await fetch('/api/dossier/energy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ energy_level: level, note: 'Быстрый чек-ин из чата' })
+        });
+        if (res.ok) {
+            showToastNotification(`🔋 Уровень энергии ${level} сохранён. Коуч мгновенно адаптировал стиль сессии!`);
+            await loadDossier();
+        }
+    } catch(e) {
+        console.warn('Energy update notice:', e);
+    }
+}
+
 function renderIntakeSummary(profile) {
     const container = document.getElementById('intakeSummaryContainer');
     if (!container) return;
@@ -2708,7 +2768,7 @@ function renderIntakeSummary(profile) {
     if (!profile) {
         container.innerHTML = `
             <div class="col-span-full p-3 bg-amber-50/70 border border-amber-200 rounded-xl text-amber-800 text-xs flex items-center justify-between">
-                <span>⚡️ Анкета ещё не заполнена. Пройдите 5 коротких шагов, чтобы психолог знал ваши цели.</span>
+                <span>⚡️ Анкета ещё не заполнена. Пройдите 6 коротких шагов, чтобы психолог знал ваши цели и границы.</span>
                 <button onclick="openIntakeWizard()" class="px-3 py-1 bg-amber-500 text-white rounded-lg font-bold text-xs">Пройти</button>
             </div>
         `;
@@ -2716,11 +2776,15 @@ function renderIntakeSummary(profile) {
     }
 
     const btnText = document.getElementById('btnIntakeText');
-    if (btnText) btnText.textContent = '✨ Изменить анкету (5 шагов)';
+    if (btnText) btnText.textContent = '✨ Изменить анкету (6 шагов)';
+
+    const quickLabel = document.getElementById('quickEnergyLabel');
+    if (quickLabel && profile.energy_level) quickLabel.textContent = profile.energy_level;
 
     const challenges = Array.isArray(profile.current_challenges) ? profile.current_challenges : [profile.current_challenges || 'Не указано'];
+    const dachTriggers = Array.isArray(profile.germany_specific_triggers) ? profile.germany_specific_triggers : (profile.germany_specific_triggers ? [profile.germany_specific_triggers] : []);
+    const boundaries = Array.isArray(profile.boundaries_taboos) ? profile.boundaries_taboos : (profile.boundaries_taboos ? [profile.boundaries_taboos] : []);
     const resources = Array.isArray(profile.restorative_resources) ? profile.restorative_resources : [profile.restorative_resources || 'Не указано'];
-    const somatic = Array.isArray(profile.somatic_stress_signs) ? profile.somatic_stress_signs : [profile.somatic_stress_signs || 'Не указано'];
 
     container.innerHTML = `
         <div class="p-2.5 bg-white border border-rose-100 rounded-xl space-y-1.5 shadow-2xs">
@@ -2728,6 +2792,14 @@ function renderIntakeSummary(profile) {
             <div class="flex flex-wrap gap-1">
                 ${challenges.map(c => `<span class="bg-rose-50 text-rose-700 px-2 py-0.5 rounded-md text-[11px] font-medium border border-rose-100">${escapeHtml(c)}</span>`).join('')}
             </div>
+            ${dachTriggers.length > 0 ? `
+                <div class="pt-1 border-t border-slate-100">
+                    <span class="text-[10px] text-slate-500 font-semibold block mb-0.5">🇩🇪 Ситуации в Германии:</span>
+                    <div class="flex flex-wrap gap-1">
+                        ${dachTriggers.map(t => `<span class="bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded text-[10px] font-medium border border-amber-200">${escapeHtml(t)}</span>`).join('')}
+                    </div>
+                </div>
+            ` : ''}
         </div>
 
         <div class="p-2.5 bg-white border border-rose-100 rounded-xl space-y-1 shadow-2xs">
@@ -2741,6 +2813,22 @@ function renderIntakeSummary(profile) {
             </div>
         </div>
 
+        <!-- Карточка психологических границ и табу коуча -->
+        <div class="p-2.5 bg-white border border-rose-200 rounded-xl space-y-1.5 shadow-2xs">
+            <div class="flex items-center justify-between">
+                <span class="font-bold text-slate-700 text-[11.5px]">🛡 Психологические границы коуча:</span>
+                <span class="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 font-semibold">Строгие табу</span>
+            </div>
+            <div class="flex flex-wrap gap-1">
+                ${boundaries.length > 0 ? boundaries.map(b => `<span class="bg-rose-50 text-rose-800 px-2 py-0.5 rounded-md text-[10.5px] font-medium border border-rose-200">${escapeHtml(b)}</span>`).join('') : '<span class="text-slate-400 text-xs italic">Без специфических табу</span>'}
+            </div>
+            ${profile.custom_taboos ? `
+                <p class="text-[10.5px] text-slate-600 italic bg-slate-50 p-1.5 rounded border border-slate-100">
+                    Личное табу: ${escapeHtml(profile.custom_taboos)}
+                </p>
+            ` : ''}
+        </div>
+
         <div class="p-2.5 bg-white border border-rose-100 rounded-xl space-y-1 shadow-2xs">
             <span class="font-bold text-slate-700 block text-[11.5px]">🛡 Голос внутреннего критика:</span>
             <p class="text-rose-900 bg-rose-50/60 p-2 rounded-lg text-[11px] italic border-l-2 border-rose-400">
@@ -2748,7 +2836,7 @@ function renderIntakeSummary(profile) {
             </p>
         </div>
 
-        <div class="p-2.5 bg-white border border-rose-100 rounded-xl space-y-1.5 shadow-2xs">
+        <div class="col-span-full p-2.5 bg-white border border-rose-100 rounded-xl space-y-1.5 shadow-2xs">
             <span class="font-bold text-slate-700 block text-[11.5px]">🌸 Источники ресурса:</span>
             <div class="flex flex-wrap gap-1">
                 ${resources.map(r => `<span class="bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-md text-[11px] font-medium border border-emerald-100">${escapeHtml(r)}</span>`).join('')}
@@ -2803,7 +2891,7 @@ async function saveDossierSettings() {
 }
 
 // ------------------------------------------
-// 8.0 ПОШАГОВЫЙ ВИЗАРД ПСИХОЛОГИЧЕСКОГО ОПРОСНИКА
+// 8.0 ПОШАГОВЫЙ ВИЗАРД ПСИХОЛОГИЧЕСКОГО ОПРОСНИКА (6 ШАГОВ)
 // ------------------------------------------
 function openIntakeWizard() {
     const modal = document.getElementById('intakeWizardModal');
@@ -2836,26 +2924,27 @@ function renderWizardStep(step) {
     const prevBtn = document.getElementById('btnWizardPrev');
     const nextBtn = document.getElementById('btnWizardNext');
 
-    if (progressEl) progressEl.style.width = `${(step / 5) * 100}%`;
-    if (indicatorEl) indicatorEl.textContent = `${step} / 5`;
+    if (progressEl) progressEl.style.width = `${(step / 6) * 100}%`;
+    if (indicatorEl) indicatorEl.textContent = `${step} / 6`;
     if (prevBtn) prevBtn.disabled = step === 1;
 
     const titles = [
-        "Шаг 1 из 5: Текущие вызовы и уровень сил",
-        "Шаг 2 из 5: Голос Внутреннего Критика",
-        "Шаг 3 из 5: Тело и реакция на стресс",
-        "Шаг 4 из 5: Источники ресурса и ценности",
-        "Шаг 5 из 5: Желаемый стиль поддержки и цель"
+        "Шаг 1 из 6: Вызовы и ситуации в Германии",
+        "Шаг 2 из 6: Голос Внутреннего Критика",
+        "Шаг 3 из 6: Тело и реакция на стресс",
+        "Шаг 4 из 6: Источники ресурса и ценности",
+        "Шаг 5 из 6: Психологические границы и табу (Чего НЕ делать)",
+        "Шаг 6 из 6: Стиль общения коуча и личная цель"
     ];
-    if (subtitleEl) subtitleEl.textContent = titles[step - 1] || `Шаг ${step} из 5`;
+    if (subtitleEl) subtitleEl.textContent = titles[step - 1] || `Шаг ${step} из 6`;
 
     if (nextBtn) {
-        nextBtn.innerHTML = step === 5 
+        nextBtn.innerHTML = step === 6 
             ? '<span>✨ Сохранить настройки</span>' 
             : '<span>Далее ➔</span>';
     }
 
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 6; i++) {
         const stepDiv = document.getElementById(`wizardStep${i}`);
         if (stepDiv) {
             if (i === step) stepDiv.classList.remove('hidden');
@@ -2868,23 +2957,41 @@ function renderWizardStep(step) {
     if (step === 3) renderStep3();
     if (step === 4) renderStep4();
     if (step === 5) renderStep5();
+    if (step === 6) renderStep6();
 }
 
 function renderStep1() {
     const container = document.getElementById('step1Chips');
-    if (!container) return;
-    const current = currentIntakeState.current_challenges || [];
-    container.innerHTML = INTAKE_OPTIONS.challenges.map(item => {
-        const isSelected = current.includes(item.label);
-        const style = isSelected 
-            ? 'bg-rose-500 text-white border-rose-600 shadow-sm' 
-            : 'bg-white hover:bg-rose-50 text-slate-700 border-slate-200';
-        return `
-            <button type="button" onclick="toggleIntakeChallenge('${escapeQuotes(item.label)}')" class="px-3 py-2 rounded-xl text-xs font-semibold border transition active:scale-95 ${style}">
-                ${isSelected ? '✓ ' : ''}${escapeHtml(item.label)}
-            </button>
-        `;
-    }).join('');
+    const dachContainer = document.getElementById('step1DachChips');
+    if (container) {
+        const current = currentIntakeState.current_challenges || [];
+        container.innerHTML = INTAKE_OPTIONS.challenges.map(item => {
+            const isSelected = current.includes(item.label);
+            const style = isSelected 
+                ? 'bg-rose-500 text-white border-rose-600 shadow-sm' 
+                : 'bg-white hover:bg-rose-50 text-slate-700 border-slate-200';
+            return `
+                <button type="button" onclick="toggleIntakeChallenge('${escapeQuotes(item.label)}')" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition active:scale-95 ${style}">
+                    ${isSelected ? '✓ ' : ''}${escapeHtml(item.label)}
+                </button>
+            `;
+        }).join('');
+    }
+
+    if (dachContainer) {
+        const currentDach = currentIntakeState.germany_specific_triggers || [];
+        dachContainer.innerHTML = INTAKE_OPTIONS.dachTriggers.map(item => {
+            const isSelected = currentDach.includes(item.label);
+            const style = isSelected 
+                ? 'bg-amber-500 text-white border-amber-600 shadow-sm' 
+                : 'bg-white hover:bg-amber-50 text-slate-700 border-slate-200';
+            return `
+                <button type="button" onclick="toggleIntakeDachTrigger('${escapeQuotes(item.label)}')" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition active:scale-95 ${style}">
+                    ${isSelected ? '✓ ' : ''}${escapeHtml(item.label)}
+                </button>
+            `;
+        }).join('');
+    }
 
     const range = document.getElementById('energyRange');
     const num = parseInt(currentIntakeState.energy_level) || 6;
@@ -2899,6 +3006,17 @@ function toggleIntakeChallenge(label) {
         currentIntakeState.current_challenges.splice(idx, 1);
     } else {
         currentIntakeState.current_challenges.push(label);
+    }
+    renderStep1();
+}
+
+function toggleIntakeDachTrigger(label) {
+    if (!Array.isArray(currentIntakeState.germany_specific_triggers)) currentIntakeState.germany_specific_triggers = [];
+    const idx = currentIntakeState.germany_specific_triggers.indexOf(label);
+    if (idx > -1) {
+        currentIntakeState.germany_specific_triggers.splice(idx, 1);
+    } else {
+        currentIntakeState.germany_specific_triggers.push(label);
     }
     renderStep1();
 }
@@ -3020,8 +3138,47 @@ function toggleIntakeValue(label) {
     renderStep4();
 }
 
+// Шаг 5: Психологические границы и табу
 function renderStep5() {
-    const container = document.getElementById('step5StyleChips');
+    const container = document.getElementById('step5BoundariesChips');
+    if (!container) return;
+    const current = currentIntakeState.boundaries_taboos || [];
+    container.innerHTML = INTAKE_OPTIONS.boundariesTaboos.map(item => {
+        const isSelected = current.includes(item.title);
+        const style = isSelected 
+            ? 'bg-rose-50 border-rose-400 ring-2 ring-rose-300' 
+            : 'bg-white hover:bg-slate-50 border-slate-200';
+        return `
+            <div onclick="toggleIntakeBoundary('${escapeQuotes(item.title)}')" class="p-3 rounded-2xl border cursor-pointer transition active:scale-98 ${style}">
+                <div class="flex items-center justify-between font-bold text-xs sm:text-sm text-slate-800">
+                    <span>${escapeHtml(item.title)}</span>
+                    ${isSelected ? '<span class="text-rose-600 font-bold">✓ Соблюдать</span>' : ''}
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1">${escapeHtml(item.desc)}</p>
+            </div>
+        `;
+    }).join('');
+
+    const customInput = document.getElementById('customBoundariesInput');
+    if (customInput && currentIntakeState.custom_taboos) {
+        customInput.value = currentIntakeState.custom_taboos;
+    }
+}
+
+function toggleIntakeBoundary(title) {
+    if (!Array.isArray(currentIntakeState.boundaries_taboos)) currentIntakeState.boundaries_taboos = [];
+    const idx = currentIntakeState.boundaries_taboos.indexOf(title);
+    if (idx > -1) {
+        currentIntakeState.boundaries_taboos.splice(idx, 1);
+    } else {
+        currentIntakeState.boundaries_taboos.push(title);
+    }
+    renderStep5();
+}
+
+// Шаг 6: Стиль общения и цель
+function renderStep6() {
+    const container = document.getElementById('step6StyleChips');
     if (!container) return;
     const current = currentIntakeState.support_style || '';
     container.innerHTML = INTAKE_OPTIONS.supportStyles.map(item => {
@@ -3048,7 +3205,7 @@ function renderStep5() {
 
 function selectSupportStyle(title) {
     currentIntakeState.support_style = title;
-    renderStep5();
+    renderStep6();
 }
 
 function prevWizardStep() {
@@ -3070,13 +3227,16 @@ async function nextWizardStep() {
             currentIntakeState.somatic_stress_signs.push(customSom);
         }
     } else if (step === 5) {
+        const customTaboo = document.getElementById('customBoundariesInput')?.value?.trim();
+        if (customTaboo) currentIntakeState.custom_taboos = customTaboo;
+    } else if (step === 6) {
         const goal = document.getElementById('personalGoalText')?.value?.trim();
         if (goal) currentIntakeState.personal_growth_goal = goal;
         await finishIntakeWizard();
         return;
     }
 
-    if (step < 5) {
+    if (step < 6) {
         renderWizardStep(step + 1);
     }
 }
@@ -3085,7 +3245,7 @@ async function finishIntakeWizard() {
     const nextBtn = document.getElementById('btnWizardNext');
     if (nextBtn) {
         nextBtn.disabled = true;
-        nextBtn.innerHTML = '<span>Сохранение...</span>';
+        nextBtn.innerHTML = '<span>Сохранение настроек...</span>';
     }
 
     try {
@@ -3094,11 +3254,14 @@ async function finishIntakeWizard() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 current_challenges: currentIntakeState.current_challenges,
+                germany_specific_triggers: currentIntakeState.germany_specific_triggers,
                 energy_level: currentIntakeState.energy_level || '6/10',
                 inner_critic_triggers: currentIntakeState.inner_critic_triggers || '',
                 somatic_stress_signs: Array.isArray(currentIntakeState.somatic_stress_signs) ? currentIntakeState.somatic_stress_signs.join(', ') : (currentIntakeState.somatic_stress_signs || ''),
                 restorative_resources: currentIntakeState.restorative_resources,
                 core_values: currentIntakeState.core_values,
+                boundaries_taboos: currentIntakeState.boundaries_taboos,
+                custom_taboos: currentIntakeState.custom_taboos || '',
                 support_style: currentIntakeState.support_style || '🌸 Бережное принятие и тепло',
                 personal_growth_goal: currentIntakeState.personal_growth_goal || ''
             })
@@ -3107,11 +3270,29 @@ async function finishIntakeWizard() {
         if (res.ok) {
             closeIntakeWizard();
             if (typeof confetti === 'function') {
-                confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+                confetti({ particleCount: 75, spread: 70, origin: { y: 0.6 } });
             }
-            showToastNotification('✨ Психолог настроен лично под тебя! Все сессии теперь опираются на твои цели.');
+            showToastNotification('✨ Психолог настроен лично под тебя! Все сессии теперь опираются на твои цели и границы.');
             localStorage.setItem('alina_intake_completed', 'true');
             await loadDossier();
+
+            // Генерация персонального терапевтического письма-отклика от психолога
+            try {
+                const welcomeRes = await fetch('/api/dossier/intake/welcome', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+                if (welcomeRes.ok) {
+                    const wData = await welcomeRes.json();
+                    if (wData.welcome_letter) {
+                        appendMessage('assistant', wData.welcome_letter);
+                        switchTab('chat');
+                    }
+                }
+            } catch(wErr) {
+                console.warn('Welcome letter notice:', wErr);
+            }
         } else {
             alert('Не удалось сохранить анкету. Пожалуйста, попробуйте снова.');
         }

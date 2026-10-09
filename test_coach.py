@@ -110,7 +110,10 @@ def test_dossier_intake_flow():
         "restorative_resources": ["Чай с мятой", "Прогулки"],
         "core_values": ["Спокойствие", "Самоценность"],
         "support_style": "Бережное принятие и тепло",
-        "personal_growth_goal": "Свободный немецкий B1"
+        "personal_growth_goal": "Свободный немецкий B1",
+        "boundaries_taboos": ["🚫 Не давать непрошеных советов", "🚫 Не обесценивать языковой страх"],
+        "germany_specific_triggers": ["Телефонные звонки на немецком (Telefonangst)", "Бюрократия (Bürgeramt)"],
+        "custom_taboos": "Не сравнивать с другими"
     }
     save_res = auth_client.post("/api/dossier/intake", json=test_payload)
     assert save_res.status_code == 200
@@ -121,4 +124,35 @@ def test_dossier_intake_flow():
     data = get_res.json()
     assert "intake_profile" in data
     assert data["intake_profile"]["energy_level"] == "7/10"
+    assert "🚫 Не давать непрошеных советов" in data["intake_profile"].get("boundaries_taboos", [])
+
+def test_daily_energy_update():
+    auth_client = TestClient(app, cookies={"auth_token": VALID_AUTH_TOKEN})
+    res = auth_client.post("/api/dossier/energy", json={"energy_level": "3/10", "note": "Устала после визита к врачу"})
+    assert res.status_code == 200
+    assert res.json().get("status") == "ok"
+    assert res.json().get("energy_level") == "3/10"
+
+    # Проверяем, что в досье теперь 3/10
+    get_res = auth_client.get("/api/dossier")
+    assert get_res.status_code == 200
+    data = get_res.json()
+    assert data["intake_profile"]["energy_level"] == "3/10"
+
+def test_coach_clinical_case_conceptualization():
+    from coach import coach
+    prompt = coach._get_system_prompt(is_voice_mode=False)
+    # Проверяем наличие ключевых терапевтических элементов концептуализации
+    assert "КЛИНИЧЕСКАЯ КОНЦЕПТУАЛИЗАЦИЯ" in prompt
+    assert "СТРОЖАЙШИЕ ПСИХОЛОГИЧЕСКИЕ ГРАНИЦЫ АЛИНЫ" in prompt
+    assert "Транзактный драйвер" in prompt
+
+def test_welcome_letter_endpoint():
+    auth_client = TestClient(app, cookies={"auth_token": VALID_AUTH_TOKEN})
+    res = auth_client.post("/api/dossier/intake/welcome", json={"session_id": "test_intake_welcome_session"})
+    assert res.status_code == 200
+    data = res.json()
+    assert data.get("status") == "ok"
+    assert len(data.get("welcome_letter", "")) > 10
+    assert "Алина" in data.get("welcome_letter", "")
 

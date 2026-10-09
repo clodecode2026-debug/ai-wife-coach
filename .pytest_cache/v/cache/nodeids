@@ -1,9 +1,13 @@
 [
   "test_coach.py::test_auth_login_and_cookie",
   "test_coach.py::test_books_and_german_course_endpoints",
+  "test_coach.py::test_coach_clinical_case_conceptualization",
+  "test_coach.py::test_daily_energy_update",
+  "test_coach.py::test_dossier_intake_flow",
   "test_coach.py::test_german_check_logic",
   "test_coach.py::test_german_endpoint",
   "test_coach.py::test_health",
   "test_coach.py::test_library_endpoint",
-  "test_coach.py::test_protected_routes_require_auth"
+  "test_coach.py::test_protected_routes_require_auth",
+  "test_coach.py::test_welcome_letter_endpoint"
 ]

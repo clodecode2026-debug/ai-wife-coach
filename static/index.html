@@ -215,6 +215,35 @@
                 </div>
             </div>
 
+            <!-- Быстрый чек-ин энергии (адаптирует длину и тон психолога в 1 клик) -->
+            <div class="px-3.5 py-1.5 bg-rose-50/90 border-b border-rose-100 flex items-center justify-between text-xs shrink-0 select-none">
+                <div class="flex items-center gap-2">
+                    <span class="text-[11px] text-slate-500 font-medium">🔋 Батарейка сегодня:</span>
+                    <div class="relative">
+                        <button id="quickEnergyBtn" onclick="toggleQuickEnergyPicker()" class="bg-white hover:bg-rose-100/60 border border-rose-200 px-2 py-0.5 rounded-lg text-rose-700 font-bold text-[11px] transition flex items-center gap-1 shadow-2xs">
+                            <span id="quickEnergyLabel">6/10</span>
+                            <span class="text-[9px] text-slate-400">▾</span>
+                        </button>
+                        <!-- Всплывающее меню уровней энергии -->
+                        <div id="quickEnergyDropdown" class="hidden absolute left-0 top-full mt-1 bg-white rounded-xl shadow-xl border border-rose-200 p-1.5 z-30 flex flex-col gap-1 w-44 animate-scale-in">
+                            <button onclick="setDailyEnergyFast('2/10')" class="px-2 py-1 text-left text-[11px] rounded-lg hover:bg-rose-50 text-amber-700 font-semibold flex items-center gap-1.5">
+                                <span>🪫</span><span>2/10 • Истощена</span>
+                            </button>
+                            <button onclick="setDailyEnergyFast('5/10')" class="px-2 py-1 text-left text-[11px] rounded-lg hover:bg-rose-50 text-blue-700 font-semibold flex items-center gap-1.5">
+                                <span>🔋</span><span>5/10 • Держусь</span>
+                            </button>
+                            <button onclick="setDailyEnergyFast('8/10')" class="px-2 py-1 text-left text-[11px] rounded-lg hover:bg-rose-50 text-emerald-700 font-semibold flex items-center gap-1.5">
+                                <span>⚡️</span><span>8/10 • В ресурсе</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1 text-[10px] text-slate-400">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span id="chatBoundariesBadge">Границы активны</span>
+                </div>
+            </div>
+
             <!-- Область сообщений -->
             <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3.5">
                 <div class="flex items-start gap-2.5">
@@ -480,7 +509,7 @@
                         </div>
                         <button onclick="openIntakeWizard()" class="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-rose-500 to-pink-500 text-white text-xs font-bold rounded-xl shadow-md hover:opacity-95 active:scale-95 transition flex items-center justify-center gap-1.5 shrink-0">
                             <span>✨</span>
-                            <span id="btnIntakeText">Настроить анкету (5 шагов)</span>
+                            <span id="btnIntakeText">Настроить анкету (6 шагов)</span>
                         </button>
                     </div>
 
@@ -594,7 +623,7 @@
                     <span class="text-xl">🌸</span>
                     <div>
                         <h3 class="font-bold text-slate-800 text-sm sm:text-base">Настройка твоего AI-психолога</h3>
-                        <p class="text-[11px] text-slate-500" id="wizardStepSubtitle">Шаг 1 из 5: Текущие вызовы</p>
+                        <p class="text-[11px] text-slate-500" id="wizardStepSubtitle">Шаг 1 из 6: Вызовы и ситуации в Германии</p>
                     </div>
                 </div>
                 <button onclick="closeIntakeWizard()" class="w-8 h-8 rounded-full bg-white text-slate-400 hover:text-slate-800 flex items-center justify-center transition shadow-2xs">✕</button>
@@ -602,19 +631,28 @@
 
             <!-- Прогресс-бар шагов -->
             <div class="w-full bg-slate-100 h-1.5">
-                <div id="wizardProgressBar" class="bg-gradient-to-r from-rose-500 to-pink-500 h-1.5 transition-all duration-300" style="width: 20%;"></div>
+                <div id="wizardProgressBar" class="bg-gradient-to-r from-rose-500 to-pink-500 h-1.5 transition-all duration-300" style="width: 16.6%;"></div>
             </div>
 
             <!-- Тело визарда (сменяемые шаги) -->
             <div class="p-4 sm:p-5 flex-1 overflow-y-auto space-y-4">
-                <!-- ШАГ 1: ВЫЗОВЫ И ЭНЕРГИЯ -->
-                <div id="wizardStep1" class="space-y-4">
+                <!-- ШАГ 1: ВЫЗОВЫ В ЖИЗНИ И ГЕРМАНИИ -->
+                <div id="wizardStep1" class="space-y-3.5">
                     <div>
                         <h4 class="font-bold text-slate-800 text-sm sm:text-base">1. Что забирает больше всего сил прямо сейчас?</h4>
-                        <p class="text-xs text-slate-500 mt-0.5">Выбери один или несколько вариантов (коуч сфокусируется именно на них):</p>
+                        <p class="text-xs text-slate-500 mt-0.5">Выбери главное в жизни и в Германии (коуч сфокусируется на них):</p>
                     </div>
-                    <div class="flex flex-wrap gap-2" id="step1Chips">
-                        <!-- Чипы вызовов генерируются JS -->
+                    <div class="space-y-1">
+                        <span class="text-[11px] font-semibold text-slate-600 block">Общие фокусы:</span>
+                        <div class="flex flex-wrap gap-2" id="step1Chips">
+                            <!-- Чипы вызовов генерируются JS -->
+                        </div>
+                    </div>
+                    <div class="space-y-1 pt-1">
+                        <span class="text-[11px] font-semibold text-slate-600 block">🇩🇪 Ситуации в Германии (DACH-триггеры):</span>
+                        <div class="flex flex-wrap gap-2" id="step1DachChips">
+                            <!-- Чипы немецких триггеров генерируются JS -->
+                        </div>
                     </div>
                     <div class="pt-2 border-t border-slate-100">
                         <div class="flex items-center justify-between text-xs font-semibold text-slate-700 mb-1">
@@ -677,18 +715,33 @@
                     </div>
                 </div>
 
-                <!-- ШАГ 5: СТИЛЬ ПОДДЕРЖКИ И ЛИЧНАЯ ЦЕЛЬ -->
+                <!-- ШАГ 5: ПСИХОЛОГИЧЕСКИЕ ГРАНИЦЫ И ТАБУ (ЧЕГО НЕ ДЕЛАТЬ) -->
                 <div id="wizardStep5" class="space-y-4 hidden">
                     <div>
-                        <h4 class="font-bold text-slate-800 text-sm sm:text-base">5. Как психологу общаться с тобой?</h4>
+                        <h4 class="font-bold text-slate-800 text-sm sm:text-base">5. Твои границы: чего коучу категорически НЕ делать?</h4>
+                        <p class="text-xs text-slate-500 mt-0.5">Отметь то, что вызывает раздражение, сопротивление или тревогу (строгие табу):</p>
+                    </div>
+                    <div class="space-y-2" id="step5BoundariesChips">
+                        <!-- Чипы табу генерируются JS -->
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Твоё личное табу или стоп-тема (если есть):</label>
+                        <input type="text" id="customBoundariesInput" placeholder="например: Не сравнивать с другими, не давить советами" class="w-full px-3 py-2 text-xs border border-rose-200 rounded-xl bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-rose-400">
+                    </div>
+                </div>
+
+                <!-- ШАГ 6: СТИЛЬ ПОДДЕРЖКИ И ЛИЧНАЯ ЦЕЛЬ -->
+                <div id="wizardStep6" class="space-y-4 hidden">
+                    <div>
+                        <h4 class="font-bold text-slate-800 text-sm sm:text-base">6. Желаемый стиль общения и главная цель</h4>
                         <p class="text-xs text-slate-500 mt-0.5">Выбери самый желанный тон взаимодействия:</p>
                     </div>
-                    <div class="space-y-2" id="step5StyleChips">
+                    <div class="space-y-2" id="step6StyleChips">
                         <!-- Чипы стиля генерируются JS -->
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 mb-1">Какой ты хочешь чувствовать себя через 2-3 месяца? (Главная цель):</label>
-                        <textarea id="personalGoalText" rows="2" placeholder="например: Чувствовать себя спокойно и уверенно в Германии, свободно говорить на немецком B1 и безусловно ценить себя" class="w-full px-3 py-2 text-xs border border-rose-200 rounded-xl bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-rose-400"></textarea>
+                        <textarea id="personalGoalText" rows="2" placeholder="например: Спокойно и уверенно говорить на немецком B1, чувствовать глубокое спокойствие и безусловную самоценность" class="w-full px-3 py-2 text-xs border border-rose-200 rounded-xl bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-rose-400"></textarea>
                     </div>
                 </div>
             </div>
@@ -699,7 +752,7 @@
                     ⬅️ Назад
                 </button>
                 <div class="flex items-center gap-1 text-[11px] font-bold text-rose-500" id="wizardStepIndicator">
-                    1 / 5
+                    1 / 6
                 </div>
                 <button onclick="nextWizardStep()" id="btnWizardNext" class="py-2.5 px-6 bg-gradient-to-r from-rose-500 to-pink-500 text-white font-bold text-xs rounded-xl shadow-md hover:opacity-95 transition">
                     Далее ➔
@@ -713,7 +766,7 @@
     <audio id="liveGlobalAudioPlayer" preload="auto" playsinline webkit-playsinline class="hidden"></audio>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    <script src="/static/duolingo/duolingo.js?v=19"></script>
-    <script src="/static/app.js?v=19"></script>
+    <script src="/static/duolingo/duolingo.js?v=20"></script>
+    <script src="/static/app.js?v=20"></script>
 </body>
 </html>

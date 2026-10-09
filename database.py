@@ -1,5 +1,6 @@
 import os
 import uuid
+import json
 import logging
 from typing import Dict, Any, List, Optional
 
@@ -124,6 +125,40 @@ class SupabaseManager:
                 logger.info("Психологическая анкета сохранена в Supabase")
             except Exception as e:
                 logger.error(f"Ошибка сохранения анкеты в Supabase: {e}")
+
+    def update_daily_energy(self, energy_level: str, note: Optional[str] = "") -> Dict[str, Any]:
+        """Быстрое 1-таповое обновление текущего уровня энергии Алины (адаптация сессии на лету)"""
+        mem_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "alina_memory_profile.json")
+        profile: Dict[str, Any] = {}
+        try:
+            if os.path.exists(mem_file):
+                with open(mem_file, "r", encoding="utf-8") as mf:
+                    profile = json.load(mf)
+            
+            if "intake_profile" not in profile:
+                profile["intake_profile"] = {}
+            
+            profile["intake_profile"]["energy_level"] = energy_level
+            if note:
+                profile["intake_profile"]["energy_note"] = note
+            
+            with open(mem_file, "w", encoding="utf-8") as mf:
+                json.dump(profile, mf, ensure_ascii=False, indent=2)
+            logger.info(f"Уровень энергии Алины обновлен: {energy_level}")
+        except Exception as e:
+            logger.error(f"Ошибка обновления энергии в файле: {e}")
+
+        intake = profile.get("intake_profile", {"energy_level": energy_level})
+        if self.client:
+            try:
+                self.client.table("wife_dossier").upsert([
+                    {"category": "intake", "key_name": "intake_profile", "value": json.dumps(intake, ensure_ascii=False), "importance": 5}
+                ]).execute()
+                logger.info("Обновление энергии синхронизировано с Supabase")
+            except Exception as e:
+                logger.warning(f"Ошибка синхронизации энергии с Supabase: {e}")
+
+        return intake
 
     def save_dossier(self, name: str, notes: str, user_id: str = "default_wife") -> None:
         if not self.client:

@@ -133,6 +133,36 @@ class AIFeminineCoach:
         }
         dossier_info = f"\n\nПЕРСОНАЛЬНОЕ ДОСЬЕ И ПАМЯТЬ ОБ АЛИНЕ:\n{json.dumps(dossier_data, ensure_ascii=False, indent=2)}"
 
+        intake = dossier_data.get("intake_profile", {})
+        intake_section = ""
+        if intake:
+            challenges_raw = intake.get("current_challenges", [])
+            challenges_str = ", ".join(challenges_raw) if isinstance(challenges_raw, list) else str(challenges_raw)
+            resources_raw = intake.get("restorative_resources", [])
+            resources_str = ", ".join(resources_raw) if isinstance(resources_raw, list) else str(resources_raw)
+            values_raw = intake.get("core_values", [])
+            values_str = ", ".join(values_raw) if isinstance(values_raw, list) else str(values_raw)
+
+            intake_section = f"""
+======================================================================
+ПЕРСОНАЛЬНЫЙ ТЕРАПЕВТИЧЕСКИЙ ПРОФИЛЬ АЛИНЫ (ЗАПОЛНЕН ЕЮ ЛИЧНО):
+• ГЛАВНЫЕ ВЫЗОВЫ СЕЙЧАС: {challenges_str or 'Не указано'}
+• БАЗОВЫЙ УРОВЕНЬ ЭНЕРГИИ: {intake.get('energy_level', 'Не указано')}
+• ГОЛОС ВНУТРЕННЕГО КРИТИКА И ТРИГГЕРЫ: {intake.get('inner_critic_triggers', 'Не указано')}
+• РЕАКЦИЯ ТЕЛА НА СТРЕСС: {intake.get('somatic_stress_signs', 'Не указано')}
+• ИСТОЧНИКИ РЕСУРСА И ВОССТАНОВЛЕНИЯ: {resources_str or 'Не указано'}
+• ГЛУБИННЫЕ ЦЕННОСТИ: {values_str or 'Не указано'}
+• ЖЕЛАЕМЫЙ СТИЛЬ ПОДДЕРЖКИ: {intake.get('support_style', 'Не указано')}
+• ГЛАВНАЯ ЛИЧНАЯ ЦЕЛЬ: {intake.get('personal_growth_goal', 'Не указано')}
+======================================================================
+ПРАВИЛА ИНДИВИДУАЛЬНОЙ РАБОТЫ ПО ПРОФИЛЮ:
+1. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО давать общие советы из интернета или рассуждать абстрактно!
+2. Вся твоя терапия, примеры, Сократические вопросы и метафоры должны быть на 100% привязаны к ЭТИМ конкретным вызовам, триггерам и ценностям Алины.
+3. Если Алина устала — напоминай именно о её любимых источниках ресурса ({resources_str}).
+4. Помогай разоружать её конкретную мысль внутреннего критика («{intake.get('inner_critic_triggers', '')}»).
+5. Соблюдай выбранный ею стиль общения ({intake.get('support_style', '')}).
+"""
+
         kb_prompt = get_knowledge_base_prompt()
 
         book_prompt_section = ""
@@ -210,6 +240,7 @@ class AIFeminineCoach:
 - Запрет на банальности вроде: «Я понимаю ваши чувства», «Не переживайте, всё наладится», «Держитесь», «Всё будет хорошо». Это звучит фальшиво.
 - Вместо пустых слов используй живой сократический диалог и принятие.
 {dossier_info}
+{intake_section}
 {book_prompt_section}
 """
 
@@ -264,6 +295,7 @@ class AIFeminineCoach:
 
 {depth_instruction}
 {dossier_info}
+{intake_section}
 
 {kb_prompt}
 {book_prompt_section}

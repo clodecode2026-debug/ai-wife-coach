@@ -99,3 +99,26 @@ def test_books_and_german_course_endpoints():
     assert res_course.status_code == 200
     assert isinstance(res_course.json(), dict)
     assert "lessons" in res_course.json()
+
+def test_dossier_intake_flow():
+    auth_client = TestClient(app, cookies={"auth_token": VALID_AUTH_TOKEN})
+    test_payload = {
+        "current_challenges": ["Адаптация в Германии", "Немецкий B1"],
+        "energy_level": "7/10",
+        "inner_critic_triggers": "«Я делаю недостаточно»",
+        "somatic_stress_signs": "Зажим в шее",
+        "restorative_resources": ["Чай с мятой", "Прогулки"],
+        "core_values": ["Спокойствие", "Самоценность"],
+        "support_style": "Бережное принятие и тепло",
+        "personal_growth_goal": "Свободный немецкий B1"
+    }
+    save_res = auth_client.post("/api/dossier/intake", json=test_payload)
+    assert save_res.status_code == 200
+    assert save_res.json().get("status") == "ok"
+
+    get_res = auth_client.get("/api/dossier")
+    assert get_res.status_code == 200
+    data = get_res.json()
+    assert "intake_profile" in data
+    assert data["intake_profile"]["energy_level"] == "7/10"
+

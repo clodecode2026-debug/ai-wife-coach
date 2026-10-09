@@ -2643,8 +2643,127 @@ function filterLibrary() {
 }
 
 // ==========================================
-// 8. ДОСЬЕ АЛИНЫ
+// 8. ДОСЬЕ АЛИНЫ И ТЕРАПЕВТИЧЕСКИЙ ПРОФИЛЬ
 // ==========================================
+let currentIntakeState = {
+    currentStep: 1,
+    current_challenges: ["Адаптация и жизнь в Германии", "Языковой барьер и страх говорить по-немецки"],
+    energy_level: "6/10",
+    inner_critic_triggers: "«Я делаю недостаточно и должна быть сильнее»",
+    somatic_stress_signs: ["Зажим и боль в плечах / шее"],
+    restorative_resources: ["Уютный вечер и травяной чай в тишине", "Прогулки на свежем воздухе"],
+    core_values: ["Внутреннее спокойствие и мир"],
+    support_style: "🌸 Бережное принятие и тепло",
+    personal_growth_goal: "Свободно и без страха говорить на немецком B1, чувствовать глубокое спокойствие и безусловную самоценность"
+};
+
+const INTAKE_OPTIONS = {
+    challenges: [
+        { id: "germany", label: "🏢 Адаптация и жизнь в Германии" },
+        { id: "german_lang", label: "🇩🇪 Языковой барьер в немецком" },
+        { id: "burnout", label: "🔋 Эмоциональное выгорание и усталость" },
+        { id: "perfectionism", label: "👑 Синдром отличницы и перфекционизм" },
+        { id: "self_worth", label: "🧭 Поиск внутренней опоры и самоценности" },
+        { id: "boundaries", label: "🛡 Личные границы и умение говорить «нет»" }
+    ],
+    criticThoughts: [
+        "«Я делаю недостаточно и должна быть сильнее»",
+        "«У меня не получится, я всё испорчу»",
+        "«Обо мне подумают плохо / я скажу глупость»",
+        "«Я не имею права расслабляться, пока всё не сделано идеально»",
+        "«Другие справляются намного лучше меня»"
+    ],
+    somaticSigns: [
+        { id: "shoulders", label: "Зажим и боль в плечах / шее" },
+        { id: "throat", label: "Ком в горле / трудно глубоко вдохнуть" },
+        { id: "chest", label: "Тяжесть в груди / тревожное сердцебиение" },
+        { id: "sleep", label: "Беспокойные мысли перед сном" },
+        { id: "fatigue", label: "Ступор, апатия и бессилие" }
+    ],
+    resources: [
+        { id: "tea", label: "☕️ Тёплый чай/кофе в тишине и уюте" },
+        { id: "walk", label: "🌳 Прогулки на свежем воздухе" },
+        { id: "bath", label: "🛁 Время наедине с собой и забота о теле" },
+        { id: "books", label: "📖 Чтение книг и вдохновляющие инсайты" },
+        { id: "talk", label: "💬 Искренний тёплый разговор по душам" },
+        { id: "german_wins", label: "✨ Маленькие победы в немецком языке" }
+    ],
+    values: [
+        { id: "peace", label: "🕊 Внутреннее спокойствие и мир" },
+        { id: "worth", label: "👑 Уверенность и безусловная самоценность" },
+        { id: "freedom", label: "🌱 Свобода и личное развитие" }
+    ],
+    supportStyles: [
+        { id: "warmth", title: "🌸 Бережное принятие и тепло", desc: "Сначала просто выслушать, согреть словами и дать поддержку без поучений." },
+        { id: "cbt", title: "💡 Рациональный КПТ-разбор", desc: "Помочь разложить тревогу на факты, разоблачить критика и найти логичный выход." },
+        { id: "somatic", title: "🌿 Практики заземления и тела", desc: "Помочь глубоко подышать, снять зажимы в теле и вернуть в момент «здесь и сейчас»." },
+        { id: "micro", title: "🎯 Короткие микро-шаги", desc: "Без длинных лекций — ровно одна мысль и одно конкретное действие." }
+    ]
+};
+
+function renderIntakeSummary(profile) {
+    const container = document.getElementById('intakeSummaryContainer');
+    if (!container) return;
+
+    if (!profile) {
+        container.innerHTML = `
+            <div class="col-span-full p-3 bg-amber-50/70 border border-amber-200 rounded-xl text-amber-800 text-xs flex items-center justify-between">
+                <span>⚡️ Анкета ещё не заполнена. Пройдите 5 коротких шагов, чтобы психолог знал ваши цели.</span>
+                <button onclick="openIntakeWizard()" class="px-3 py-1 bg-amber-500 text-white rounded-lg font-bold text-xs">Пройти</button>
+            </div>
+        `;
+        return;
+    }
+
+    const btnText = document.getElementById('btnIntakeText');
+    if (btnText) btnText.textContent = '✨ Изменить анкету (5 шагов)';
+
+    const challenges = Array.isArray(profile.current_challenges) ? profile.current_challenges : [profile.current_challenges || 'Не указано'];
+    const resources = Array.isArray(profile.restorative_resources) ? profile.restorative_resources : [profile.restorative_resources || 'Не указано'];
+    const somatic = Array.isArray(profile.somatic_stress_signs) ? profile.somatic_stress_signs : [profile.somatic_stress_signs || 'Не указано'];
+
+    container.innerHTML = `
+        <div class="p-2.5 bg-white border border-rose-100 rounded-xl space-y-1.5 shadow-2xs">
+            <span class="font-bold text-slate-700 block text-[11.5px]">🧩 Главные фокусы и вызовы:</span>
+            <div class="flex flex-wrap gap-1">
+                ${challenges.map(c => `<span class="bg-rose-50 text-rose-700 px-2 py-0.5 rounded-md text-[11px] font-medium border border-rose-100">${escapeHtml(c)}</span>`).join('')}
+            </div>
+        </div>
+
+        <div class="p-2.5 bg-white border border-rose-100 rounded-xl space-y-1 shadow-2xs">
+            <div class="flex items-center justify-between">
+                <span class="font-bold text-slate-700 text-[11.5px]">🔋 Уровень энергии:</span>
+                <span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md text-[11px] font-bold">${escapeHtml(profile.energy_level || '6/10')}</span>
+            </div>
+            <div class="pt-1">
+                <span class="font-bold text-slate-700 block text-[11.5px]">💬 Желаемый стиль общения:</span>
+                <span class="text-slate-600 text-[11px] block mt-0.5">${escapeHtml(profile.support_style || 'Бережное принятие и тепло')}</span>
+            </div>
+        </div>
+
+        <div class="p-2.5 bg-white border border-rose-100 rounded-xl space-y-1 shadow-2xs">
+            <span class="font-bold text-slate-700 block text-[11.5px]">🛡 Голос внутреннего критика:</span>
+            <p class="text-rose-900 bg-rose-50/60 p-2 rounded-lg text-[11px] italic border-l-2 border-rose-400">
+                ${escapeHtml(profile.inner_critic_triggers || '«Я делаю недостаточно»')}
+            </p>
+        </div>
+
+        <div class="p-2.5 bg-white border border-rose-100 rounded-xl space-y-1.5 shadow-2xs">
+            <span class="font-bold text-slate-700 block text-[11.5px]">🌸 Источники ресурса:</span>
+            <div class="flex flex-wrap gap-1">
+                ${resources.map(r => `<span class="bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-md text-[11px] font-medium border border-emerald-100">${escapeHtml(r)}</span>`).join('')}
+            </div>
+        </div>
+
+        ${profile.personal_growth_goal ? `
+            <div class="col-span-full p-2.5 bg-gradient-to-r from-rose-50/80 to-pink-50/60 border border-rose-200 rounded-xl">
+                <span class="font-bold text-rose-800 text-xs block mb-0.5">🎯 Главная личная цель Алины:</span>
+                <p class="text-slate-700 text-xs font-medium">${escapeHtml(profile.personal_growth_goal)}</p>
+            </div>
+        ` : ''}
+    `;
+}
+
 async function loadDossier() {
     try {
         const res = await fetch('/api/dossier');
@@ -2654,6 +2773,13 @@ async function loadDossier() {
             const notesEl = document.getElementById('dossierNotes');
             if (nameEl && data.name) nameEl.value = data.name;
             if (notesEl && data.notes) notesEl.value = data.notes;
+
+            if (data.intake_profile) {
+                currentIntakeState = { ...currentIntakeState, ...data.intake_profile };
+                renderIntakeSummary(data.intake_profile);
+            } else {
+                renderIntakeSummary(null);
+            }
         }
     } catch(e){}
 }
@@ -2673,6 +2799,329 @@ async function saveDossierSettings() {
         }
     } catch(e) {
         alert('Ошибка сохранения досье.');
+    }
+}
+
+// ------------------------------------------
+// 8.0 ПОШАГОВЫЙ ВИЗАРД ПСИХОЛОГИЧЕСКОГО ОПРОСНИКА
+// ------------------------------------------
+function openIntakeWizard() {
+    const modal = document.getElementById('intakeWizardModal');
+    if (!modal) return;
+    renderWizardStep(1);
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.classList.add('overflow-hidden');
+}
+
+function closeIntakeWizard() {
+    const modal = document.getElementById('intakeWizardModal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.classList.remove('overflow-hidden');
+}
+
+function updateEnergyLabel(val) {
+    const el = document.getElementById('energyLevelVal');
+    if (el) el.textContent = `${val} / 10`;
+    currentIntakeState.energy_level = `${val}/10`;
+}
+
+function renderWizardStep(step) {
+    currentIntakeState.currentStep = step;
+    const progressEl = document.getElementById('wizardProgressBar');
+    const subtitleEl = document.getElementById('wizardStepSubtitle');
+    const indicatorEl = document.getElementById('wizardStepIndicator');
+    const prevBtn = document.getElementById('btnWizardPrev');
+    const nextBtn = document.getElementById('btnWizardNext');
+
+    if (progressEl) progressEl.style.width = `${(step / 5) * 100}%`;
+    if (indicatorEl) indicatorEl.textContent = `${step} / 5`;
+    if (prevBtn) prevBtn.disabled = step === 1;
+
+    const titles = [
+        "Шаг 1 из 5: Текущие вызовы и уровень сил",
+        "Шаг 2 из 5: Голос Внутреннего Критика",
+        "Шаг 3 из 5: Тело и реакция на стресс",
+        "Шаг 4 из 5: Источники ресурса и ценности",
+        "Шаг 5 из 5: Желаемый стиль поддержки и цель"
+    ];
+    if (subtitleEl) subtitleEl.textContent = titles[step - 1] || `Шаг ${step} из 5`;
+
+    if (nextBtn) {
+        nextBtn.innerHTML = step === 5 
+            ? '<span>✨ Сохранить настройки</span>' 
+            : '<span>Далее ➔</span>';
+    }
+
+    for (let i = 1; i <= 5; i++) {
+        const stepDiv = document.getElementById(`wizardStep${i}`);
+        if (stepDiv) {
+            if (i === step) stepDiv.classList.remove('hidden');
+            else stepDiv.classList.add('hidden');
+        }
+    }
+
+    if (step === 1) renderStep1();
+    if (step === 2) renderStep2();
+    if (step === 3) renderStep3();
+    if (step === 4) renderStep4();
+    if (step === 5) renderStep5();
+}
+
+function renderStep1() {
+    const container = document.getElementById('step1Chips');
+    if (!container) return;
+    const current = currentIntakeState.current_challenges || [];
+    container.innerHTML = INTAKE_OPTIONS.challenges.map(item => {
+        const isSelected = current.includes(item.label);
+        const style = isSelected 
+            ? 'bg-rose-500 text-white border-rose-600 shadow-sm' 
+            : 'bg-white hover:bg-rose-50 text-slate-700 border-slate-200';
+        return `
+            <button type="button" onclick="toggleIntakeChallenge('${escapeQuotes(item.label)}')" class="px-3 py-2 rounded-xl text-xs font-semibold border transition active:scale-95 ${style}">
+                ${isSelected ? '✓ ' : ''}${escapeHtml(item.label)}
+            </button>
+        `;
+    }).join('');
+
+    const range = document.getElementById('energyRange');
+    const num = parseInt(currentIntakeState.energy_level) || 6;
+    if (range) range.value = num;
+    updateEnergyLabel(num);
+}
+
+function toggleIntakeChallenge(label) {
+    if (!Array.isArray(currentIntakeState.current_challenges)) currentIntakeState.current_challenges = [];
+    const idx = currentIntakeState.current_challenges.indexOf(label);
+    if (idx > -1) {
+        currentIntakeState.current_challenges.splice(idx, 1);
+    } else {
+        currentIntakeState.current_challenges.push(label);
+    }
+    renderStep1();
+}
+
+function renderStep2() {
+    const container = document.getElementById('step2Chips');
+    if (!container) return;
+    const current = currentIntakeState.inner_critic_triggers || '';
+    container.innerHTML = INTAKE_OPTIONS.criticThoughts.map(thought => {
+        const isSelected = current === thought;
+        const style = isSelected 
+            ? 'bg-rose-500 text-white border-rose-600 shadow-sm' 
+            : 'bg-white hover:bg-rose-50 text-slate-700 border-slate-200';
+        return `
+            <div onclick="selectCriticThought('${escapeQuotes(thought)}')" class="p-2.5 rounded-xl text-xs font-medium border cursor-pointer transition active:scale-98 flex items-center justify-between ${style}">
+                <span>${escapeHtml(thought)}</span>
+                ${isSelected ? '<span class="font-bold">✓</span>' : ''}
+            </div>
+        `;
+    }).join('');
+
+    const input = document.getElementById('customInnerCritic');
+    if (input && !INTAKE_OPTIONS.criticThoughts.includes(current)) {
+        input.value = current;
+    }
+}
+
+function selectCriticThought(thought) {
+    currentIntakeState.inner_critic_triggers = thought;
+    const input = document.getElementById('customInnerCritic');
+    if (input) input.value = '';
+    renderStep2();
+}
+
+function renderStep3() {
+    const container = document.getElementById('step3Chips');
+    if (!container) return;
+    const current = currentIntakeState.somatic_stress_signs || [];
+    container.innerHTML = INTAKE_OPTIONS.somaticSigns.map(item => {
+        const isSelected = current.includes(item.label);
+        const style = isSelected 
+            ? 'bg-rose-500 text-white border-rose-600 shadow-sm' 
+            : 'bg-white hover:bg-rose-50 text-slate-700 border-slate-200';
+        return `
+            <button type="button" onclick="toggleIntakeSomatic('${escapeQuotes(item.label)}')" class="px-3 py-2 rounded-xl text-xs font-semibold border transition active:scale-95 ${style}">
+                ${isSelected ? '✓ ' : ''}${escapeHtml(item.label)}
+            </button>
+        `;
+    }).join('');
+
+    const input = document.getElementById('customSomatic');
+    if (input && !INTAKE_OPTIONS.somaticSigns.map(s => s.label).some(l => current.includes(l))) {
+        input.value = Array.isArray(current) ? current.join(', ') : current;
+    }
+}
+
+function toggleIntakeSomatic(label) {
+    if (!Array.isArray(currentIntakeState.somatic_stress_signs)) currentIntakeState.somatic_stress_signs = [];
+    const idx = currentIntakeState.somatic_stress_signs.indexOf(label);
+    if (idx > -1) {
+        currentIntakeState.somatic_stress_signs.splice(idx, 1);
+    } else {
+        currentIntakeState.somatic_stress_signs.push(label);
+    }
+    renderStep3();
+}
+
+function renderStep4() {
+    const chipsCont = document.getElementById('step4Chips');
+    const valuesCont = document.getElementById('step4Values');
+    if (!chipsCont || !valuesCont) return;
+
+    const currentRes = currentIntakeState.restorative_resources || [];
+    chipsCont.innerHTML = INTAKE_OPTIONS.resources.map(item => {
+        const isSelected = currentRes.includes(item.label);
+        const style = isSelected 
+            ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm' 
+            : 'bg-white hover:bg-emerald-50 text-slate-700 border-slate-200';
+        return `
+            <button type="button" onclick="toggleIntakeResource('${escapeQuotes(item.label)}')" class="px-3 py-2 rounded-xl text-xs font-semibold border transition active:scale-95 ${style}">
+                ${isSelected ? '✓ ' : ''}${escapeHtml(item.label)}
+            </button>
+        `;
+    }).join('');
+
+    const currentVal = currentIntakeState.core_values || [];
+    valuesCont.innerHTML = INTAKE_OPTIONS.values.map(item => {
+        const isSelected = currentVal.includes(item.label);
+        const style = isSelected 
+            ? 'bg-rose-500 text-white border-rose-600 shadow-sm' 
+            : 'bg-white hover:bg-rose-50 text-slate-700 border-slate-200';
+        return `
+            <button type="button" onclick="toggleIntakeValue('${escapeQuotes(item.label)}')" class="px-3 py-1.5 rounded-xl text-xs font-semibold border transition active:scale-95 ${style}">
+                ${isSelected ? '✓ ' : ''}${escapeHtml(item.label)}
+            </button>
+        `;
+    }).join('');
+}
+
+function toggleIntakeResource(label) {
+    if (!Array.isArray(currentIntakeState.restorative_resources)) currentIntakeState.restorative_resources = [];
+    const idx = currentIntakeState.restorative_resources.indexOf(label);
+    if (idx > -1) {
+        currentIntakeState.restorative_resources.splice(idx, 1);
+    } else {
+        currentIntakeState.restorative_resources.push(label);
+    }
+    renderStep4();
+}
+
+function toggleIntakeValue(label) {
+    if (!Array.isArray(currentIntakeState.core_values)) currentIntakeState.core_values = [];
+    const idx = currentIntakeState.core_values.indexOf(label);
+    if (idx > -1) {
+        currentIntakeState.core_values.splice(idx, 1);
+    } else {
+        currentIntakeState.core_values.push(label);
+    }
+    renderStep4();
+}
+
+function renderStep5() {
+    const container = document.getElementById('step5StyleChips');
+    if (!container) return;
+    const current = currentIntakeState.support_style || '';
+    container.innerHTML = INTAKE_OPTIONS.supportStyles.map(item => {
+        const isSelected = current === item.title;
+        const style = isSelected 
+            ? 'bg-rose-50 border-rose-400 ring-2 ring-rose-300' 
+            : 'bg-white hover:bg-slate-50 border-slate-200';
+        return `
+            <div onclick="selectSupportStyle('${escapeQuotes(item.title)}')" class="p-3 rounded-2xl border cursor-pointer transition active:scale-98 ${style}">
+                <div class="flex items-center justify-between font-bold text-xs sm:text-sm text-slate-800">
+                    <span>${escapeHtml(item.title)}</span>
+                    ${isSelected ? '<span class="text-rose-600 text-sm">✓</span>' : ''}
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1">${escapeHtml(item.desc)}</p>
+            </div>
+        `;
+    }).join('');
+
+    const goalEl = document.getElementById('personalGoalText');
+    if (goalEl && currentIntakeState.personal_growth_goal) {
+        goalEl.value = currentIntakeState.personal_growth_goal;
+    }
+}
+
+function selectSupportStyle(title) {
+    currentIntakeState.support_style = title;
+    renderStep5();
+}
+
+function prevWizardStep() {
+    if (currentIntakeState.currentStep > 1) {
+        renderWizardStep(currentIntakeState.currentStep - 1);
+    }
+}
+
+async function nextWizardStep() {
+    const step = currentIntakeState.currentStep;
+
+    // Считывание пользовательских полей с текущего шага
+    if (step === 2) {
+        const customCritic = document.getElementById('customInnerCritic')?.value?.trim();
+        if (customCritic) currentIntakeState.inner_critic_triggers = customCritic;
+    } else if (step === 3) {
+        const customSom = document.getElementById('customSomatic')?.value?.trim();
+        if (customSom && !currentIntakeState.somatic_stress_signs.includes(customSom)) {
+            currentIntakeState.somatic_stress_signs.push(customSom);
+        }
+    } else if (step === 5) {
+        const goal = document.getElementById('personalGoalText')?.value?.trim();
+        if (goal) currentIntakeState.personal_growth_goal = goal;
+        await finishIntakeWizard();
+        return;
+    }
+
+    if (step < 5) {
+        renderWizardStep(step + 1);
+    }
+}
+
+async function finishIntakeWizard() {
+    const nextBtn = document.getElementById('btnWizardNext');
+    if (nextBtn) {
+        nextBtn.disabled = true;
+        nextBtn.innerHTML = '<span>Сохранение...</span>';
+    }
+
+    try {
+        const res = await fetch('/api/dossier/intake', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                current_challenges: currentIntakeState.current_challenges,
+                energy_level: currentIntakeState.energy_level || '6/10',
+                inner_critic_triggers: currentIntakeState.inner_critic_triggers || '',
+                somatic_stress_signs: Array.isArray(currentIntakeState.somatic_stress_signs) ? currentIntakeState.somatic_stress_signs.join(', ') : (currentIntakeState.somatic_stress_signs || ''),
+                restorative_resources: currentIntakeState.restorative_resources,
+                core_values: currentIntakeState.core_values,
+                support_style: currentIntakeState.support_style || '🌸 Бережное принятие и тепло',
+                personal_growth_goal: currentIntakeState.personal_growth_goal || ''
+            })
+        });
+
+        if (res.ok) {
+            closeIntakeWizard();
+            if (typeof confetti === 'function') {
+                confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+            }
+            showToastNotification('✨ Психолог настроен лично под тебя! Все сессии теперь опираются на твои цели.');
+            localStorage.setItem('alina_intake_completed', 'true');
+            await loadDossier();
+        } else {
+            alert('Не удалось сохранить анкету. Пожалуйста, попробуйте снова.');
+        }
+    } catch(e) {
+        alert('Ошибка связи с сервером при сохранении анкеты.');
+    } finally {
+        if (nextBtn) {
+            nextBtn.disabled = false;
+            nextBtn.innerHTML = '<span>✨ Сохранить настройки</span>';
+        }
     }
 }
 

@@ -64,10 +64,66 @@ class SupabaseManager:
                         result["husband"] = v
                     elif k == "Заметки" and v:
                         result["notes"] = v
+                    elif k == "intake_profile" and v:
+                        try:
+                            result["intake_profile"] = json.loads(v) if isinstance(v, str) else v
+                            result["intake_completed"] = True
+                        except Exception:
+                            pass
+                
+                # Также подгружаем из локального файла памяти
+                mem_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "alina_memory_profile.json")
+                if os.path.exists(mem_file):
+                    try:
+                        with open(mem_file, "r", encoding="utf-8") as mf:
+                            mem_data = json.load(mf)
+                            if "intake_profile" in mem_data and "intake_profile" not in result:
+                                result["intake_profile"] = mem_data["intake_profile"]
+                                result["intake_completed"] = mem_data.get("intake_completed", True)
+                    except Exception:
+                        pass
                 return result
         except Exception as e:
             logger.error(f"Ошибка чтения досье из Supabase: {e}")
-        return default_data
+
+        # Если Supabase недоступен — возвращаем из локального файла
+        result = dict(default_data)
+        mem_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "alina_memory_profile.json")
+        if os.path.exists(mem_file):
+            try:
+                with open(mem_file, "r", encoding="utf-8") as mf:
+                    mem_data = json.load(mf)
+                    if "intake_profile" in mem_data:
+                        result["intake_profile"] = mem_data["intake_profile"]
+                        result["intake_completed"] = mem_data.get("intake_completed", True)
+            except Exception:
+                pass
+        return result
+
+    def save_intake_profile(self, intake_data: Dict[str, Any]) -> None:
+        """Сохранение персональной психологической анкеты Алины в файл памяти и Supabase"""
+        mem_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "alina_memory_profile.json")
+        try:
+            profile = {}
+            if os.path.exists(mem_file):
+                with open(mem_file, "r", encoding="utf-8") as mf:
+                    profile = json.load(mf)
+            profile["intake_completed"] = True
+            profile["intake_profile"] = intake_data
+            with open(mem_file, "w", encoding="utf-8") as mf:
+                json.dump(profile, mf, ensure_ascii=False, indent=2)
+            logger.info("Психологическая анкета сохранена в alina_memory_profile.json")
+        except Exception as e:
+            logger.error(f"Ошибка сохранения анкеты в файл: {e}")
+
+        if self.client:
+            try:
+                self.client.table("wife_dossier").upsert([
+                    {"category": "intake", "key_name": "intake_profile", "value": json.dumps(intake_data, ensure_ascii=False), "importance": 5}
+                ]).execute()
+                logger.info("Психологическая анкета сохранена в Supabase")
+            except Exception as e:
+                logger.error(f"Ошибка сохранения анкеты в Supabase: {e}")
 
     def save_dossier(self, name: str, notes: str, user_id: str = "default_wife") -> None:
         if not self.client:

@@ -6,7 +6,7 @@ import asyncio
 import logging
 import hmac
 import hashlib
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query, Request, Response, Depends
 from fastapi.staticfiles import StaticFiles
@@ -532,6 +532,22 @@ def api_get_dossier(_auth: bool = Depends(require_auth)):
 def api_save_dossier(req: DossierUpdateRequest, _auth: bool = Depends(require_auth)):
     db_manager.save_dossier(req.name, req.notes)
     return {"status": "ok", "message": "Досье сохранено"}
+
+class IntakeProfileRequest(BaseModel):
+    current_challenges: List[str] = []
+    energy_level: str = "5/10"
+    inner_critic_triggers: str = ""
+    somatic_stress_signs: str = ""
+    restorative_resources: List[str] = []
+    core_values: List[str] = []
+    support_style: str = ""
+    personal_growth_goal: str = ""
+
+@app.post("/api/dossier/intake")
+def api_save_intake(req: IntakeProfileRequest, _auth: bool = Depends(require_auth)):
+    data = req.dict()
+    db_manager.save_intake_profile(data)
+    return {"status": "ok", "message": "Персональная анкета успешно сохранена", "intake_profile": data}
 
 class InsightRequest(BaseModel):
     text: str

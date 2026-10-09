@@ -218,7 +218,7 @@ function primeAudioForIOS(audioEl) {
 // Платформа немецкого языка (180 дней • A1+ ➔ B1 для Алины)
 let currentGermanLevel = localStorage.getItem('ai_coach_german_level') || 'A1+';
 window.currentGermanLevel = currentGermanLevel;
-let currentGermanMode = 'lessons'; // 'lessons' | 'flashcards' | 'duolingo'
+let currentGermanMode = 'hub'; // 'hub' | 'path' | 'flashcards' | 'quiz'
 let allGermanCourseData = null;
 let currentCourseDay = parseInt(localStorage.getItem('ai_coach_german_day') || '1', 10);
 let lessonTimerSeconds = 0;
@@ -308,6 +308,12 @@ function switchTab(tabId) {
             lingoContainer.classList.add('hidden');
             document.body.classList.remove('overflow-hidden');
         }
+    } else {
+        // При переходе на вкладку «Немецкий» открываем дружелюбный Хаб, если не идёт активный урок
+        if (currentGermanMode !== 'quiz') {
+            currentGermanMode = 'hub';
+        }
+        renderGermanPlatform();
     }
 }
 
@@ -2005,6 +2011,9 @@ function updateCourseProgressUI() {
     const xpEl = document.getElementById('courseXpDisplay');
     const heartsEl = document.getElementById('courseHeartsDisplay');
 
+    const pathXp = document.getElementById('pathXpMini');
+    const pathHearts = document.getElementById('pathHeartsMini');
+
     const streak = parseInt(localStorage.getItem('lingo_streak') || '1', 10);
     const xp = parseInt(localStorage.getItem('lingo_xp') || '0', 10);
     const hearts = parseInt(localStorage.getItem('lingo_hearts') || '5', 10);
@@ -2012,6 +2021,9 @@ function updateCourseProgressUI() {
     if (streakEl) streakEl.textContent = `${streak} дн.`;
     if (xpEl) xpEl.textContent = `${xp} XP`;
     if (heartsEl) heartsEl.textContent = `${hearts}`;
+
+    if (pathXp) pathXp.textContent = `${xp}`;
+    if (pathHearts) pathHearts.textContent = `${hearts}`;
 }
 
 function updateLearnedCountUI() {
@@ -2142,48 +2154,65 @@ function updateLiveCoachModeUI() {
 }
 
 function renderGermanPlatform() {
-    // 1. Обновляем кнопки уровней (A1+ / A2 / B1)
-    const activeLevel = currentGermanLevel.startsWith('A1') ? 'a1' : currentGermanLevel.toLowerCase();
-    ['a1', 'a2', 'b1'].forEach(l => {
-        const btn = document.getElementById('german-btn-' + l);
-        if (btn) {
-            if (l === activeLevel) {
-                btn.className = 'px-2 py-0.5 text-[11px] font-black rounded-md bg-emerald-500 text-white shadow-2xs transition';
-            } else {
-                btn.className = 'px-2 py-0.5 text-[11px] font-bold rounded-md text-slate-600 hover:text-slate-900 transition';
-            }
-        }
-    });
-
-    // 2. Обновляем кнопки переключения режимов
-    const btnPath = document.getElementById('german-mode-path');
-    const btnCards = document.getElementById('german-mode-flashcards');
-    const statEl = document.getElementById('flashcardsStat');
-
+    const hubContainer = document.getElementById('germanHubContainer');
     const pathContainer = document.getElementById('germanPathContainer');
     const lingoContainer = document.getElementById('lingoAppContainer');
     const flashcardsContainer = document.getElementById('germanFlashcardsContainer');
 
-    if (btnPath) {
-        btnPath.className = currentGermanMode === 'path'
-            ? 'py-1.5 text-xs font-black rounded-lg bg-white text-emerald-800 shadow-xs transition flex items-center justify-center gap-1.5 active:scale-95'
-            : 'py-1.5 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-800 transition flex items-center justify-center gap-1.5 active:scale-95';
+    // 1. Обновляем уровень в Хабе (A1+ / A2 / B1)
+    const activeLevelKey = currentGermanLevel.startsWith('A1') ? 'a1' : currentGermanLevel.toLowerCase();
+    ['a1', 'a2', 'b1'].forEach(lvl => {
+        const card = document.getElementById('hub-level-card-' + lvl);
+        const check = document.getElementById('hub-level-check-' + lvl);
+        if (card) {
+            if (lvl === activeLevelKey) {
+                card.className = 'p-2.5 rounded-2xl border-2 transition text-left flex flex-col justify-between active:scale-95 bg-emerald-50 border-emerald-500 shadow-sm';
+            } else {
+                card.className = 'p-2.5 rounded-2xl border-2 transition text-left flex flex-col justify-between active:scale-95 bg-white border-slate-200 hover:border-slate-300';
+            }
+        }
+        if (check) {
+            if (lvl === activeLevelKey) {
+                check.classList.remove('hidden');
+            } else {
+                check.classList.add('hidden');
+            }
+        }
+    });
+
+    const activeBadge = document.getElementById('hubActiveLevelBadge');
+    if (activeBadge) activeBadge.textContent = currentGermanLevel;
+
+    const pathLevelLabel = document.getElementById('pathHeaderLevelLabel');
+    if (pathLevelLabel) pathLevelLabel.textContent = `Уровень ${currentGermanLevel} • Дорожка`;
+
+    // 2. Статистика и счетчики в Хабе (XP, Серия, Сердечки, Ошибки, Кол-во слов)
+    updateCourseProgressUI();
+    updateMistakesBadgeUI();
+
+    if (allGermanCourseData && allGermanCourseData.lessons) {
+        const levelLessons = allGermanCourseData.lessons.filter(l => l.level === currentGermanLevel);
+        let totalVocab = 0;
+        levelLessons.forEach(l => { totalVocab += (l.vocabulary || []).length; });
+        const cardsBadge = document.getElementById('hubCardsBadge');
+        if (cardsBadge) cardsBadge.textContent = `${totalVocab} слов`;
+
+        const curLesson = allGermanCourseData.lessons.find(l => (l.day == currentCourseDay || l.id == currentCourseDay)) || levelLessons[0];
+        const pathSub = document.getElementById('hubPathSubtitle');
+        if (pathSub && curLesson) {
+            pathSub.textContent = `День ${curLesson.day || curLesson.id}: ${curLesson.title}`;
+        }
     }
 
-    if (btnCards) {
-        btnCards.className = currentGermanMode === 'flashcards'
-            ? 'py-1.5 text-xs font-black rounded-lg bg-white text-emerald-800 shadow-xs transition flex items-center justify-center gap-1.5 active:scale-95'
-            : 'py-1.5 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-800 transition flex items-center justify-center gap-1.5 active:scale-95';
-    }
-
-    if (statEl) {
-        if (currentGermanMode === 'flashcards') statEl.classList.remove('hidden');
-        else statEl.classList.add('hidden');
+    if (typeof updateAlinaAvatarsInDOM === 'function') {
+        updateAlinaAvatarsInDOM();
     }
 
     if (!allGermanCourseData) return;
 
+    // 3. Отображение соответствующего экрана
     if (currentGermanMode === 'quiz') {
+        if (hubContainer) hubContainer.classList.add('hidden');
         if (pathContainer) pathContainer.classList.add('hidden');
         if (flashcardsContainer) flashcardsContainer.classList.add('hidden');
         if (lingoContainer) lingoContainer.classList.remove('hidden');
@@ -2192,16 +2221,22 @@ function renderGermanPlatform() {
 
     if (lingoContainer) lingoContainer.classList.add('hidden');
 
-    if (currentGermanMode === 'path') {
+    if (currentGermanMode === 'hub') {
+        if (pathContainer) pathContainer.classList.add('hidden');
+        if (flashcardsContainer) flashcardsContainer.classList.add('hidden');
+        if (hubContainer) hubContainer.classList.remove('hidden');
+    } else if (currentGermanMode === 'path') {
+        if (hubContainer) hubContainer.classList.add('hidden');
         if (flashcardsContainer) flashcardsContainer.classList.add('hidden');
         if (pathContainer) {
             pathContainer.classList.remove('hidden');
+            const scrollArea = document.getElementById('germanPathScrollArea') || pathContainer;
             if (window.lingoEngine) {
-                lingoEngine.renderPathView(pathContainer, allGermanCourseData.lessons || []);
+                lingoEngine.renderPathView(scrollArea, allGermanCourseData.lessons || []);
             }
         }
-    } else {
-        // Flashcards
+    } else if (currentGermanMode === 'flashcards') {
+        if (hubContainer) hubContainer.classList.add('hidden');
         if (pathContainer) pathContainer.classList.add('hidden');
         if (flashcardsContainer) {
             flashcardsContainer.classList.remove('hidden');
@@ -2278,38 +2313,31 @@ function prepareFlashcards() {
 }
 
 function renderFlashcardsView() {
-    const container = document.getElementById('germanFlashcardsContainer') || document.getElementById('germanContent');
-    if (!container) return;
-    container.innerHTML = '';
+    const cardArea = document.getElementById('flashcardsCardArea') || document.getElementById('germanFlashcardsContainer');
+    const selectMount = document.getElementById('flashcardSelectMount');
+    if (!cardArea) return;
+    cardArea.innerHTML = '';
 
     const lessons = (allGermanCourseData.lessons || []).filter(l => l.level === currentGermanLevel);
 
-    // Панель фильтра уроков
-    const filterPanel = document.createElement('div');
-    filterPanel.className = 'flex flex-wrap items-center justify-between gap-2 bg-rose-50/50 p-2.5 rounded-xl border border-rose-100 text-xs mb-3';
-    
-    let lessonOptions = `<option value="all" ${currentFlashcardLessonId === 'all' ? 'selected' : ''}>🌟 Все слова уровня ${currentGermanLevel} (${currentFlashcards.length} шт)</option>`;
-    lessons.forEach(l => {
-        const count = (l.vocabulary || []).length;
-        const isSelected = String(currentFlashcardLessonId) === String(l.id) || String(currentFlashcardLessonId) === String(l.day);
-        lessonOptions += `<option value="${l.id}" ${isSelected ? 'selected' : ''}>Урок ${l.day || l.id}: ${escapeHtml(l.title)} (${count} слов)</option>`;
-    });
+    // Компактный селектор уроков монтируем в верхнюю строку #flashcardSelectMount
+    if (selectMount) {
+        let lessonOptions = `<option value="all" ${currentFlashcardLessonId === 'all' ? 'selected' : ''}>🌟 Все уроки (${lessons.length} шт)</option>`;
+        lessons.forEach(l => {
+            const count = (l.vocabulary || []).length;
+            const isSelected = String(currentFlashcardLessonId) === String(l.id) || String(currentFlashcardLessonId) === String(l.day);
+            lessonOptions += `<option value="${l.id}" ${isSelected ? 'selected' : ''}>Урок ${l.day || l.id}: ${escapeHtml(l.title)} (${count} сл.)</option>`;
+        });
 
-    filterPanel.innerHTML = `
-        <div class="flex items-center gap-2 flex-1 min-w-[200px]">
-            <span class="font-bold text-slate-700 shrink-0">Выбор урока:</span>
-            <select id="flashcardLessonSelect" onchange="onFlashcardLessonChange(this.value)" class="w-full bg-white border border-rose-200 rounded-lg px-2.5 py-1 text-xs text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-rose-400">
+        selectMount.innerHTML = `
+            <select id="flashcardLessonSelect" onchange="onFlashcardLessonChange(this.value)" class="w-full bg-white border border-rose-200 rounded-xl px-2 py-1 text-xs text-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-rose-400 truncate shadow-2xs">
                 ${lessonOptions}
             </select>
-        </div>
-        <button onclick="shuffleFlashcards()" class="px-2.5 py-1 bg-white border border-rose-200 text-rose-700 hover:bg-rose-100 rounded-lg font-semibold text-xs transition flex items-center gap-1 shadow-sm">
-            🔀 Перемешать
-        </button>
-    `;
-    container.appendChild(filterPanel);
+        `;
+    }
 
     if (currentFlashcards.length === 0) {
-        container.innerHTML += '<div class="text-center py-10 text-slate-400 text-xs">Нет карточек для выбранного фильтра.</div>';
+        cardArea.innerHTML = '<div class="text-center py-10 text-slate-400 text-xs">Нет карточек для выбранного фильтра.</div>';
         return;
     }
 
@@ -2468,7 +2496,7 @@ function renderFlashcardsView() {
     learnBtn.onclick = () => toggleLearnedWord(card.id);
     cardContainer.appendChild(learnBtn);
 
-    container.appendChild(cardContainer);
+    cardArea.appendChild(cardContainer);
 }
 
 function onFlashcardLessonChange(val) {
@@ -2521,9 +2549,14 @@ function toggleLearnedWord(id) {
 }
 
 function updateMistakesBadgeUI() {
-    const badge = document.getElementById('mistakesBadgeCount');
-    if (badge && window.lingoEngine) {
-        badge.textContent = window.lingoEngine.getMistakesCount();
+    const badge = document.getElementById('hubMistakesBadgeCount') || document.getElementById('mistakesBadgeCount');
+    if (badge) {
+        if (window.lingoEngine && typeof window.lingoEngine.getMistakesCount === 'function') {
+            badge.textContent = window.lingoEngine.getMistakesCount();
+        } else {
+            const mistakes = JSON.parse(localStorage.getItem('lingo_mistakes_queue') || '[]');
+            badge.textContent = mistakes.length;
+        }
     }
 }
 

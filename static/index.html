@@ -359,65 +359,202 @@
             </div>
         </section>
 
-        <!-- ВКЛАДКА 3: НЕМЕЦКИЙ ЯЗЫК (ДУОЛИНГО ДЛЯ АЛИНЫ: A1+ ➔ B1 НА 180 ДНЕЙ) -->
-        <section id="tab-german" class="tab-content hidden flex-1 flex flex-col bg-white sm:bg-white/95 sm:backdrop-blur rounded-none sm:rounded-2xl sm:shadow-xl sm:border sm:border-rose-100 p-1 sm:p-4 overflow-hidden h-full">
-            <!-- Компактный статус-бар German (Строка 1: Профиль Алины + Уровни A1+/A2/B1 + Счётчики) -->
-            <div class="flex items-center justify-between gap-1.5 pb-2 mb-1.5 border-b border-slate-100 shrink-0">
-                <div class="flex items-center gap-1.5 min-w-0">
-                    <img src="/static/img/alina_avatar.jpg" class="alina-profile-avatar w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border-2 border-emerald-400 shadow-2xs shrink-0 cursor-pointer active:scale-95 transition" onclick="switchTab('dossier')" alt="Алина" title="Профиль Алины">
-                    <!-- Компактный переключатель уровней курса -->
-                    <div class="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
-                        <button onclick="setGermanLevel('A1+')" id="german-btn-a1" class="px-2 py-0.5 text-[11px] font-black rounded-md bg-emerald-500 text-white shadow-2xs transition">A1+</button>
-                        <button onclick="setGermanLevel('A2')" id="german-btn-a2" class="px-2 py-0.5 text-[11px] font-bold rounded-md text-slate-600 hover:text-slate-900 transition">A2</button>
-                        <button onclick="setGermanLevel('B1')" id="german-btn-b1" class="px-2 py-0.5 text-[11px] font-bold rounded-md text-slate-600 hover:text-slate-900 transition">B1</button>
+        <!-- ВКЛАДКА 3: НЕМЕЦКИЙ ЯЗЫК (ПОРТАЛ И ХАБ ДЛЯ АЛИНЫ) -->
+        <section id="tab-german" class="tab-content hidden flex-1 flex flex-col bg-white sm:bg-white/95 sm:backdrop-blur rounded-none sm:rounded-2xl sm:shadow-xl sm:border sm:border-rose-100 p-2 sm:p-4 overflow-hidden h-full">
+            <!-- 1. ГЛАВНЫЙ ЭКРАН: НЕМЕЦКИЙ ХАБ (ПОРТАЛ ОБУЧЕНИЯ) -->
+            <div id="germanHubContainer" class="flex-1 flex flex-col overflow-y-auto space-y-3.5 pr-1 pb-4">
+                <!-- Карточка профиля и прогресса Алины -->
+                <div class="bg-gradient-to-br from-emerald-50 via-teal-50/70 to-amber-50/50 border border-emerald-200/90 rounded-2xl p-3.5 sm:p-4 shadow-sm shrink-0">
+                    <div class="flex items-center justify-between gap-3 mb-2.5">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <img src="/static/img/alina_avatar.jpg" class="alina-profile-avatar w-12 h-12 rounded-2xl object-cover border-2 border-emerald-400 shadow-md shrink-0 cursor-pointer active:scale-95 transition" onclick="switchTab('dossier')" alt="Алина">
+                            <div class="min-w-0">
+                                <h3 class="font-bold text-slate-800 text-sm sm:text-base leading-tight truncate">Guten Tag, Alina! ✨</h3>
+                                <p class="text-xs text-slate-500 mt-0.5 truncate">Твой немецкий: от базы к свободному B1</p>
+                            </div>
+                        </div>
+                        <span id="hubActiveLevelBadge" class="bg-emerald-600 text-white font-black text-xs px-2.5 py-1 rounded-xl shadow-xs shrink-0">
+                            A1+
+                        </span>
+                    </div>
+
+                    <!-- Статус-бар: Серия, Опыт, Сердечки -->
+                    <div class="grid grid-cols-3 gap-2 pt-2.5 border-t border-emerald-100/90 text-xs font-bold text-center">
+                        <div class="bg-white/90 rounded-xl py-1.5 px-2 border border-emerald-100 flex items-center justify-center gap-1.5 shadow-2xs">
+                            <span class="text-base">🔥</span>
+                            <span id="courseStreakDisplay" class="text-amber-700">1 дн.</span>
+                        </div>
+                        <div class="bg-white/90 rounded-xl py-1.5 px-2 border border-emerald-100 flex items-center justify-center gap-1.5 shadow-2xs">
+                            <img src="/static/duolingo/points.svg" class="w-4 h-4" alt="XP">
+                            <span id="courseXpDisplay" class="text-sky-700">0 XP</span>
+                        </div>
+                        <div onclick="lingoEngine.openHeartRefillModal()" class="bg-white/90 hover:bg-rose-50 rounded-xl py-1.5 px-2 border border-emerald-100 flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer transition active:scale-95" title="Пополнить сердечки">
+                            <img src="/static/duolingo/heart.svg" class="w-4 h-4" alt="Hearts">
+                            <span id="courseHeartsDisplay" class="text-rose-600">5</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Индикаторы: Серия, Опыт, Сердечки в одну строку -->
-                <div class="flex items-center gap-1 sm:gap-2 text-[11px] sm:text-xs font-black shrink-0">
-                    <div class="flex items-center gap-1 text-amber-600 bg-amber-50 px-1.5 sm:px-2 py-0.5 rounded-lg border border-amber-200" title="Серия дней обучения">
-                        <span>🔥</span>
-                        <span id="courseStreakDisplay">1 дн.</span>
+                <!-- Блок выбора уровня (A1+, A2, B1) -->
+                <div class="space-y-1.5 shrink-0">
+                    <div class="flex items-center justify-between px-1">
+                        <span class="text-xs font-bold text-slate-700">🎯 Твой уровень курса:</span>
+                        <span class="text-[11px] text-slate-400">Нажми, чтобы переключить</span>
                     </div>
-                    <div class="flex items-center gap-1 text-sky-600 bg-sky-50 px-1.5 sm:px-2 py-0.5 rounded-lg border border-sky-200" title="Очки опыта XP">
-                        <img src="/static/duolingo/points.svg" class="w-3.5 h-3.5" alt="XP">
-                        <span id="courseXpDisplay">0 XP</span>
+                    <div class="grid grid-cols-3 gap-2">
+                        <!-- Кнопка-карточка A1+ -->
+                        <button onclick="setGermanLevel('A1+')" id="hub-level-card-a1" class="p-2.5 rounded-2xl border-2 transition text-left flex flex-col justify-between active:scale-95 bg-emerald-50 border-emerald-500 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <span class="font-black text-xs text-emerald-800">A1+</span>
+                                <span id="hub-level-check-a1" class="text-emerald-600 font-bold text-xs">✓</span>
+                            </div>
+                            <span class="text-[10px] text-slate-500 mt-1 font-medium leading-tight">База: порядок слов, артикли</span>
+                        </button>
+                        <!-- Кнопка-карточка A2 -->
+                        <button onclick="setGermanLevel('A2')" id="hub-level-card-a2" class="p-2.5 rounded-2xl border-2 transition text-left flex flex-col justify-between active:scale-95 bg-white border-slate-200 hover:border-slate-300">
+                            <div class="flex items-center justify-between">
+                                <span class="font-black text-xs text-slate-700">A2</span>
+                                <span id="hub-level-check-a2" class="hidden text-emerald-600 font-bold text-xs">✓</span>
+                            </div>
+                            <span class="text-[10px] text-slate-500 mt-1 font-medium leading-tight">Быт: падежи, магазины</span>
+                        </button>
+                        <!-- Кнопка-карточка B1 -->
+                        <button onclick="setGermanLevel('B1')" id="hub-level-card-b1" class="p-2.5 rounded-2xl border-2 transition text-left flex flex-col justify-between active:scale-95 bg-white border-slate-200 hover:border-slate-300">
+                            <div class="flex items-center justify-between">
+                                <span class="font-black text-xs text-slate-700">B1</span>
+                                <span id="hub-level-check-b1" class="hidden text-emerald-600 font-bold text-xs">✓</span>
+                            </div>
+                            <span class="text-[10px] text-slate-500 mt-1 font-medium leading-tight">Жизнь: звонки, Bürgeramt</span>
+                        </button>
                     </div>
-                    <div onclick="lingoEngine.openHeartRefillModal()" class="flex items-center gap-1 text-rose-500 bg-rose-50 hover:bg-rose-100 px-1.5 sm:px-2 py-0.5 rounded-lg border border-rose-200 cursor-pointer transition shadow-2xs" title="Восстановить сердечки">
-                        <img src="/static/duolingo/heart.svg" class="w-3.5 h-3.5" alt="Hearts">
-                        <span id="courseHeartsDisplay">5</span>
+                </div>
+
+                <!-- Блок выбора режимов тренировки (Карточки) -->
+                <div class="space-y-2">
+                    <span class="text-xs font-bold text-slate-700 block px-1">🚀 Выбери режим тренировки:</span>
+
+                    <!-- Карточка 1: Дорожка уроков Duolingo (The Path) -->
+                    <div onclick="setGermanViewMode('path')" class="p-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl shadow-md hover:shadow-lg transition cursor-pointer active:scale-98 flex items-center justify-between gap-3 group">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-2xl shrink-0 group-hover:scale-105 transition">
+                                🗺️
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h4 class="font-black text-sm sm:text-base leading-tight">Дорожка уроков Duolingo</h4>
+                                    <span class="text-[10px] bg-white/25 px-2 py-0.5 rounded-full font-bold">Интерактивно</span>
+                                </div>
+                                <p class="text-xs text-emerald-100 mt-0.5 leading-snug" id="hubPathSubtitle">
+                                    День 1: Порядок слов (глагол на 2-м месте)
+                                </p>
+                            </div>
+                        </div>
+                        <span class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold text-sm shrink-0 group-hover:translate-x-1 transition">➔</span>
+                    </div>
+
+                    <!-- Карточка 2: Словарные карточки Anki -->
+                    <div onclick="setGermanViewMode('flashcards')" class="p-3.5 bg-white border-2 border-rose-200 hover:border-rose-300 rounded-2xl shadow-sm hover:shadow-md transition cursor-pointer active:scale-98 flex items-center justify-between gap-3 group">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-2xl bg-rose-50 flex items-center justify-center text-2xl shrink-0 group-hover:scale-105 transition">
+                                📇
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h4 class="font-bold text-slate-800 text-sm sm:text-base leading-tight">Словарные карточки (Anki)</h4>
+                                    <span class="text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-bold" id="hubCardsBadge">525 слов</span>
+                                </div>
+                                <p class="text-xs text-slate-500 mt-0.5 leading-snug">
+                                    Интервальное повторение, род (der/die/das), озвучка и транскрипция
+                                </p>
+                            </div>
+                        </div>
+                        <span class="w-8 h-8 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-sm shrink-0 group-hover:translate-x-1 transition">➔</span>
+                    </div>
+
+                    <!-- Карточка 3: Live Voice речевой тренажер -->
+                    <div onclick="startLiveGermanCoach(currentCourseDay)" class="p-3.5 bg-gradient-to-r from-amber-500 via-pink-500 to-rose-500 text-white rounded-2xl shadow-md hover:shadow-lg transition cursor-pointer active:scale-98 flex items-center justify-between gap-3 group">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-2xl shrink-0 group-hover:scale-105 transition">
+                                🎙️
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h4 class="font-black text-sm sm:text-base leading-tight">Live Voice: Речевой тренинг</h4>
+                                    <span class="text-[10px] bg-white/25 px-2 py-0.5 rounded-full font-bold">5 минут</span>
+                                </div>
+                                <p class="text-xs text-amber-100 mt-0.5 leading-snug">
+                                    Живой разговор голосом по ситуациям в Германии (чиновник, врач, покупки)
+                                </p>
+                            </div>
+                        </div>
+                        <span class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold text-sm shrink-0 group-hover:translate-x-1 transition">➔</span>
+                    </div>
+
+                    <!-- Карточка 4: Банк ошибок -->
+                    <div onclick="openMistakesModal()" class="p-3 bg-slate-50 hover:bg-rose-50/50 border border-slate-200 hover:border-rose-200 rounded-2xl transition cursor-pointer active:scale-98 flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-lg shrink-0">
+                                🎯
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-xs sm:text-sm leading-tight">Работа над ошибками</h4>
+                                <p class="text-[11px] text-slate-500 mt-0.5">
+                                    Слова и фразы, в которых были неточности: <b id="hubMistakesBadgeCount" class="text-rose-600">0</b>
+                                </p>
+                            </div>
+                        </div>
+                        <span class="text-slate-400 text-xs font-semibold">Повторить ➔</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Строка 2: Нативный сегментированный переключатель режимов (100% ширины, идеальный тач) -->
-            <div class="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl mb-2 shrink-0 border border-slate-200/80">
-                <button onclick="setGermanViewMode('path')" id="german-mode-path" class="py-1.5 text-xs font-black rounded-lg bg-white text-emerald-800 shadow-xs transition flex items-center justify-center gap-1.5 active:scale-95">
-                    <span>🗺️</span>
-                    <span>Дорожка</span>
-                </button>
-                <button onclick="setGermanViewMode('flashcards')" id="german-mode-flashcards" class="py-1.5 text-xs font-bold rounded-lg text-slate-600 hover:text-slate-800 transition flex items-center justify-center gap-1.5 active:scale-95">
-                    <span>📇</span>
-                    <span>Карточки</span>
-                </button>
-                <button onclick="openMistakesModal()" id="german-mode-mistakes" class="py-1.5 text-xs font-bold rounded-lg text-rose-600 hover:bg-rose-50 transition flex items-center justify-center gap-1.5 active:scale-95">
-                    <span>🎯</span>
-                    <span>Ошибки (<span id="mistakesBadgeCount">0</span>)</span>
-                </button>
+            <!-- 2. РЕЖИМ: ДОРОЖКА УРОКОВ DUOLINGO (THE PATH) - ЧИСТЫЙ ЭКРАН -->
+            <div id="germanPathContainer" class="hidden flex-1 flex flex-col overflow-hidden h-full">
+                <!-- Верхняя компактная строка (ровно 1 строка!) -->
+                <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 shrink-0">
+                    <button onclick="setGermanViewMode('hub')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition flex items-center gap-1 active:scale-95 shadow-2xs">
+                        <span>⬅️</span>
+                        <span>В меню</span>
+                    </button>
+                    <div class="flex items-center gap-1.5 font-black text-xs text-slate-800">
+                        <span class="text-emerald-600">🗺️</span>
+                        <span id="pathHeaderLevelLabel">Уровень A1+ • Дорожка</span>
+                    </div>
+                    <!-- Мини-статус сердечек и XP -->
+                    <div class="flex items-center gap-2 text-xs font-bold">
+                        <span class="text-sky-600 flex items-center gap-0.5"><img src="/static/duolingo/points.svg" class="w-3.5 h-3.5" alt="XP"> <span id="pathXpMini">0</span></span>
+                        <span onclick="lingoEngine.openHeartRefillModal()" class="text-rose-500 flex items-center gap-0.5 cursor-pointer" title="Сердечки"><img src="/static/duolingo/heart.svg" class="w-3.5 h-3.5" alt="Hearts"> <span id="pathHeartsMini">5</span></span>
+                    </div>
+                </div>
+
+                <!-- Сама дорожка уроков The Path со свободным скроллом на 100% высоты -->
+                <div id="germanPathScrollArea" class="flex-1 overflow-y-auto pr-1">
+                    <!-- Заполняется движком lingoEngine.renderPathView() -->
+                </div>
             </div>
 
-            <div id="flashcardsStat" class="hidden text-[11px] text-slate-500 mb-1.5 font-bold text-center">
-                Выучено слов: <span id="learnedCount" class="text-emerald-600">0</span>
-            </div>
+            <!-- 3. РЕЖИМ: КАРТОЧКИ СЛОВ (ANKI) - ЧИСТЫЙ ЭКРАН -->
+            <div id="germanFlashcardsContainer" class="hidden flex-1 flex flex-col overflow-hidden h-full">
+                <!-- Верхняя компактная строка навигации карточек (ровно 1 строка!) -->
+                <div class="flex items-center justify-between pb-2 mb-2 border-b border-rose-100 shrink-0 gap-1.5">
+                    <button onclick="setGermanViewMode('hub')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition flex items-center gap-1 active:scale-95 shadow-2xs shrink-0">
+                        <span>⬅️</span>
+                        <span>В меню</span>
+                    </button>
+                    <!-- Компактный селектор урока -->
+                    <div class="flex-1 min-w-0" id="flashcardSelectMount">
+                        <!-- Вставляется JS -->
+                    </div>
+                    <!-- Кнопка перемешать -->
+                    <button onclick="shuffleFlashcards()" class="p-1.5 px-2 bg-white border border-rose-200 text-rose-700 hover:bg-rose-50 rounded-xl font-bold text-xs transition flex items-center gap-1 shadow-2xs shrink-0 active:scale-95" title="Перемешать карточки">
+                        <span>🔀</span>
+                    </button>
+                </div>
 
-            <!-- КОНТЕЙНЕР 1: ДОРОЖКА УРОКОВ DUOLINGO (THE PATH) -->
-            <div id="germanPathContainer" class="flex-1 overflow-y-auto pr-1">
-                <!-- Заполняется движком lingoEngine.renderPathView() -->
-            </div>
-
-            <!-- КОНТЕЙНЕР 3: КАРТОЧКИ СЛОВ (ANKI) -->
-            <div id="germanFlashcardsContainer" class="hidden flex-1 overflow-y-auto space-y-4 pr-1">
-                <!-- Заполняется для режима Flashcards -->
+                <!-- Область карточки -->
+                <div id="flashcardsCardArea" class="flex-1 overflow-y-auto space-y-3 pr-1 flex flex-col justify-start sm:justify-center">
+                    <!-- Заполняется функцией renderFlashcardsView() -->
+                </div>
             </div>
         </section>
 
@@ -766,7 +903,7 @@
     <audio id="liveGlobalAudioPlayer" preload="auto" playsinline webkit-playsinline class="hidden"></audio>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    <script src="/static/duolingo/duolingo.js?v=20"></script>
-    <script src="/static/app.js?v=20"></script>
+    <script src="/static/duolingo/duolingo.js?v=21"></script>
+    <script src="/static/app.js?v=21"></script>
 </body>
 </html>

@@ -1084,11 +1084,16 @@ class LingoGameEngine {
 
         document.body.classList.remove('overflow-hidden');
         const lingoContainer = document.getElementById('lingoAppContainer');
-        const pathContainer = document.getElementById('germanPathContainer');
         if (lingoContainer) lingoContainer.classList.add('hidden');
-        if (pathContainer) {
-            pathContainer.classList.remove('hidden');
-            this.renderPathView(pathContainer, (window.allGermanCourseData ? window.allGermanCourseData.lessons : []));
+        if (typeof window.setGermanViewMode === 'function') {
+            window.setGermanViewMode('path');
+        } else {
+            const pathContainer = document.getElementById('germanPathContainer');
+            const scrollArea = document.getElementById('germanPathScrollArea') || pathContainer;
+            if (pathContainer) {
+                pathContainer.classList.remove('hidden');
+                this.renderPathView(scrollArea, (window.allGermanCourseData ? window.allGermanCourseData.lessons : []));
+            }
         }
     }
 

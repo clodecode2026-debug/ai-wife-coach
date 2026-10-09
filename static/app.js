@@ -2160,22 +2160,15 @@ function renderGermanPlatform() {
     const flashcardsContainer = document.getElementById('germanFlashcardsContainer');
 
     // 1. Обновляем уровень в Хабе (A1+ / A2 / B1)
+    // 1. Обновляем уровень в Хабе (A1+ / A2 / B1) — сегментированный стеклянный переключатель
     const activeLevelKey = currentGermanLevel.startsWith('A1') ? 'a1' : currentGermanLevel.toLowerCase();
     ['a1', 'a2', 'b1'].forEach(lvl => {
         const card = document.getElementById('hub-level-card-' + lvl);
-        const check = document.getElementById('hub-level-check-' + lvl);
         if (card) {
             if (lvl === activeLevelKey) {
-                card.className = 'p-2.5 rounded-2xl border-2 transition text-left flex flex-col justify-between active:scale-95 bg-emerald-50 border-emerald-500 shadow-sm';
+                card.className = 'flex-1 py-2 px-1 rounded-xl transition-all duration-200 text-center flex flex-col items-center justify-center active:scale-95 bg-white shadow-sm border border-white text-emerald-800 ring-2 ring-emerald-400/40';
             } else {
-                card.className = 'p-2.5 rounded-2xl border-2 transition text-left flex flex-col justify-between active:scale-95 bg-white border-slate-200 hover:border-slate-300';
-            }
-        }
-        if (check) {
-            if (lvl === activeLevelKey) {
-                check.classList.remove('hidden');
-            } else {
-                check.classList.add('hidden');
+                card.className = 'flex-1 py-2 px-1 rounded-xl transition-all duration-200 text-center flex flex-col items-center justify-center active:scale-95 text-slate-600 hover:bg-white/50 border border-transparent';
             }
         }
     });

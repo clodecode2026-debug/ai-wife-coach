@@ -2233,6 +2233,9 @@ function prepareFlashcards() {
                 german: v.german,
                 transcription: v.transcription || '',
                 russian: v.russian,
+                article: v.article || '',
+                gender: v.gender || '',
+                plural: v.plural || '',
                 example: v.example || '',
                 example_translation: v.example_translation || '',
                 voice_hint: v.voice_hint || 'de-DE-KatjaNeural',
@@ -2254,6 +2257,9 @@ function prepareFlashcards() {
                     german: v.german,
                     transcription: v.transcription || '',
                     russian: v.russian,
+                    article: v.article || '',
+                    gender: v.gender || '',
+                    plural: v.plural || '',
                     example: v.example || '',
                     example_translation: v.example_translation || '',
                     voice_hint: v.voice_hint || 'de-DE-KatjaNeural',
@@ -2311,6 +2317,47 @@ function renderFlashcardsView() {
     const isLearned = learnedWords.includes(card.id);
     const speakerName = card.voice_hint.includes('Conrad') ? 'Conrad 👨' : 'Katja 👩';
 
+    // Определение рода и цветовой темы (der - синий, die - красный/розовый, das - зеленый)
+    const art = (card.article || '').toLowerCase().trim();
+    const gen = (card.gender || '').toLowerCase().trim();
+    let genderLabel = '';
+    let genderBadgeClass = 'bg-slate-100 text-slate-700 border-slate-200';
+    let cardBorderClass = 'border-rose-200 hover:border-rose-300';
+    let wordTitleColor = 'text-slate-800';
+
+    if (art === 'der' || gen === 'm' || gen === 'masc' || gen === 'masculine') {
+        genderLabel = '🔵 der • Мужской';
+        genderBadgeClass = 'bg-sky-100 text-sky-800 border-sky-300 font-bold';
+        cardBorderClass = 'border-sky-300 hover:border-sky-400 shadow-sky-100/50';
+        wordTitleColor = 'text-sky-950';
+    } else if (art === 'die' && gen !== 'plural' && gen !== 'pl' || gen === 'f' || gen === 'fem' || gen === 'feminine') {
+        genderLabel = '🔴 die • Женский';
+        genderBadgeClass = 'bg-rose-100 text-rose-800 border-rose-300 font-bold';
+        cardBorderClass = 'border-rose-300 hover:border-rose-400 shadow-rose-100/50';
+        wordTitleColor = 'text-rose-950';
+    } else if (art === 'das' || gen === 'n' || gen === 'neut' || gen === 'neuter') {
+        genderLabel = '🟢 das • Средний';
+        genderBadgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-300 font-bold';
+        cardBorderClass = 'border-emerald-300 hover:border-emerald-400 shadow-emerald-100/50';
+        wordTitleColor = 'text-emerald-950';
+    } else if (art === 'pl' || gen === 'plural' || gen === 'pl') {
+        genderLabel = '🟡 die • Множественное';
+        genderBadgeClass = 'bg-amber-100 text-amber-800 border-amber-300 font-bold';
+        cardBorderClass = 'border-amber-300 hover:border-amber-400 shadow-amber-100/50';
+        wordTitleColor = 'text-amber-950';
+    }
+
+    const pluralHtml = card.plural ? `
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100/90 text-slate-700 rounded-xl text-xs font-semibold border border-slate-200/90 shadow-sm">
+            <span>📚 Plural:</span>
+            <span class="font-bold text-slate-900">${escapeHtml(card.plural)}</span>
+            <button onclick="event.stopPropagation(); playTTS(this, '${escapeQuotes(card.plural)}', '${card.voice_hint}')" 
+                    class="text-slate-500 hover:text-slate-800 p-0.5 ml-0.5 transition" title="Озвучить множественное число">
+                🔊
+            </button>
+        </div>
+    ` : '';
+
     const cardContainer = document.createElement('div');
     cardContainer.className = 'max-w-md mx-auto w-full space-y-4';
 
@@ -2325,9 +2372,9 @@ function renderFlashcardsView() {
         </div>
     `;
 
-    // Сама интерактивная карточка
+    // Сама интерактивная карточка с цветовой дифференциацией рода
     const flashcardEl = document.createElement('div');
-    flashcardEl.className = 'bg-white border-2 border-rose-200 hover:border-rose-300 rounded-2xl p-6 shadow-md min-h-[220px] flex flex-col justify-between cursor-pointer transition-all duration-200 select-none relative group';
+    flashcardEl.className = `bg-white border-2 ${cardBorderClass} rounded-2xl p-6 shadow-md min-h-[230px] flex flex-col justify-between cursor-pointer transition-all duration-200 select-none relative group`;
     flashcardEl.onclick = (e) => {
         // Если кликнули на кнопку озвучки — не переворачиваем
         if (e.target.closest('button')) return;
@@ -2338,43 +2385,58 @@ function renderFlashcardsView() {
         // ПЕРЕДНЯЯ СТОРОНА КАРТОЧКИ (НЕМЕЦКИЙ)
         flashcardEl.innerHTML = `
             <div class="flex items-center justify-between text-[11px] text-slate-400">
-                <span class="bg-rose-50 text-rose-600 px-2 py-0.5 rounded font-bold uppercase tracking-wider">${card.level} • НЕМЕЦКИЙ</span>
-                ${isLearned ? '<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold text-[10px]">✅ Выучено</span>' : '<span class="text-slate-400">Нажмите, чтобы перевернуть</span>'}
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-bold uppercase tracking-wider">${card.level} • НЕМЕЦКИЙ</span>
+                    ${genderLabel ? `<span class="px-2 py-0.5 rounded border text-[11px] ${genderBadgeClass}">${genderLabel}</span>` : ''}
+                </div>
+                ${isLearned ? '<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold text-[10px]">✅ Выучено</span>' : '<span class="text-slate-400 text-[10px]">Нажмите, чтобы перевернуть</span>'}
             </div>
             <div class="text-center my-4 space-y-2">
-                <h3 class="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">${escapeHtml(card.german)}</h3>
+                <h3 class="text-2xl sm:text-3xl font-extrabold tracking-tight ${wordTitleColor}">${escapeHtml(card.german)}</h3>
+                ${pluralHtml ? `<div class="pt-0.5">${pluralHtml}</div>` : ''}
                 ${card.transcription ? `<p class="text-rose-500 font-mono text-xs sm:text-sm font-semibold">${escapeHtml(card.transcription)}</p>` : ''}
             </div>
-            <div class="flex items-center justify-between pt-2 border-t border-rose-50">
+            <div class="flex items-center justify-between pt-2 border-t border-slate-100">
                 <button onclick="playTTS(this, '${escapeQuotes(card.german)}', '${card.voice_hint}')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl border border-rose-200 text-xs transition flex items-center gap-1.5 shadow-sm">
                     <span>🔊</span> <span>Озвучить (${speakerName})</span>
                 </button>
-                <span class="text-[11px] text-rose-400 font-medium">Показать перевод ➔</span>
+                <span class="text-[11px] text-rose-500 font-medium">Показать перевод ➔</span>
             </div>
         `;
     } else {
         // ЗАДНЯЯ СТОРОНА КАРТОЧКИ (РУССКИЙ ПЕРЕВОД + ПРИМЕР)
         flashcardEl.innerHTML = `
             <div class="flex items-center justify-between text-[11px] text-slate-400">
-                <span class="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded font-bold uppercase tracking-wider">${card.level} • ПЕРЕВОД</span>
-                ${isLearned ? '<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold text-[10px]">✅ Выучено</span>' : '<span class="text-slate-400">Нажмите, чтобы скрыть</span>'}
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-bold uppercase tracking-wider">${card.level} • ПЕРЕВОД</span>
+                    ${genderLabel ? `<span class="px-2 py-0.5 rounded border text-[11px] ${genderBadgeClass}">${genderLabel}</span>` : ''}
+                </div>
+                ${isLearned ? '<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold text-[10px]">✅ Выучено</span>' : '<span class="text-slate-400 text-[10px]">Нажмите, чтобы скрыть</span>'}
             </div>
             <div class="text-center my-3 space-y-2">
-                <p class="text-xs text-rose-600 font-bold">${escapeHtml(card.german)} ${card.transcription ? `<span class="font-mono font-normal">(${escapeHtml(card.transcription)})</span>` : ''}</p>
+                <p class="text-xs ${wordTitleColor} font-bold">
+                    ${escapeHtml(card.german)} 
+                    ${card.transcription ? `<span class="font-mono font-normal text-slate-500">(${escapeHtml(card.transcription)})</span>` : ''}
+                </p>
+                ${pluralHtml ? `<div class="pt-0.5">${pluralHtml}</div>` : ''}
                 <h3 class="text-xl sm:text-2xl font-extrabold text-emerald-800">${escapeHtml(card.russian)}</h3>
                 ${card.example ? `
-                    <div class="mt-3 p-2.5 bg-emerald-50/70 rounded-xl border border-emerald-100 text-xs text-left">
+                    <div class="mt-3 p-3 bg-emerald-50/70 rounded-xl border border-emerald-100 text-xs text-left space-y-1">
                         <div class="flex items-center justify-between gap-1">
                             <span class="font-bold text-slate-800">Пример: <i>${escapeHtml(card.example)}</i></span>
-                            <button onclick="playTTS(this, '${escapeQuotes(card.example)}', '${card.voice_hint}')" class="text-emerald-700 hover:text-emerald-900 p-0.5" title="Озвучить пример">🔊</button>
+                            <button onclick="event.stopPropagation(); playTTS(this, '${escapeQuotes(card.example)}', '${card.voice_hint}')" 
+                                    class="text-emerald-700 hover:text-emerald-900 bg-white border border-emerald-200 rounded-lg px-2 py-1 flex items-center gap-1 text-[11px] shadow-sm font-semibold transition" 
+                                    title="Озвучить пример">
+                                🔊 Озвучить
+                            </button>
                         </div>
-                        ${card.example_translation ? `<p class="text-slate-600 text-[11px] mt-0.5">${escapeHtml(card.example_translation)}</p>` : ''}
+                        ${card.example_translation ? `<p class="text-slate-600 text-[11px]">${escapeHtml(card.example_translation)}</p>` : ''}
                     </div>
                 ` : ''}
             </div>
-            <div class="flex items-center justify-between pt-2 border-t border-rose-50">
+            <div class="flex items-center justify-between pt-2 border-t border-slate-100">
                 <button onclick="playTTS(this, '${escapeQuotes(card.german)}', '${card.voice_hint}')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-xl border border-rose-200 text-xs transition flex items-center gap-1.5 shadow-sm">
-                    <span>🔊</span> <span>${card.german}</span>
+                    <span>🔊</span> <span>${escapeHtml(card.german)}</span>
                 </button>
                 <span class="text-[11px] text-emerald-600 font-medium">Вернуть слово ↺</span>
             </div>

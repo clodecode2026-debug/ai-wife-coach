@@ -130,13 +130,83 @@ class LingoGameEngine {
     }
 
     // =========================================================================
-    // 2. ГЕНЕРАЦИЯ ЗАДАНИЙ УРОКА (5 РАЗНООБРАЗНЫХ ТИПОВ)
+    // 2. ГЕНЕРАЦИЯ ЗАДАНИЙ УРОКА (8-10 РАЗНООБРАЗНЫХ ТИПОВ DUOLINGO)
     // =========================================================================
+    createClozeChallenge(item) {
+        if (!item || !item.example) return null;
+        const ex = item.example.trim();
+        const keywords = [
+            'dem', 'den', 'der', 'die', 'das', 'des', 'einem', 'einen', 'einer', 'ein',
+            'mit', 'bei', 'nach', 'zu', 'aus', 'seit', 'von', 'in', 'an', 'auf', 'über', 'unter', 'vor', 'zwischen', 'neben', 'hinter',
+            'weil', 'dass', 'wenn', 'obwohl', 'da', 'trotzdem',
+            'konnte', 'musste', 'wollte', 'durfte', 'sollte', 'könnten', 'würden', 'hätte', 'wäre'
+        ];
+
+        const words = ex.split(/\s+/);
+        let targetWord = null;
+        let targetIndex = -1;
+        for (let i = 0; i < words.length; i++) {
+            const clean = words[i].replace(/[.,!?;:()]/g, '');
+            if (keywords.includes(clean.toLowerCase())) {
+                targetWord = clean;
+                targetIndex = i;
+                break;
+            }
+        }
+
+        if (!targetWord || targetIndex === -1) return null;
+
+        let distractors = [];
+        const low = targetWord.toLowerCase();
+        if (['dem', 'den', 'der', 'das', 'die', 'des'].includes(low)) {
+            const arts = ['dem', 'den', 'der', 'das', 'die', 'des'].filter(a => a !== low);
+            distractors = arts.sort(() => 0.5 - Math.random()).slice(0, 2);
+        } else if (['einem', 'einen', 'einer', 'ein', 'eines'].includes(low)) {
+            const eins = ['einem', 'einen', 'einer', 'ein'].filter(e => e !== low);
+            distractors = eins.sort(() => 0.5 - Math.random()).slice(0, 2);
+        } else if (['mit', 'bei', 'nach', 'zu', 'aus', 'seit', 'von', 'in', 'an', 'auf', 'über', 'unter', 'vor'].includes(low)) {
+            const preps = ['mit', 'bei', 'nach', 'zu', 'aus', 'seit', 'von', 'in', 'an', 'auf'].filter(p => p !== low);
+            distractors = preps.sort(() => 0.5 - Math.random()).slice(0, 2);
+        } else if (['weil', 'dass', 'wenn', 'obwohl', 'da', 'trotzdem'].includes(low)) {
+            const conns = ['weil', 'dass', 'wenn', 'obwohl'].filter(c => c !== low);
+            distractors = conns.sort(() => 0.5 - Math.random()).slice(0, 2);
+        } else if (['könnten', 'würden', 'hätte', 'wäre'].includes(low)) {
+            const modk = ['könnten', 'würden', 'hätten', 'wären'].filter(m => m !== low);
+            distractors = modk.sort(() => 0.5 - Math.random()).slice(0, 2);
+        } else {
+            distractors = ['den', 'dem'];
+        }
+
+        const clozeWords = [...words];
+        clozeWords[targetIndex] = clozeWords[targetIndex].replace(targetWord, '___');
+        const clozeSentence = clozeWords.join(' ');
+
+        const options = [
+            { text: targetWord, isCorrect: true },
+            { text: distractors[0] || 'den', isCorrect: false },
+            { text: distractors[1] || 'dem', isCorrect: false }
+        ].sort(() => 0.5 - Math.random());
+
+        return {
+            type: 'CLOZE',
+            question: 'Заполните пропуск в предложении (Lückentext):',
+            mascotText: 'Обратите внимание на падеж, артикль или предлог!',
+            clozeSentence: clozeSentence,
+            clozeFullSentence: ex,
+            correctFull: ex,
+            translation: item.example_translation || item.russian || '',
+            voiceHint: item.voice_hint || 'de-DE-KatjaNeural',
+            options: options,
+            correctOptionText: targetWord,
+            correctExplanation: `Правильно: ${ex} (${item.example_translation || item.russian})`
+        };
+    }
+
     generateChallenges(lesson, allLessons) {
         const challenges = [];
         const vocab = lesson.vocabulary || [];
 
-        // 1. ТИП: MATCH PAIRS (Соедини 4 пары слов в начале урока для разминки)
+        // 1. ТИП: MATCH PAIRS 1 (Соедини 4 пары слов в начале урока для разминки)
         if (vocab.length >= 4) {
             const pairSlice = vocab.slice(0, 4);
             const leftCards = pairSlice.map((v, idx) => ({ id: `L_${idx}`, pairId: idx, side: 'de', text: v.german, voiceHint: v.voice_hint }));
@@ -151,7 +221,7 @@ class LingoGameEngine {
             });
         }
 
-        // 2. ТИП: WORD BANK (Собери фразу из слов — тренировка порядка слов)
+        // 2. ТИП: WORD BANK 1 (Собери фразу из слов — тренировка порядка слов)
         if (vocab.length > 0) {
             const item1 = vocab[0];
             const cleanGerman = item1.german.replace(/[.!?]/g, '').trim();
@@ -160,7 +230,6 @@ class LingoGameEngine {
             let questionRu = item1.russian;
             let correctFull = item1.german;
 
-            // Если фраза короткая (< 3 слов) и есть хороший пример из 3-8 слов — тренируем полноценное предложение
             if (words.length < 3 && item1.example) {
                 const exClean = item1.example.replace(/[.!?]/g, '').trim();
                 const exWords = exClean.split(/\s+/);
@@ -172,7 +241,6 @@ class LingoGameEngine {
                 }
             }
             
-            // 2 дистрактора из того же урока
             const otherWords = vocab.slice(1).flatMap(v => (v.example || v.german).replace(/[.!?]/g, '').split(/\s+/)).filter(w => !words.includes(w));
             const extraWords = [...new Set(otherWords)].slice(0, 2);
 
@@ -193,7 +261,7 @@ class LingoGameEngine {
             });
         }
 
-        // 3. ТИП: SMART SELECT (Осмысленный выбор немецкого перевода БЕЗ динамиков и спойлеров)
+        // 3. ТИП: SMART SELECT (Осмысленный выбор перевода)
         if (vocab.length > 1) {
             const item2 = vocab[1];
             const distractors = this.getSmartDistractors(item2.german, allLessons, 2, true);
@@ -215,7 +283,16 @@ class LingoGameEngine {
             });
         }
 
-        // 4. ТИП: LISTENING (Аудирование с нейро-голосом Katja/Conrad)
+        // 4. ТИП: CLOZE 1 (Lückentext — заполни пропуск в предложении)
+        for (let i = 2; i < Math.min(vocab.length, 7); i++) {
+            const clozeCh = this.createClozeChallenge(vocab[i]);
+            if (clozeCh) {
+                challenges.push(clozeCh);
+                break;
+            }
+        }
+
+        // 5. ТИП: LISTENING (Аудирование с нейро-голосом)
         if (vocab.length > 2) {
             const item3 = vocab[2];
             const distractorsRu = this.getSmartDistractors(item3.russian, allLessons, 2, false);
@@ -238,27 +315,39 @@ class LingoGameEngine {
             });
         }
 
-        // 5. ТИП: WORD BANK 2 (Вторая фраза на закрепление структуры)
-        if (vocab.length > 3) {
-            const item4 = vocab[3];
-            const cleanGerman = item4.german.replace(/[.!?]/g, '').trim();
+        // 6. ТИП: ARTICLE QUIZ (der / die / das тренажер рода)
+        const nounsWithArticles = vocab.filter(v => v.article && ['der', 'die', 'das'].includes(v.article.toLowerCase()));
+        if (nounsWithArticles.length > 0) {
+            nounsWithArticles.slice(0, 2).forEach((noun) => {
+                const cleanWord = noun.german.replace(/^(der|die|das)\s+/i, '').trim();
+                const correctArt = noun.article.toLowerCase();
+                challenges.push({
+                    type: 'SELECT',
+                    question: `Какой артикль у слова «${cleanWord}» (${noun.russian})?`,
+                    mascotText: 'В немецком род существительного нужно запоминать вместе со словом!',
+                    options: [
+                        { text: `der ${cleanWord} (мужской род)`, isCorrect: correctArt === 'der', voiceHint: 'de-DE-KatjaNeural' },
+                        { text: `die ${cleanWord} (женский род)`, isCorrect: correctArt === 'die', voiceHint: 'de-DE-KatjaNeural' },
+                        { text: `das ${cleanWord} (средний род)`, isCorrect: correctArt === 'das', voiceHint: 'de-DE-KatjaNeural' }
+                    ],
+                    correctOptionText: `${correctArt} ${cleanWord} (${correctArt === 'der' ? 'мужской' : correctArt === 'die' ? 'женский' : 'средний'} род)`,
+                    voiceHint: noun.voice_hint || 'de-DE-KatjaNeural',
+                    correctExplanation: `Верно! ${noun.article} ${cleanWord} — ${noun.russian}. ${noun.plural ? `(Мн. число: ${noun.plural})` : ''} ${noun.example ? `Пример: ${noun.example}` : ''}`
+                });
+            });
+        }
+
+        // 7. ТИП: WORD BANK 2 (Второе предложение — сложный порядок слов / придаточное)
+        if (vocab.length > 5) {
+            const item4 = vocab[5];
+            const cleanGerman = (item4.example || item4.german).replace(/[.!?]/g, '').trim();
             let words = cleanGerman.split(/\s+/);
-            let targetSentence = cleanGerman;
-            let questionRu = item4.russian;
-            let correctFull = item4.german;
+            if (words.length > 8) words = words.slice(0, 8);
+            const targetSentence = words.join(' ');
+            const questionRu = item4.example_translation || item4.russian;
+            const correctFull = targetSentence;
 
-            if (words.length < 3 && item4.example) {
-                const exClean = item4.example.replace(/[.!?]/g, '').trim();
-                const exWords = exClean.split(/\s+/);
-                if (exWords.length >= 3 && exWords.length <= 8) {
-                    words = exWords;
-                    targetSentence = exClean;
-                    questionRu = item4.example_translation || item4.russian;
-                    correctFull = item4.example;
-                }
-            }
-
-            const otherWords = vocab.slice(0, 3).flatMap(v => (v.example || v.german).replace(/[.!?]/g, '').split(/\s+/)).filter(w => !words.includes(w));
+            const otherWords = vocab.slice(0, 5).flatMap(v => (v.example || v.german).replace(/[.!?]/g, '').split(/\s+/)).filter(w => !words.includes(w));
             const extraWords = [...new Set(otherWords)].slice(0, 2);
 
             const allTokens = [...words, ...extraWords].map((word, idx) => ({
@@ -278,7 +367,16 @@ class LingoGameEngine {
             });
         }
 
-        // 6. ТИП: DIALOGUE SIMULATOR (Реальная ситуация в Германии)
+        // 8. ТИП: CLOZE 2 (Второй Lückentext из второй половины словаря)
+        for (let i = 7; i < vocab.length; i++) {
+            const clozeCh2 = this.createClozeChallenge(vocab[i]);
+            if (clozeCh2) {
+                challenges.push(clozeCh2);
+                break;
+            }
+        }
+
+        // 9. ТИП: DIALOGUE SIMULATOR (Реальная ситуация в Германии)
         if (lesson.dialogue_simulator) {
             const currentEx = lesson.dialogue_simulator.example;
             const otherDialogueExamples = (allLessons || [])
@@ -304,38 +402,17 @@ class LingoGameEngine {
             });
         }
 
-        // 7. ТИП: ARTICLE QUIZ (Определение рода и артикля der/die/das)
-        const nounsWithArticles = vocab.filter(v => v.article && ['der', 'die', 'das'].includes(v.article.toLowerCase()));
-        if (nounsWithArticles.length > 0) {
-            nounsWithArticles.slice(0, 2).forEach((noun, nIdx) => {
-                const cleanWord = noun.german.replace(/^(der|die|das)\s+/i, '').trim();
-                const correctArt = noun.article.toLowerCase();
-                challenges.push({
-                    type: 'SELECT',
-                    question: `Какой артикль у слова «${cleanWord}» (${noun.russian})?`,
-                    mascotText: 'В немецком род существительного нужно запоминать вместе со словом!',
-                    options: [
-                        { text: `der ${cleanWord} (мужской род)`, isCorrect: correctArt === 'der', voiceHint: 'de-DE-KatjaNeural' },
-                        { text: `die ${cleanWord} (женский род)`, isCorrect: correctArt === 'die', voiceHint: 'de-DE-KatjaNeural' },
-                        { text: `das ${cleanWord} (средний род)`, isCorrect: correctArt === 'das', voiceHint: 'de-DE-KatjaNeural' }
-                    ],
-                    correctOptionText: `${correctArt} ${cleanWord} (${correctArt === 'der' ? 'мужской' : correctArt === 'die' ? 'женский' : 'средний'} род)`,
-                    voiceHint: noun.voice_hint || 'de-DE-KatjaNeural',
-                    correctExplanation: `Верно! ${noun.article} ${cleanWord} — ${noun.russian}. ${noun.example ? `Пример: ${noun.example}` : ''}`
-                });
-            });
-        }
-
-        // 8. ТИП: SECOND MATCH PAIRS (Закрепление расширенного словарного запаса)
-        if (vocab.length >= 8) {
-            const pairSlice2 = vocab.slice(4, 8);
+        // 10. ТИП: MATCH PAIRS 2 (Закрепление расширенного словарного запаса — вторая четверка)
+        if (vocab.length >= 10) {
+            const startIdx = Math.min(8, vocab.length - 4);
+            const pairSlice2 = vocab.slice(startIdx, startIdx + 4);
             const leftCards2 = pairSlice2.map((v, idx) => ({ id: `L2_${idx}`, pairId: idx + 10, side: 'de', text: v.german, voiceHint: v.voice_hint }));
             const rightCards2 = pairSlice2.map((v, idx) => ({ id: `R2_${idx}`, pairId: idx + 10, side: 'ru', text: v.russian }));
 
             challenges.push({
                 type: 'MATCH_PAIRS',
                 question: 'Закрепление слов: соедините пары слов:',
-                mascotText: 'Отлично справляешься! Соедини оставшиеся слова урока:',
+                mascotText: 'Отлично справляешься! Закрепи новые слова урока:',
                 cards: [...leftCards2, ...rightCards2].sort(() => 0.5 - Math.random()),
                 totalPairs: 4
             });
@@ -487,6 +564,8 @@ class LingoGameEngine {
             return this.renderMatchPairsContent(challenge);
         } else if (challenge.type === 'LISTEN') {
             return this.renderListenContent(challenge);
+        } else if (challenge.type === 'CLOZE') {
+            return this.renderClozeContent(challenge);
         } else {
             // SELECT or DIALOGUE
             return this.renderSelectContent(challenge);
@@ -663,6 +742,68 @@ class LingoGameEngine {
                                     </span>
                                     <span class="font-bold text-sm sm:text-base">${escapeHtml(opt.text)}</span>
                                 </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    // =========================================================================
+    // 7b. РЕНДЕР И ЛОГИКА CLOZE / LÜCKENTEXT (ЗАПОЛНЕНИЕ ПРОПУСКОВ)
+    // =========================================================================
+    renderClozeContent(challenge) {
+        const parts = escapeHtml(challenge.clozeSentence).split('___');
+        const gapDisplay = this.selectedOptionIndex !== null && challenge.options[this.selectedOptionIndex]
+            ? `<span class="inline-block px-3 py-0.5 mx-1 font-bold text-sky-700 bg-sky-100 border-b-2 border-sky-400 rounded-lg animate-fade-in">${escapeHtml(challenge.options[this.selectedOptionIndex].text)}</span>`
+            : `<span class="inline-block min-w-[48px] px-2 py-0.5 mx-1 font-bold text-amber-600 bg-amber-50 border-b-2 border-dashed border-amber-400 rounded-lg text-center">___</span>`;
+
+        return `
+            <div class="space-y-5">
+                <!-- Cloze Sentence Card -->
+                <div class="p-4 sm:p-5 bg-gradient-to-br from-amber-50/70 to-orange-50/50 border-2 border-amber-200/80 rounded-2xl shadow-sm">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="text-base sm:text-lg font-bold text-slate-800 leading-relaxed">
+                            ${parts[0] || ''}${gapDisplay}${parts[1] || ''}
+                        </div>
+                        ${challenge.voiceHint ? `
+                            <button onclick="playTTS(this, '${escapeQuotes(challenge.clozeFullSentence)}', '${challenge.voiceHint}')"
+                                    class="w-10 h-10 rounded-xl bg-white border border-amber-300 shadow-sm flex items-center justify-center text-lg text-amber-700 hover:bg-amber-100 shrink-0 transition"
+                                    title="Послушать предложение">
+                                🔊
+                            </button>
+                        ` : ''}
+                    </div>
+                    ${challenge.translation ? `
+                        <div class="text-xs sm:text-sm text-slate-500 font-medium mt-2 pt-2 border-t border-amber-200/60">
+                            ${escapeHtml(challenge.translation)}
+                        </div>
+                    ` : ''}
+                </div>
+
+                <!-- Choice Options (3 buttons) -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    ${challenge.options.map((opt, idx) => {
+                        let style = "border-slate-200 bg-white hover:bg-slate-50 text-slate-700 border-2 border-b-4 active:border-b-2";
+                        if (this.selectedOptionIndex === idx) {
+                            style = "border-sky-400 bg-sky-50 text-sky-700 border-2 border-b-4 active:border-b-2 ring-2 ring-sky-300";
+                        }
+                        if (this.status === 'correct' && opt.isCorrect) {
+                            style = "border-emerald-500 bg-emerald-50 text-emerald-800 border-2 border-b-4";
+                        }
+                        if (this.status === 'wrong') {
+                            if (this.selectedOptionIndex === idx) {
+                                style = "border-rose-500 bg-rose-50 text-rose-800 border-2 border-b-4";
+                            } else if (opt.isCorrect) {
+                                style = "border-emerald-500 bg-emerald-50 text-emerald-800 border-2 border-b-4";
+                            }
+                        }
+
+                        return `
+                            <div onclick="lingoEngine.selectOption(${idx})"
+                                 class="rounded-xl p-3.5 cursor-pointer text-center font-bold text-sm sm:text-base transition-all duration-150 shadow-sm ${style}">
+                                ${escapeHtml(opt.text)}
                             </div>
                         `;
                     }).join('')}

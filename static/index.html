@@ -19,7 +19,7 @@
     <title>Коуч 💖 — Личный психолог & Немецкий B1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css?v=26">
+    <link rel="stylesheet" href="/static/style.css?v=27">
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -163,7 +163,7 @@
     </div>
 
     <!-- Основной контейнер содержимого -->
-    <main class="max-w-6xl mx-auto px-3 py-3 flex-1 w-full flex flex-col overflow-hidden pb-20 md:pb-3">
+    <main class="max-w-6xl mx-auto px-3 py-3 flex-1 w-full flex flex-col overflow-hidden min-h-0 pb-20 md:pb-3">
 
         <!-- Баннер установки PWA на iPhone в 1 клик -->
         <div id="iosInstallBanner" class="hidden shrink-0 mb-2 p-3 bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 text-white rounded-2xl shadow-lg border border-rose-300 flex items-center justify-between gap-3 animate-fade-in">
@@ -360,9 +360,9 @@
         </section>
 
         <!-- ВКЛАДКА 3: НЕМЕЦКИЙ ЯЗЫК (ПОРТАЛ И ХАБ ДЛЯ АЛИНЫ) -->
-        <section id="tab-german" class="tab-content hidden flex-1 flex flex-col rounded-none sm:rounded-2xl sm:shadow-xl sm:border sm:border-white/60 p-2 sm:p-4 overflow-hidden h-full">
+        <section id="tab-german" class="tab-content hidden flex-1 flex flex-col rounded-none sm:rounded-2xl sm:shadow-xl sm:border sm:border-white/60 p-2 sm:p-4 overflow-hidden min-h-0 h-full">
             <!-- 1. ГЛАВНЫЙ ЭКРАН: НЕМЕЦКИЙ ХАБ (КОНЦЕПТ 1: GLASSMORPHISM & 3D НЕОН) -->
-            <div id="germanHubContainer" class="flex-1 flex flex-col overflow-y-auto space-y-3.5 pb-4">
+            <div id="germanHubContainer" class="flex-1 flex flex-col overflow-y-auto min-h-0 space-y-3.5 pb-4">
                 <!-- Карточка профиля и прогресса Алины -->
                 <div class="hub-glass-card rounded-3xl p-3.5 sm:p-4 shadow-sm shrink-0 border border-white/80">
                     <div class="flex items-center justify-between gap-3 mb-3">
@@ -491,7 +491,7 @@
             </div>
 
             <!-- 2. РЕЖИМ: ДОРОЖКА УРОКОВ DUOLINGO (THE PATH) - ЧИСТЫЙ ЭКРАН -->
-            <div id="germanPathContainer" class="hidden flex-1 flex flex-col overflow-hidden h-full">
+            <div id="germanPathContainer" class="hidden flex-1 flex flex-col overflow-hidden min-h-0 h-full">
                 <!-- Верхняя компактная строка (ровно 1 строка!) -->
                 <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 shrink-0">
                     <button onclick="setGermanViewMode('hub')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition flex items-center gap-1 active:scale-95 shadow-2xs">
@@ -510,13 +510,13 @@
                 </div>
 
                 <!-- Сама дорожка уроков The Path со свободным скроллом на 100% высоты -->
-                <div id="germanPathScrollArea" class="flex-1 overflow-y-auto pr-1">
+                <div id="germanPathScrollArea" class="flex-1 overflow-y-auto min-h-0 pr-1 overscroll-contain">
                     <!-- Заполняется движком lingoEngine.renderPathView() -->
                 </div>
             </div>
 
             <!-- 3. РЕЖИМ: КАРТОЧКИ СЛОВ (ANKI) - ЧИСТЫЙ ЭКРАН -->
-            <div id="germanFlashcardsContainer" class="hidden flex-1 flex flex-col overflow-hidden h-full">
+            <div id="germanFlashcardsContainer" class="hidden flex-1 flex flex-col overflow-hidden min-h-0 h-full">
                 <!-- Верхняя компактная строка навигации карточек (ровно 1 строка!) -->
                 <div class="flex items-center justify-between pb-2 mb-2 border-b border-rose-100 shrink-0 gap-1.5">
                     <button onclick="setGermanViewMode('hub')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition flex items-center gap-1 active:scale-95 shadow-2xs shrink-0">
@@ -977,7 +977,7 @@
     <audio id="liveGlobalAudioPlayer" preload="auto" playsinline webkit-playsinline class="hidden"></audio>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    <script src="/static/duolingo/duolingo.js?v=26"></script>
-    <script src="/static/app.js?v=26"></script>
+    <script src="/static/duolingo/duolingo.js?v=27"></script>
+    <script src="/static/app.js?v=27"></script>
 </body>
 </html>

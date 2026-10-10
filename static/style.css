@@ -397,6 +397,46 @@ button, .touch-btn {
     animation: duoAvatarGlowRing 2.2s ease-in-out infinite;
 }
 
+/* Компактный аккуратный аватар Алины на карте Duolingo (строго 40px на мобильном, 46px на ПК) */
+.duolingo-hero-avatar {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
+    border-radius: 9999px !important;
+    object-fit: cover !important;
+    display: block !important;
+}
+
+@media (min-width: 640px) {
+    .duolingo-hero-avatar {
+        width: 46px !important;
+        height: 46px !important;
+        min-width: 46px !important;
+        min-height: 46px !important;
+        max-width: 46px !important;
+        max-height: 46px !important;
+    }
+}
+
+/* Бесшовный плавный скролл дорожки Duolingo на смартфонах */
+#germanPathContainer {
+    min-height: 0 !important;
+    height: 100% !important;
+}
+
+#germanPathScrollArea {
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-y: contain !important;
+    touch-action: pan-y !important;
+}
+
 /* Glassmorphism плашки названий уроков */
 .duo-pill-label {
     background: rgba(255, 255, 255, 0.94);

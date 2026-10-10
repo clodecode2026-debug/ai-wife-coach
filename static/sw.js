@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ai-coach-alina-v26';
+const CACHE_NAME = 'ai-coach-alina-v27';
 const ASSETS = [
   '/',
   '/static/index.html',

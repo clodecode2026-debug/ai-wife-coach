@@ -1435,6 +1435,11 @@ class LingoGameEngine {
 
                 const iconSvg = this.getNode3DIcon(iconType);
 
+                const isOffsetLeft = offsetClass.includes('-translate-x');
+                const avatarPosClass = isOffsetLeft 
+                    ? 'left-full ml-2.5 sm:ml-3 top-0 sm:top-1' 
+                    : 'right-full mr-2.5 sm:mr-3 top-0 sm:top-1';
+
                 nodesHtml += `
                     ${idx > 0 ? `
                         <div class="duo-connector my-2">
@@ -1446,14 +1451,14 @@ class LingoGameEngine {
 
                     <div class="flex flex-col items-center my-1.5 transition-transform ${offsetClass} relative group">
                         ${isCurrent ? `
-                            <div class="absolute -left-20 sm:-left-24 -top-2 flex flex-col items-center z-20 duo-avatar-floating pointer-events-auto">
-                                <div class="relative cursor-pointer group/avatar" onclick="if(typeof switchTab==='function') switchTab('dossier')" title="Алина — Твой текущий урок! (Нажми для перехода в профиль)">
+                            <div class="absolute ${avatarPosClass} flex flex-col items-center z-20 duo-avatar-floating pointer-events-auto shrink-0">
+                                <div class="relative cursor-pointer group/avatar w-10 h-10 sm:w-11 sm:h-11 shrink-0" onclick="if(typeof switchTab==='function') switchTab('dossier')" title="Алина — Твой текущий урок! (Нажми для перехода в профиль)">
                                     <img src="${(typeof getAlinaAvatar === 'function') ? getAlinaAvatar() : (localStorage.getItem('alina_custom_avatar') || localStorage.getItem('alina_active_avatar') || '/static/img/alina_avatar.jpg')}" 
-                                         class="duolingo-hero-avatar w-13 h-13 sm:w-15 sm:h-15 rounded-full object-cover border-2 border-amber-300 duo-avatar-glow shadow-xl group-hover/avatar:scale-105 transition" alt="Алина">
-                                    <span class="absolute -bottom-1 -right-1 text-xs">✨</span>
+                                         class="duolingo-hero-avatar rounded-full object-cover border-2 border-amber-300 duo-avatar-glow shadow-md group-hover/avatar:scale-105 transition" alt="Алина">
+                                    <span class="absolute -bottom-1 -right-1 text-[11px] leading-none">✨</span>
                                 </div>
-                                <div class="duo-pill-label px-2 py-0.5 rounded-full mt-1.5 shadow-md flex items-center gap-1 border border-amber-200/80">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                                <div class="duo-pill-label px-1.5 py-0.5 rounded-full mt-1 shadow-xs flex items-center gap-1 border border-amber-200/80 shrink-0 whitespace-nowrap">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping shrink-0"></span>
                                     <span class="text-[9px] font-black bg-gradient-to-r from-amber-600 to-rose-600 bg-clip-text text-transparent tracking-wide">
                                         Алина 🎯
                                     </span>
@@ -1529,11 +1534,19 @@ class LingoGameEngine {
         });
 
         container.innerHTML = `
-            <div class="max-w-md mx-auto w-full pb-16">
+            <div class="max-w-md mx-auto w-full pb-32">
                 ${levelSwitcherHtml}
                 ${sectionsHtml}
             </div>
         `;
+
+        // Авто-скролл к текущему уроку при открытии
+        setTimeout(() => {
+            const activeNode = container.querySelector('.duo-puck-active-pulse');
+            if (activeNode) {
+                activeNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 150);
     }
 
     // =========================================================================

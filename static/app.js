@@ -627,42 +627,17 @@ async function saveInsightToDossier(msgId, btn) {
 }
 
 function getQuickReplyChips(text, isBook) {
-    if (isBook) {
-        return [
-            { icon: '📝', text: 'Давай сделаем Шаг 1 упражнения' },
-            { icon: '💡', text: 'Объясни суть проще в 2 фразах' },
-            { icon: '🌸', text: 'Мне сейчас просто нужна поддержка' },
-            { icon: '✨', text: 'В чём главный инсайт автора?' }
-        ];
+    // В обычном диалоге с коучем КАТЕГОРИЧЕСКИ НЕ предлагаем варианты (коуч — собеседник, а не программа).
+    // Варианты и шаги упражнений автора сохраняются ТОЛЬКО для специального режима обсуждения книг.
+    if (!isBook) {
+        return [];
     }
-
-    const lower = (text || '').toLowerCase();
-    if (lower.includes('шаг 1') || lower.includes('упражнен') || lower.includes('практик')) {
-        return [
-            { icon: '🌿', text: 'Да, давай разберём это вместе' },
-            { icon: '🤔', text: 'Мне сложно сформулировать, подскажи' },
-            { icon: '☕️', text: 'Я очень устала, давай просто поговорим' }
-        ];
-    } else if (lower.includes('тревог') || lower.includes('страх') || lower.includes('напряжен')) {
-        return [
-            { icon: '🌸', text: 'Помоги заземлиться и снять тревогу' },
-            { icon: '💡', text: 'Какое правило КПТ здесь применить?' },
-            { icon: '🌱', text: 'В чём сейчас моя главная опора?' }
-        ];
-    } else if (lower.includes('немецк') || lower.includes('b1') || lower.includes('язык')) {
-        return [
-            { icon: '🇩🇪', text: 'Потренируй со мной одну фразу B1' },
-            { icon: '✨', text: 'Как не бояться говорить с немцами?' },
-            { icon: '☕️', text: 'Слишком устала учить язык сегодня' }
-        ];
-    } else {
-        return [
-            { icon: '🌸', text: 'Мне тревожно, помоги успокоиться' },
-            { icon: '☕️', text: 'Я очень устала, сил совсем нет' },
-            { icon: '💡', text: 'Что мне сделать прямо сейчас?' },
-            { icon: '✨', text: 'Помоги с синдромом отличницы' }
-        ];
-    }
+    return [
+        { icon: '📝', text: 'Давай сделаем Шаг 1 упражнения' },
+        { icon: '💡', text: 'Объясни суть проще в 2 фразах' },
+        { icon: '🌸', text: 'Мне сейчас просто нужна поддержка' },
+        { icon: '✨', text: 'В чём главный инсайт автора?' }
+    ];
 }
 
 function sendQuickReply(text) {
@@ -754,7 +729,7 @@ function appendMessage(text, role, scroll = true) {
         const msgId = 'msg_' + Math.random().toString(36).substring(2, 9);
         const isBook = Boolean(window._currentBookId || getStoredBookForSession(sessionId));
         const chips = getQuickReplyChips(text, isBook);
-        const chipsHtml = `
+        const chipsHtml = (chips && chips.length > 0) ? `
             <div class="mt-2.5 pt-2 border-t border-rose-200/60 flex flex-wrap gap-1.5 items-center">
                 ${chips.map(c => `
                     <button onclick="sendQuickReply('${escapeQuotes(c.text)}')" class="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-rose-100/90 active:scale-95 text-[10.5px] font-medium text-rose-800 rounded-full border border-rose-200 shadow-2xs transition">
@@ -763,7 +738,7 @@ function appendMessage(text, role, scroll = true) {
                     </button>
                 `).join('')}
             </div>
-        `;
+        ` : '';
 
         div.innerHTML = `
             <img src="/static/img/coach_avatar.jpg" alt="Coach" class="w-8 h-8 rounded-full object-cover border border-rose-200 shrink-0">
@@ -856,20 +831,6 @@ async function loadChatHistory() {
                         <button onclick="playElementTTS('initialWelcomeMsg', this)" class="absolute top-2.5 right-2.5 opacity-60 hover:opacity-100 text-rose-600 p-1 rounded-lg hover:bg-rose-100 transition" title="Озвучить ответ">
                             🔊
                         </button>
-                        <div class="mt-2.5 pt-2 border-t border-rose-200/60 flex flex-wrap gap-1.5 items-center">
-                            <button onclick="sendQuickReply('Я очень устала сегодня после работы, сил совсем нет...')" class="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-rose-100/90 active:scale-95 text-[10.5px] font-medium text-rose-800 rounded-full border border-rose-200 shadow-2xs transition">
-                                <span>☕️</span><span>Очень устала</span>
-                            </button>
-                            <button onclick="sendQuickReply('Мне тревожно и накатывает страх, помоги успокоиться методом КПТ.')" class="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-rose-100/90 active:scale-95 text-[10.5px] font-medium text-rose-800 rounded-full border border-rose-200 shadow-2xs transition">
-                                <span>🌸</span><span>Тревожно</span>
-                            </button>
-                            <button onclick="sendQuickReply('Помоги разобрать синдром отличницы и перфекционизм.')" class="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-rose-100/90 active:scale-95 text-[10.5px] font-medium text-rose-800 rounded-full border border-rose-200 shadow-2xs transition">
-                                <span>✨</span><span>Самооценка</span>
-                            </button>
-                            <button onclick="sendQuickReply('Помоги найти внутренний ресурс и восстановить силы.')" class="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-rose-100/90 active:scale-95 text-[10.5px] font-medium text-rose-800 rounded-full border border-rose-200 shadow-2xs transition">
-                                <span>🌱</span><span>Внутренний ресурс</span>
-                            </button>
-                        </div>
                     </div>
                 </div>
             `;

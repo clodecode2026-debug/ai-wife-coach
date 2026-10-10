@@ -1838,7 +1838,27 @@ let isChatDictating = false;
 let chatDictationBaseText = '';
 let chatDictationSessionFinal = '';
 
-function stopChatDictation() {
+async function cleanVoiceDictationText(rawText) {
+    if (!rawText || rawText.trim().length < 3) return rawText;
+    try {
+        const res = await fetch('/api/voice/clean_transcript', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: rawText.trim() })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.cleaned_text && data.cleaned_text.trim()) {
+                return data.cleaned_text.trim();
+            }
+        }
+    } catch(e) {
+        console.warn('clean_transcript error:', e);
+    }
+    return rawText;
+}
+
+async function stopChatDictation() {
     if (!isChatDictating) return;
     isChatDictating = false;
 
@@ -1867,9 +1887,39 @@ function stopChatDictation() {
     }
 
     if (input) {
-        input.placeholder = 'Алина, напиши, что у тебя на душе или задай вопрос...';
-        // Возвращаем фокус в поле ввода, чтобы Алина могла проверить надиктованный текст и нажать «Отправить»
-        input.focus();
+        const rawText = input.value.trim();
+        // Запускаем интеллектуальную ИИ-коррекцию распознанного текста от искажений и опечаток
+        if (rawText.length >= 3) {
+            const defaultPlaceholder = 'Алина, напиши, что у тебя на душе или задай вопрос...';
+            input.placeholder = '✨ Корректирую слова и расставляю знаки препинания...';
+            if (recordBtn) {
+                recordBtn.innerHTML = `<span class="animate-spin text-sm">✨</span>`;
+                recordBtn.title = 'ИИ проверяет слова и пунктуацию...';
+            }
+
+            try {
+                const cleaned = await cleanVoiceDictationText(rawText);
+                if (cleaned) {
+                    input.value = cleaned;
+                }
+            } catch(e) {
+                console.warn('Dictation cleanup error:', e);
+            } finally {
+                input.placeholder = defaultPlaceholder;
+                if (recordBtn) {
+                    recordBtn.innerHTML = `
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                        </svg>
+                    `;
+                    recordBtn.title = 'Голосовой ввод сообщения (нажмите, чтобы начать надиктовку)';
+                }
+                input.focus();
+            }
+        } else {
+            input.placeholder = 'Алина, напиши, что у тебя на душе или задай вопрос...';
+            input.focus();
+        }
     }
 }
 
@@ -1883,7 +1933,7 @@ function toggleRecordVoice() {
         return;
     }
 
-    // Если надиктовка уже активна — повторное нажатие останавливает запись и фиксирует текст
+    // Если надиктовка уже активна — повторное нажатие останавливает запись и запускает ИИ-очистку
     if (isChatDictating) {
         stopChatDictation();
         return;
@@ -1899,7 +1949,7 @@ function toggleRecordVoice() {
     chatDictationSessionFinal = '';
     isChatDictating = true;
 
-    // Визуальное состояние записи в стиле Antigravity: красный пульсирующий стоп-квадрат ⏹️
+    // Визуальное состояние записи: красный пульсирующий стоп-квадрат ⏹️
     if (recordBtn) {
         recordBtn.classList.remove('bg-rose-100', 'text-rose-600', 'hover:bg-rose-200');
         recordBtn.classList.add('bg-rose-600', 'text-white', 'animate-pulse');
@@ -1908,7 +1958,7 @@ function toggleRecordVoice() {
                 <rect x="6" y="6" width="12" height="12" rx="2"></rect>
             </svg>
         `;
-        recordBtn.title = 'Идет запись речи... Нажмите еще раз, чтобы завершить надиктовку';
+        recordBtn.title = 'Идет запись речи... Нажмите еще раз ⏹️, чтобы завершить надиктовку';
     }
 
     input.placeholder = '🎙️ Слушаю вас... Говорите. Нажмите ⏹️ для завершения.';
@@ -1935,10 +1985,10 @@ function toggleRecordVoice() {
             }
 
             if (instanceFinal) {
-                chatDictationSessionFinal = deduplicateSpokenText((chatDictationSessionFinal + ' ' + instanceFinal).trim());
+                chatDictationSessionFinal = (chatDictationSessionFinal + ' ' + instanceFinal).replace(/\s+/g, ' ').trim();
             }
 
-            const currentSpoken = deduplicateSpokenText((chatDictationSessionFinal + ' ' + instanceInterim).trim());
+            const currentSpoken = (chatDictationSessionFinal + ' ' + instanceInterim).replace(/\s+/g, ' ').trim();
             if (currentSpoken) {
                 input.value = (chatDictationBaseText + currentSpoken).trim();
             }
@@ -1948,15 +1998,20 @@ function toggleRecordVoice() {
             console.warn('Chat dictation error:', e.error);
             if (e.error === 'not-allowed') {
                 alert('Доступ к микрофону заблокирован. Разрешите доступ к микрофону в настройках браузера.');
+                stopChatDictation();
             }
-            stopChatDictation();
         };
 
         chatDictationRecognition.onend = () => {
-            // При завершении сессии распознавания возвращаем кнопку в исходное состояние
-            // Текст остается в поле ввода для проверки и ручной отправки!
+            // Если пользователь еще диктует и НЕ нажал Стоп — мягко возобновляем прослушивание на мобильных
             if (isChatDictating) {
-                stopChatDictation();
+                setTimeout(() => {
+                    if (isChatDictating && chatDictationRecognition) {
+                        try {
+                            chatDictationRecognition.start();
+                        } catch(e) {}
+                    }
+                }, 200);
             }
         };
 

@@ -515,6 +515,29 @@ def api_voice_save(req: VoiceSaveRequest, _auth: bool = Depends(require_auth)):
         logger.error(f"Voice Save Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+class CleanTranscriptRequest(BaseModel):
+    text: str
+
+@app.post("/api/voice/clean_transcript")
+def api_voice_clean_transcript(req: CleanTranscriptRequest):
+    """
+    Быстрая ИИ-очистка надиктованного голосом текста:
+    - Исправляет опечатки и ошибки распознавания микрофона
+    - Убирает склеенные слова, согласует падежи
+    - Расставляет знаки препинания (запятые, точки, тире)
+    - 100% сохраняет все слова, чувства и смысл пользователя
+    """
+    raw = req.text.strip()
+    if not raw or len(raw) < 2:
+        return {"cleaned_text": raw}
+
+    try:
+        cleaned = coach.clean_voice_transcript(raw)
+        return {"cleaned_text": cleaned}
+    except Exception as e:
+        logger.error(f"Clean transcript error: {e}")
+        return {"cleaned_text": raw}
+
 @app.get("/health")
 async def health_check():
     ai_active = bool(coach.ag_client or coach.genai_client)

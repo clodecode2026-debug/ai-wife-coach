@@ -203,12 +203,21 @@ def api_chat(req: ChatRequest, _auth: bool = Depends(require_auth)):
         history = db_manager.get_chat_history(session_id)
         dossier = db_manager.get_dossier()
 
-        # Сохраняем входящее сообщение
-        db_manager.save_message(session_id, "user", req.message)
+        # Сохраняем входящее сообщение с автоочисткой голосового ввода при необходимости
+        user_msg = req.message.strip()
+        if req.is_voice_mode or (len(user_msg) >= 6 and not any(p in user_msg for p in ".!?") and user_msg[0].islower()):
+            try:
+                cleaned = coach.clean_voice_transcript(user_msg)
+                if cleaned and len(cleaned) >= 2:
+                    user_msg = cleaned
+            except Exception as clean_err:
+                logger.warning(f"Voice cleanup fallback warning: {clean_err}")
+
+        db_manager.save_message(session_id, "user", user_msg)
 
         # Генерация живого ответа через каскадный роутер
         reply = coach.generate_response(
-            req.message,
+            user_msg,
             history=history,
             dossier=dossier,
             is_voice_mode=req.is_voice_mode,
@@ -266,7 +275,17 @@ def api_chat_stream(req: ChatRequest, _auth: bool = Depends(require_auth)):
     history = db_manager.get_chat_history(session_id)
     dossier = db_manager.get_dossier()
 
-    db_manager.save_message(session_id, "user", req.message)
+    # Сохраняем входящее сообщение с автоочисткой голосового ввода при необходимости
+    user_msg = req.message.strip()
+    if req.is_voice_mode or (len(user_msg) >= 6 and not any(p in user_msg for p in ".!?") and user_msg[0].islower()):
+        try:
+            cleaned = coach.clean_voice_transcript(user_msg)
+            if cleaned and len(cleaned) >= 2:
+                user_msg = cleaned
+        except Exception as clean_err:
+            logger.warning(f"Voice cleanup fallback warning (stream): {clean_err}")
+
+    db_manager.save_message(session_id, "user", user_msg)
     voice = "de-DE-SeraphinaMultilingualNeural" if (req.mode == "german") else "ru-RU-SvetlanaNeural"
 
     def event_generator():
@@ -277,7 +296,7 @@ def api_chat_stream(req: ChatRequest, _auth: bool = Depends(require_auth)):
 
         try:
             for token in coach.generate_streaming_response(
-                req.message,
+                user_msg,
                 history=history,
                 dossier=dossier,
                 is_voice_mode=req.is_voice_mode,

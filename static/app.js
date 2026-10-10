@@ -677,8 +677,30 @@ function sendQuickReply(text) {
 }
 
 async function sendMessage() {
+    // 1. Если пользователь нажал «Отправить» прямо во время надиктовки:
+    if (isChatDictating) {
+        await stopChatDictation();
+    }
+
+    // 2. Если в этот момент уже выполняется ИИ-очистка надиктованного текста — дожидаемся её!
+    if (isDictationCleaning && dictationCleanPromise) {
+        const sendBtn = document.getElementById('sendMsgBtn');
+        const originalSendBtnContent = sendBtn ? sendBtn.innerHTML : '';
+        if (sendBtn) {
+            sendBtn.innerHTML = `<span>✨ Очищаю...</span>`;
+            sendBtn.disabled = true;
+        }
+        try {
+            await dictationCleanPromise;
+        } catch(e) {}
+        if (sendBtn) {
+            sendBtn.innerHTML = originalSendBtnContent;
+            sendBtn.disabled = false;
+        }
+    }
+
     const input = document.getElementById('chatInput');
-    const text = input.value.trim();
+    const text = input ? input.value.trim() : '';
     if (!text) return;
 
     input.value = '';
@@ -1831,21 +1853,30 @@ function passTurnToUser() {
 }
 
 // =========================================================================
-// 5.1 ГОЛОСОВАЯ НАДИКТОВКА В ЧАТЕ (В СТИЛЕ ANTIGRAVITY: PUSH-TO-TALK С ПРОВЕРКОЙ)
+// 5.1 ГОЛОСОВАЯ НАДИКТОВКА В ЧАТЕ С ИИ-КОРРЕКЦИЕЙ РЕЧИ (iOS Safari & Android)
 // =========================================================================
 let chatDictationRecognition = null;
 let isChatDictating = false;
+let isDictationCleaning = false;
+let dictationCleanPromise = null;
 let chatDictationBaseText = '';
 let chatDictationSessionFinal = '';
+let chatDictationCurrentInterim = '';
 
 async function cleanVoiceDictationText(rawText) {
     if (!rawText || rawText.trim().length < 3) return rawText;
     try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4500);
+
         const res = await fetch('/api/voice/clean_transcript', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: rawText.trim() })
+            body: JSON.stringify({ text: rawText.trim() }),
+            signal: controller.signal
         });
+        clearTimeout(timeoutId);
+
         if (res.ok) {
             const data = await res.json();
             if (data && data.cleaned_text && data.cleaned_text.trim()) {
@@ -1853,9 +1884,101 @@ async function cleanVoiceDictationText(rawText) {
             }
         }
     } catch(e) {
-        console.warn('clean_transcript error:', e);
+        console.warn('clean_transcript error / timeout:', e);
     }
     return rawText;
+}
+
+function startDictationSession() {
+    if (!isChatDictating) return;
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    try {
+        if (chatDictationRecognition) {
+            try {
+                chatDictationRecognition.onresult = null;
+                chatDictationRecognition.onerror = null;
+                chatDictationRecognition.onend = null;
+                chatDictationRecognition.abort();
+            } catch(e) {}
+            chatDictationRecognition = null;
+        }
+
+        const rec = new SpeechRecognition();
+        rec.lang = 'ru-RU';
+        rec.continuous = true;
+        rec.interimResults = true;
+
+        rec.onresult = (e) => {
+            if (!isChatDictating) return;
+            let currentFinal = '';
+            let currentInterim = '';
+
+            for (let i = e.resultIndex; i < e.results.length; ++i) {
+                const res = e.results[i];
+                const tr = res[0] ? res[0].transcript : '';
+                if (res.isFinal) {
+                    currentFinal += tr + ' ';
+                } else {
+                    currentInterim += tr;
+                }
+            }
+
+            if (currentFinal) {
+                chatDictationSessionFinal = (chatDictationSessionFinal + ' ' + currentFinal).replace(/\s+/g, ' ').trim();
+            }
+            chatDictationCurrentInterim = currentInterim;
+
+            const spokenSoFar = (chatDictationSessionFinal + ' ' + currentInterim).replace(/\s+/g, ' ').trim();
+            const input = document.getElementById('chatInput');
+            if (input && spokenSoFar) {
+                input.value = (chatDictationBaseText + spokenSoFar).trim();
+            }
+        };
+
+        rec.onerror = (e) => {
+            console.warn('SpeechRecognition error:', e.error);
+            if (e.error === 'not-allowed') {
+                alert('Доступ к микрофону заблокирован. Пожалуйста, разрешите микрофон в настройках браузера Safari.');
+                stopChatDictation();
+            }
+        };
+
+        rec.onend = () => {
+            // Фиксируем промежуточный текст перед перезапуском
+            if (chatDictationCurrentInterim) {
+                chatDictationSessionFinal = (chatDictationSessionFinal + ' ' + chatDictationCurrentInterim).replace(/\s+/g, ' ').trim();
+                chatDictationCurrentInterim = '';
+            }
+
+            // ВАЖНО ДЛЯ IOS SAFARI: старый инстанс умер, зануляем его!
+            chatDictationRecognition = null;
+
+            // Если надиктовка еще активна — мягко запускаем СВЕЖИЙ инстанс, сохраняя весь накопленный текст
+            if (isChatDictating) {
+                setTimeout(() => {
+                    if (isChatDictating && !chatDictationRecognition) {
+                        startDictationSession();
+                    }
+                }, 150);
+            }
+        };
+
+        chatDictationRecognition = rec;
+        rec.start();
+    } catch(err) {
+        console.warn('Failed to start recognition instance:', err);
+        chatDictationRecognition = null;
+        if (isChatDictating) {
+            setTimeout(() => {
+                if (isChatDictating && !chatDictationRecognition) {
+                    startDictationSession();
+                }
+            }, 300);
+        }
+    }
 }
 
 async function stopChatDictation() {
@@ -1872,8 +1995,13 @@ async function stopChatDictation() {
         chatDictationRecognition = null;
     }
 
-    const recordBtn = document.getElementById('recordBtn');
+    if (chatDictationCurrentInterim) {
+        chatDictationSessionFinal = (chatDictationSessionFinal + ' ' + chatDictationCurrentInterim).replace(/\s+/g, ' ').trim();
+        chatDictationCurrentInterim = '';
+    }
+
     const input = document.getElementById('chatInput');
+    const recordBtn = document.getElementById('recordBtn');
 
     if (recordBtn) {
         recordBtn.classList.remove('bg-rose-600', 'text-white', 'animate-pulse');
@@ -1886,54 +2014,56 @@ async function stopChatDictation() {
         recordBtn.title = 'Голосовой ввод сообщения (нажмите, чтобы начать надиктовку)';
     }
 
-    if (input) {
-        const rawText = input.value.trim();
-        // Запускаем интеллектуальную ИИ-коррекцию распознанного текста от искажений и опечаток
-        if (rawText.length >= 3) {
-            const defaultPlaceholder = 'Алина, напиши, что у тебя на душе или задай вопрос...';
-            input.placeholder = '✨ Корректирую слова и расставляю знаки препинания...';
-            if (recordBtn) {
-                recordBtn.innerHTML = `<span class="animate-spin text-sm">✨</span>`;
-                recordBtn.title = 'ИИ проверяет слова и пунктуацию...';
-            }
+    if (!input) return;
 
-            try {
-                const cleaned = await cleanVoiceDictationText(rawText);
-                if (cleaned) {
-                    input.value = cleaned;
-                }
-            } catch(e) {
-                console.warn('Dictation cleanup error:', e);
-            } finally {
-                input.placeholder = defaultPlaceholder;
-                if (recordBtn) {
-                    recordBtn.innerHTML = `
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
-                        </svg>
-                    `;
-                    recordBtn.title = 'Голосовой ввод сообщения (нажмите, чтобы начать надиктовку)';
-                }
-                input.focus();
-            }
-        } else {
-            input.placeholder = 'Алина, напиши, что у тебя на душе или задай вопрос...';
-            input.focus();
+    const rawText = input.value.trim();
+    if (rawText.length < 3) {
+        input.placeholder = 'Алина, напиши, что у тебя на душе или задай вопрос...';
+        return;
+    }
+
+    // Запускаем ИИ-очистку с визуальной индикацией
+    isDictationCleaning = true;
+    const defaultPlaceholder = 'Алина, напиши, что у тебя на душе или задай вопрос...';
+    input.placeholder = '✨ Корректирую слова и расставляю знаки препинания...';
+    if (recordBtn) {
+        recordBtn.innerHTML = `<span class="animate-spin text-sm">✨</span>`;
+        recordBtn.title = 'ИИ улучшает надиктованный текст...';
+    }
+
+    dictationCleanPromise = cleanVoiceDictationText(rawText);
+    try {
+        const cleaned = await dictationCleanPromise;
+        if (cleaned && input) {
+            input.value = cleaned;
+        }
+    } catch(e) {
+        console.warn('Dictation cleanup error:', e);
+    } finally {
+        isDictationCleaning = false;
+        dictationCleanPromise = null;
+        if (input) input.placeholder = defaultPlaceholder;
+        if (recordBtn) {
+            recordBtn.innerHTML = `
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                </svg>
+            `;
+            recordBtn.title = 'Голосовой ввод сообщения (нажмите, чтобы начать надиктовку)';
         }
     }
 }
 
 function toggleRecordVoice() {
-    // Разблокируем аудиосистему на iOS при взаимодействии пользователя
     primeAudioForIOS(document.getElementById('globalTTSPlayer'));
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-        alert('Голосовой ввод не поддерживается вашим браузером. На iPhone рекомендуем использовать браузер Safari.');
+        alert('Голосовой ввод не поддерживается вашим браузером. На iPhone рекомендуем открыть сайт в приложении Safari.');
         return;
     }
 
-    // Если надиктовка уже активна — повторное нажатие останавливает запись и запускает ИИ-очистку
+    // Если надиктовка уже активна — повторный тап останавливает запись и запускает ИИ-очистку
     if (isChatDictating) {
         stopChatDictation();
         return;
@@ -1943,13 +2073,12 @@ function toggleRecordVoice() {
     const recordBtn = document.getElementById('recordBtn');
     if (!input) return;
 
-    // Сохраняем уже набранный текст, чтобы дополнить его надиктовкой
     const existingVal = input.value.trim();
     chatDictationBaseText = existingVal ? existingVal + ' ' : '';
     chatDictationSessionFinal = '';
+    chatDictationCurrentInterim = '';
     isChatDictating = true;
 
-    // Визуальное состояние записи: красный пульсирующий стоп-квадрат ⏹️
     if (recordBtn) {
         recordBtn.classList.remove('bg-rose-100', 'text-rose-600', 'hover:bg-rose-200');
         recordBtn.classList.add('bg-rose-600', 'text-white', 'animate-pulse');
@@ -1962,64 +2091,7 @@ function toggleRecordVoice() {
     }
 
     input.placeholder = '🎙️ Слушаю вас... Говорите. Нажмите ⏹️ для завершения.';
-
-    try {
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-        chatDictationRecognition = new SpeechRecognition();
-        chatDictationRecognition.lang = 'ru-RU';
-        chatDictationRecognition.continuous = !isIOS;
-        chatDictationRecognition.interimResults = true;
-
-        chatDictationRecognition.onresult = (e) => {
-            let instanceFinal = '';
-            let instanceInterim = '';
-
-            for (let i = e.resultIndex; i < e.results.length; ++i) {
-                const res = e.results[i];
-                const tr = res[0] ? res[0].transcript : '';
-                if (res.isFinal) {
-                    instanceFinal += tr + ' ';
-                } else {
-                    instanceInterim += tr;
-                }
-            }
-
-            if (instanceFinal) {
-                chatDictationSessionFinal = (chatDictationSessionFinal + ' ' + instanceFinal).replace(/\s+/g, ' ').trim();
-            }
-
-            const currentSpoken = (chatDictationSessionFinal + ' ' + instanceInterim).replace(/\s+/g, ' ').trim();
-            if (currentSpoken) {
-                input.value = (chatDictationBaseText + currentSpoken).trim();
-            }
-        };
-
-        chatDictationRecognition.onerror = (e) => {
-            console.warn('Chat dictation error:', e.error);
-            if (e.error === 'not-allowed') {
-                alert('Доступ к микрофону заблокирован. Разрешите доступ к микрофону в настройках браузера.');
-                stopChatDictation();
-            }
-        };
-
-        chatDictationRecognition.onend = () => {
-            // Если пользователь еще диктует и НЕ нажал Стоп — мягко возобновляем прослушивание на мобильных
-            if (isChatDictating) {
-                setTimeout(() => {
-                    if (isChatDictating && chatDictationRecognition) {
-                        try {
-                            chatDictationRecognition.start();
-                        } catch(e) {}
-                    }
-                }, 200);
-            }
-        };
-
-        chatDictationRecognition.start();
-    } catch(err) {
-        console.error('Failed to start chat dictation:', err);
-        stopChatDictation();
-    }
+    startDictationSession();
 }
 
 // =========================================================================

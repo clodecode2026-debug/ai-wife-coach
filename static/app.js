@@ -236,6 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSessionsList();
     loadChatHistory();
     loadGermanCourseData();
+    loadGermanDialogues();
     loadLibraryBooks();
     loadDossier();
     updateAlinaAvatarUI();
@@ -1525,8 +1526,9 @@ async function handleLiveUserSpeech(text) {
             message: text,
             session_id: sessionId,
             is_voice_mode: true,
-            mode: liveCoachMode,
+            mode: (liveCoachMode === 'german_dialogue') ? 'german' : liveCoachMode,
             german_lesson_id: currentLiveGermanLessonId,
+            dialogue_id: (liveCoachMode === 'german_dialogue') ? currentLiveDialogueId : null,
             depth_mode: chatDepthMode
         };
         if (currentLiveBookId) streamPayload.book_id = currentLiveBookId;
@@ -1602,8 +1604,9 @@ async function handleLiveUserSpeech(text) {
             message: text,
             session_id: sessionId,
             is_voice_mode: true,
-            mode: liveCoachMode,
+            mode: (liveCoachMode === 'german_dialogue') ? 'german' : liveCoachMode,
             german_lesson_id: currentLiveGermanLessonId,
+            dialogue_id: (liveCoachMode === 'german_dialogue') ? currentLiveDialogueId : null,
             depth_mode: chatDepthMode
         };
         if (currentLiveBookId) fbPayload.book_id = currentLiveBookId;
@@ -2213,6 +2216,7 @@ function startLiveGermanCoach(lessonId) {
 
 function switchToCoachLiveMode() {
     liveCoachMode = 'coach';
+    currentLiveDialogueId = null;
     LIVE_SILENCE_DELAY_MS = 2500;
     updateLiveCoachModeUI();
     const transcript = document.getElementById('liveTranscript');
@@ -2228,7 +2232,13 @@ function updateLiveCoachModeUI() {
     const sub = document.getElementById('liveSubtitleText');
     const switchBtn = document.getElementById('liveSwitchToCoachBtn');
 
-    if (liveCoachMode === 'german') {
+    if (liveCoachMode === 'german_dialogue' && currentLiveDialogueId) {
+        const diag = allGermanDialogues.find(d => d.id === currentLiveDialogueId) || activeDialogue;
+        if (badge) badge.textContent = `🇩🇪 Ролевой диалог • ${diag ? diag.level : 'B1'}`;
+        if (title) title.textContent = diag ? `${diag.partner_avatar || '🗣'} ${diag.partner_role}` : 'Ролевой диалог';
+        if (sub) sub.textContent = diag ? `${diag.title_de}: ${diag.description_ru}` : 'Реалистичный диалог в Германии';
+        if (switchBtn) switchBtn.classList.remove('hidden');
+    } else if (liveCoachMode === 'german') {
         const allLessons = window.allGermanCourseData?.lessons || [];
         const lesson = allLessons.find(l => (l.day == currentLiveGermanLessonId || l.id == currentLiveGermanLessonId)) || allLessons[0];
         const lessonTitle = lesson ? lesson.title : `Урок ${currentLiveGermanLessonId}`;
@@ -2250,6 +2260,8 @@ function renderGermanPlatform() {
     const pathContainer = document.getElementById('germanPathContainer');
     const lingoContainer = document.getElementById('lingoAppContainer');
     const flashcardsContainer = document.getElementById('germanFlashcardsContainer');
+    const dialoguesContainer = document.getElementById('germanDialoguesContainer');
+    const dialogueDetailContainer = document.getElementById('germanDialogueDetailContainer');
 
     // 1. Обновляем уровень в Хабе (A1+ / A2 / B1)
     // 1. Обновляем уровень в Хабе (A1+ / A2 / B1) — сегментированный стеклянный переключатель
@@ -2301,6 +2313,8 @@ function renderGermanPlatform() {
         if (hubContainer) hubContainer.classList.add('hidden');
         if (pathContainer) pathContainer.classList.add('hidden');
         if (flashcardsContainer) flashcardsContainer.classList.add('hidden');
+        if (dialoguesContainer) dialoguesContainer.classList.add('hidden');
+        if (dialogueDetailContainer) dialogueDetailContainer.classList.add('hidden');
         if (lingoContainer) lingoContainer.classList.remove('hidden');
         return;
     }
@@ -2310,10 +2324,14 @@ function renderGermanPlatform() {
     if (currentGermanMode === 'hub') {
         if (pathContainer) pathContainer.classList.add('hidden');
         if (flashcardsContainer) flashcardsContainer.classList.add('hidden');
+        if (dialoguesContainer) dialoguesContainer.classList.add('hidden');
+        if (dialogueDetailContainer) dialogueDetailContainer.classList.add('hidden');
         if (hubContainer) hubContainer.classList.remove('hidden');
     } else if (currentGermanMode === 'path') {
         if (hubContainer) hubContainer.classList.add('hidden');
         if (flashcardsContainer) flashcardsContainer.classList.add('hidden');
+        if (dialoguesContainer) dialoguesContainer.classList.add('hidden');
+        if (dialogueDetailContainer) dialogueDetailContainer.classList.add('hidden');
         if (pathContainer) {
             pathContainer.classList.remove('hidden');
             const scrollArea = document.getElementById('germanPathScrollArea') || pathContainer;
@@ -2324,10 +2342,30 @@ function renderGermanPlatform() {
     } else if (currentGermanMode === 'flashcards') {
         if (hubContainer) hubContainer.classList.add('hidden');
         if (pathContainer) pathContainer.classList.add('hidden');
+        if (dialoguesContainer) dialoguesContainer.classList.add('hidden');
+        if (dialogueDetailContainer) dialogueDetailContainer.classList.add('hidden');
         if (flashcardsContainer) {
             flashcardsContainer.classList.remove('hidden');
             prepareFlashcards();
             renderFlashcardsView();
+        }
+    } else if (currentGermanMode === 'dialogues') {
+        if (hubContainer) hubContainer.classList.add('hidden');
+        if (pathContainer) pathContainer.classList.add('hidden');
+        if (flashcardsContainer) flashcardsContainer.classList.add('hidden');
+        if (dialogueDetailContainer) dialogueDetailContainer.classList.add('hidden');
+        if (dialoguesContainer) {
+            dialoguesContainer.classList.remove('hidden');
+            renderDialoguesCatalog();
+        }
+    } else if (currentGermanMode === 'dialogue_detail') {
+        if (hubContainer) hubContainer.classList.add('hidden');
+        if (pathContainer) pathContainer.classList.add('hidden');
+        if (flashcardsContainer) flashcardsContainer.classList.add('hidden');
+        if (dialoguesContainer) dialoguesContainer.classList.add('hidden');
+        if (dialogueDetailContainer) {
+            dialogueDetailContainer.classList.remove('hidden');
+            renderDialogueDetailView();
         }
     }
 }
@@ -3627,6 +3665,985 @@ function escapeHtml(str) {
 function escapeQuotes(str) {
     if (!str) return '';
     return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+// =========================================================================
+// 7. СИТУАЦИОННЫЕ ДИАЛОГИ И РОЛЕВЫЕ ИГРЫ DACH (18 СЦЕНАРИЕВ • A2-B1)
+// =========================================================================
+
+let allGermanDialogues = [];
+let currentDialogueCategory = 'all';
+let dialoguesSearchTerm = '';
+let activeDialogue = null;
+let activeDialogueTab = 'vocab'; // 'vocab' | 'script' | 'trainer'
+let activeTrainerStep = 0;
+let trainerSelectedWords = [];
+let isDialoguePlayingAll = false;
+let dialoguePlayIndex = 0;
+let dialogueShowTranslations = true;
+let isTrainerDictating = false;
+let trainerDictationRecognition = null;
+
+const DIAG_CAT_INFO = {
+    job: { icon: '💼', title: 'Работа и карьера', bg: 'from-blue-50 to-indigo-50/50', border: 'border-blue-200/80', badge: 'bg-blue-100 text-blue-800' },
+    health: { icon: '🩺', title: 'Здоровье и медицина', bg: 'from-emerald-50 to-teal-50/50', border: 'border-emerald-200/80', badge: 'bg-emerald-100 text-emerald-800' },
+    authorities: { icon: '🏛', title: 'Ведомства и документы', bg: 'from-amber-50 to-orange-50/50', border: 'border-amber-200/80', badge: 'bg-amber-100 text-amber-800' },
+    housing: { icon: '🏠', title: 'Жилье и Hausverwaltung', bg: 'from-violet-50 to-purple-50/50', border: 'border-violet-200/80', badge: 'bg-violet-100 text-violet-800' },
+    services: { icon: '🛒', title: 'Быт, банк и сервисы', bg: 'from-sky-50 to-cyan-50/50', border: 'border-sky-200/80', badge: 'bg-sky-100 text-sky-800' },
+    exam: { icon: '🎓', title: 'Экзамен DTZ / B1', bg: 'from-rose-50 to-pink-50/50', border: 'border-rose-200/80', badge: 'bg-rose-100 text-rose-800' }
+};
+
+async function loadGermanDialogues() {
+    try {
+        const res = await fetch('/api/german/dialogues');
+        if (res.ok) {
+            const data = await res.json();
+            allGermanDialogues = data.dialogues || [];
+            const badge = document.getElementById('dialoguesTotalBadge');
+            if (badge) badge.textContent = allGermanDialogues.length;
+            console.log(`Загружено ${allGermanDialogues.length} ситуационных диалогов DACH`);
+        }
+    } catch (e) {
+        console.warn('Ошибка загрузки диалогов немецкого языка:', e);
+    }
+}
+
+function renderDialoguesCatalog() {
+    const listEl = document.getElementById('germanDialoguesList');
+    if (!listEl) return;
+
+    if (!allGermanDialogues || allGermanDialogues.length === 0) {
+        listEl.innerHTML = `
+            <div class="text-center py-12 text-slate-500 space-y-3">
+                <div class="text-3xl animate-bounce">⏳</div>
+                <p class="text-xs font-semibold">Загрузка ситуационных диалогов...</p>
+            </div>
+        `;
+        loadGermanDialogues().then(() => renderDialoguesCatalog());
+        return;
+    }
+
+    const filtered = allGermanDialogues.filter(d => {
+        // Фильтр по категории
+        if (currentDialogueCategory !== 'all' && d.category !== currentDialogueCategory) {
+            return false;
+        }
+        // Фильтр по поисковому запросу
+        if (dialoguesSearchTerm) {
+            const term = dialoguesSearchTerm.toLowerCase();
+            const inDe = (d.title_de || '').toLowerCase().includes(term);
+            const inRu = (d.title_ru || '').toLowerCase().includes(term);
+            const inDesc = (d.description_ru || '').toLowerCase().includes(term);
+            const inRole = (d.partner_role || '').toLowerCase().includes(term);
+            const inVocab = (d.vocabulary || []).some(v => 
+                (v.german || '').toLowerCase().includes(term) || (v.russian || '').toLowerCase().includes(term)
+            );
+            const inChunks = (d.redemittel || []).some(c => 
+                (c.chunk_de || '').toLowerCase().includes(term) || (c.translation_ru || '').toLowerCase().includes(term)
+            );
+            if (!inDe && !inRu && !inDesc && !inRole && !inVocab && !inChunks) {
+                return false;
+            }
+        }
+        return true;
+    });
+
+    if (filtered.length === 0) {
+        listEl.innerHTML = `
+            <div class="text-center py-12 text-slate-500 space-y-3">
+                <div class="text-4xl">🔍</div>
+                <p class="text-xs font-bold text-slate-700">Ничего не найдено по запросу «${escapeHtml(dialoguesSearchTerm)}»</p>
+                <button onclick="clearDialoguesSearch()" class="px-3 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-xs font-bold rounded-xl transition">
+                    Сбросить поиск
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '';
+    filtered.forEach(d => {
+        const catInfo = DIAG_CAT_INFO[d.category] || { 
+            icon: '💬', title: 'Ситуация', bg: 'from-slate-50 to-indigo-50/40', border: 'border-slate-200', badge: 'bg-slate-100 text-slate-800' 
+        };
+
+        html += `
+            <div onclick="openGermanDialogueDetail('${d.id}')" class="diag-card hub-glass-card rounded-2xl p-3.5 sm:p-4 cursor-pointer border ${catInfo.border} bg-gradient-to-br ${catInfo.bg} hover:shadow-md transition">
+                <div class="flex items-start justify-between gap-2 mb-2">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="text-base">${catInfo.icon}</span>
+                        <span class="text-[10px] font-bold ${catInfo.badge} px-2 py-0.5 rounded-full">${d.category_label || catInfo.title}</span>
+                        <span class="text-[10px] font-black bg-white/95 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-100 shadow-2xs">${d.level}</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-[11px] text-slate-600 font-semibold shrink-0 bg-white/80 px-2 py-0.5 rounded-lg border border-slate-200/50">
+                        <span>${d.partner_avatar || '🗣'}</span>
+                        <span class="truncate max-w-[110px]">${escapeHtml(d.partner_role)}</span>
+                    </div>
+                </div>
+
+                <h4 class="font-black text-slate-900 text-sm leading-snug">${escapeHtml(d.title_de)}</h4>
+                <p class="text-xs text-slate-600 mt-0.5 font-medium">${escapeHtml(d.title_ru)}</p>
+                <p class="text-[11px] text-slate-500 mt-1.5 line-clamp-2 leading-relaxed">${escapeHtml(d.description_ru)}</p>
+
+                <div class="flex items-center justify-between gap-2 mt-3 pt-2.5 border-t border-slate-200/60">
+                    <div class="flex items-center gap-2 text-[10px] text-slate-500 font-semibold">
+                        <span>📚 ${(d.vocabulary || []).length} слов</span>
+                        <span>•</span>
+                        <span>💡 ${(d.redemittel || []).length} чанков</span>
+                        <span>•</span>
+                        <span>🎙 ${(d.dialogue || []).length} реплик</span>
+                    </div>
+                    <button class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] rounded-xl shadow-xs transition active:scale-95 flex items-center gap-1 shrink-0">
+                        <span>Учить</span>
+                        <span>➔</span>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+
+    listEl.innerHTML = html;
+}
+
+function selectDialogueCategory(cat) {
+    currentDialogueCategory = cat;
+    document.querySelectorAll('.diag-cat-pill').forEach(btn => {
+        if (btn.id === 'diag-cat-' + cat) {
+            btn.className = 'diag-cat-pill active px-3 py-1 rounded-xl font-bold text-[11px] whitespace-nowrap transition bg-indigo-600 text-white shadow-2xs';
+        } else {
+            btn.className = 'diag-cat-pill px-3 py-1 rounded-xl font-semibold text-[11px] whitespace-nowrap transition bg-white/80 hover:bg-white text-slate-700 border border-slate-200/70 shadow-2xs';
+        }
+    });
+    renderDialoguesCatalog();
+}
+
+function filterDialoguesCatalog() {
+    const input = document.getElementById('dialoguesSearchInput');
+    const clearBtn = document.getElementById('dialoguesClearSearch');
+    dialoguesSearchTerm = (input?.value || '').trim().toLowerCase();
+    if (clearBtn) {
+        if (dialoguesSearchTerm) clearBtn.classList.remove('hidden');
+        else clearBtn.classList.add('hidden');
+    }
+    renderDialoguesCatalog();
+}
+
+function clearDialoguesSearch() {
+    const input = document.getElementById('dialoguesSearchInput');
+    const clearBtn = document.getElementById('dialoguesClearSearch');
+    if (input) input.value = '';
+    if (clearBtn) clearBtn.classList.add('hidden');
+    dialoguesSearchTerm = '';
+    renderDialoguesCatalog();
+}
+
+function openGermanDialogueDetail(dialogueId) {
+    activeDialogue = allGermanDialogues.find(d => d.id === dialogueId);
+    if (!activeDialogue) return;
+    activeDialogueTab = 'vocab';
+    activeTrainerStep = 0;
+    trainerSelectedWords = [];
+    stopDialogueFullAudio();
+    stopTrainerDictation();
+    setGermanViewMode('dialogue_detail');
+}
+
+function switchDialogueTab(tab) {
+    activeDialogueTab = tab;
+    ['vocab', 'script', 'trainer'].forEach(t => {
+        const btn = document.getElementById('diagTabBtn-' + t);
+        if (btn) {
+            if (t === tab) {
+                btn.className = 'flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 bg-white text-indigo-700 shadow-xs border border-white';
+            } else {
+                btn.className = 'flex-1 py-1.5 px-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1';
+            }
+        }
+    });
+    stopDialogueFullAudio();
+    stopTrainerDictation();
+    renderDialogueDetailView();
+}
+
+function renderDialogueDetailView() {
+    if (!activeDialogue) return;
+
+    const titleEl = document.getElementById('dialogueDetailHeaderTitle');
+    const partnerEl = document.getElementById('dialogueDetailPartnerBadge');
+    const levelEl = document.getElementById('dialogueDetailLevelBadge');
+
+    if (titleEl) titleEl.textContent = activeDialogue.title_de;
+    if (partnerEl) partnerEl.textContent = `${activeDialogue.partner_avatar || '🗣'} ${activeDialogue.partner_role}`;
+    if (levelEl) levelEl.textContent = activeDialogue.level;
+
+    const contentArea = document.getElementById('dialogueTabContentArea');
+    if (!contentArea) return;
+
+    if (activeDialogueTab === 'vocab') {
+        renderDialogueVocabTab(contentArea);
+    } else if (activeDialogueTab === 'script') {
+        renderDialogueScriptTab(contentArea);
+    } else if (activeDialogueTab === 'trainer') {
+        renderDialogueTrainerTab(contentArea);
+    }
+}
+
+// -------------------------------------------------------------------------
+// ВКЛАДКА 1: СЛОВАРЬ И РЕЧЕВЫЕ КАРКАСЫ (Wortschatz & Redemittel)
+// -------------------------------------------------------------------------
+function renderDialogueVocabTab(container) {
+    const vocab = activeDialogue.vocabulary || [];
+    const redemittel = activeDialogue.redemittel || [];
+
+    let html = `
+        <div class="space-y-4">
+            <!-- Информационная карточка ситуации -->
+            <div class="bg-indigo-50/70 border border-indigo-200/80 rounded-2xl p-3.5 space-y-1">
+                <div class="flex items-center gap-1.5 text-xs font-black text-indigo-900">
+                    <span>📍</span>
+                    <span>Ситуация: ${escapeHtml(activeDialogue.title_ru)}</span>
+                </div>
+                <p class="text-[11px] text-slate-600 leading-relaxed">${escapeHtml(activeDialogue.description_ru)}</p>
+            </div>
+
+            <!-- Раздел 1: Ключевая лексика (Wortschatz) -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between px-1">
+                    <h5 class="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                        <span>📚</span>
+                        <span>Ключевая лексика (${vocab.length} слов)</span>
+                    </h5>
+                    <span class="text-[10px] text-slate-400 font-medium">Нажмите 🔊 для произношения</span>
+                </div>
+
+                <div class="space-y-2">
+    `;
+
+    vocab.forEach((w) => {
+        let badgeClass = 'badge-die';
+        if (w.gender === 'der') badgeClass = 'badge-der';
+        else if (w.gender === 'das') badgeClass = 'badge-das';
+        else if (w.gender === 'die Pl.' || w.gender === 'pl') badgeClass = 'badge-die-pl';
+
+        const voiceToUse = w.voice_hint || activeDialogue.partner_voice || 'de-DE-KatjaNeural';
+
+        html += `
+            <div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-2.5 hover:border-indigo-200 transition">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="font-black text-xs sm:text-sm text-slate-900">${escapeHtml(w.german)}</span>
+                        ${w.gender ? `<span class="text-[10px] font-bold px-2 py-0.2 rounded-md ${badgeClass}">${escapeHtml(w.gender)}</span>` : ''}
+                    </div>
+                    <p class="text-xs text-slate-600 font-medium mt-0.5">${escapeHtml(w.russian)}</p>
+                    ${w.plural ? `<p class="text-[10px] text-purple-700/80 font-semibold mt-0.5">Plural: ${escapeHtml(w.plural)}</p>` : ''}
+                    ${w.example ? `<p class="text-[10px] text-slate-400 italic mt-0.5">„${escapeHtml(w.example)}“</p>` : ''}
+                </div>
+                <button onclick="playTTS(this, '${escapeQuotes(w.german)}', '${voiceToUse}')" class="p-2 sm:px-3 sm:py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl font-bold text-xs transition active:scale-95 flex items-center gap-1 shrink-0" title="Озвучить немецкое слово">
+                    <span>🔊</span>
+                </button>
+            </div>
+        `;
+    });
+
+    html += `
+                </div>
+            </div>
+
+            <!-- Раздел 2: Речевые каркасы (Redemittel) -->
+            <div class="space-y-2 pt-2">
+                <div class="flex items-center justify-between px-1">
+                    <h5 class="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                        <span>💡</span>
+                        <span>Готовые фразы и каркасы (${redemittel.length} чанков)</span>
+                    </h5>
+                    <span class="text-[10px] text-indigo-600 font-semibold">Шаблоны B1</span>
+                </div>
+
+                <div class="space-y-2">
+    `;
+
+    redemittel.forEach((c) => {
+        const voiceToUse = c.voice_hint || activeDialogue.partner_voice || 'de-DE-KatjaNeural';
+
+        html += `
+            <div class="bg-gradient-to-br from-white to-indigo-50/30 rounded-2xl p-3 border border-indigo-100 shadow-2xs flex items-center justify-between gap-2.5">
+                <div class="flex-1 min-w-0">
+                    <div class="font-bold text-xs sm:text-sm text-indigo-950">${escapeHtml(c.chunk_de)}</div>
+                    <div class="text-xs text-slate-600 font-medium mt-0.5">${escapeHtml(c.translation_ru)}</div>
+                    ${c.usage_tip ? `
+                        <div class="inline-block mt-1 bg-amber-50 border border-amber-200/70 text-amber-800 text-[10px] font-semibold px-2 py-0.5 rounded-md">
+                            💡 ${escapeHtml(c.usage_tip)}
+                        </div>
+                    ` : ''}
+                </div>
+                <button onclick="playTTS(this, '${escapeQuotes(c.chunk_de)}', '${voiceToUse}')" class="p-2 sm:px-3 sm:py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl font-bold text-xs transition active:scale-95 flex items-center gap-1 shrink-0" title="Озвучить речевой каркас">
+                    <span>🔊</span>
+                </button>
+            </div>
+        `;
+    });
+
+    html += `
+                </div>
+            </div>
+
+            <!-- Нижняя кнопка перехода к эталонному диалогу -->
+            <div class="pt-3">
+                <button onclick="switchDialogueTab('script')" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-2xl font-black text-xs sm:text-sm shadow-md hover:opacity-95 transition active:scale-[0.98] flex items-center justify-center gap-2">
+                    <span>Перейти к эталонному диалогу</span>
+                    <span>➔</span>
+                </button>
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+// -------------------------------------------------------------------------
+// ВКЛАДКА 2: ЭТАЛОННЫЙ ДИАЛОГ С АУДИО (Musterdialog mit Audio)
+// -------------------------------------------------------------------------
+function renderDialogueScriptTab(container) {
+    const turns = activeDialogue.dialogue || [];
+
+    let html = `
+        <div class="space-y-3">
+            <!-- Верхняя панель управления воспроизведением диалога -->
+            <div class="bg-white rounded-2xl p-2.5 border border-slate-200/80 shadow-2xs flex items-center justify-between gap-2">
+                <button id="btnPlayFullDialogue" onclick="toggleDialogueFullAudio()" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl transition flex items-center gap-1.5 active:scale-95 shrink-0">
+                    <span>▶</span>
+                    <span>Слушать весь диалог</span>
+                </button>
+                <button onclick="toggleDialogueTranslations()" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-[11px] rounded-xl transition flex items-center gap-1 active:scale-95 shrink-0">
+                    <span>👁</span>
+                    <span id="btnTranslationsToggleText">${dialogueShowTranslations ? 'Скрыть перевод' : 'Показать перевод'}</span>
+                </button>
+            </div>
+
+            <!-- Поток реплик диалога -->
+            <div class="space-y-3 pt-1">
+    `;
+
+    turns.forEach((turn, idx) => {
+        const isPartner = (turn.speaker === 'partner');
+        const voice = isPartner ? (turn.voice_hint || activeDialogue.partner_voice || 'de-DE-ConradNeural') : 'de-DE-KatjaNeural';
+
+        if (isPartner) {
+            html += `
+                <div id="diagTurn-${idx}" class="flex items-start gap-2.5 transition-all duration-200 p-2 rounded-2xl">
+                    <div class="w-9 h-9 rounded-2xl bg-indigo-100 text-indigo-800 flex items-center justify-center text-lg font-bold shadow-2xs shrink-0 mt-0.5">
+                        ${activeDialogue.partner_avatar || '🗣'}
+                    </div>
+                    <div class="flex-1 max-w-[85%] bg-white rounded-2xl rounded-tl-sm p-3 border border-slate-200 shadow-2xs">
+                        <div class="flex items-center justify-between gap-2 mb-1">
+                            <span class="font-bold text-[11px] text-slate-500">${escapeHtml(turn.speaker_name || activeDialogue.partner_role)}</span>
+                            <button onclick="playTTS(this, '${escapeQuotes(turn.german)}', '${voice}')" class="text-indigo-600 hover:text-indigo-800 text-xs p-1" title="Озвучить фразу">
+                                🔊
+                            </button>
+                        </div>
+                        <p class="font-bold text-xs sm:text-sm text-slate-900 leading-snug">${escapeHtml(turn.german)}</p>
+                        <p class="diag-trans-text text-xs text-slate-500 font-medium mt-1 leading-snug ${dialogueShowTranslations ? '' : 'hidden'}">${escapeHtml(turn.russian)}</p>
+                    </div>
+                </div>
+            `;
+        } else {
+            html += `
+                <div id="diagTurn-${idx}" class="flex items-start justify-end gap-2.5 transition-all duration-200 p-2 rounded-2xl">
+                    <div class="flex-1 max-w-[85%] bg-indigo-600 text-white rounded-2xl rounded-tr-sm p-3 shadow-sm">
+                        <div class="flex items-center justify-between gap-2 mb-1">
+                            <span class="font-bold text-[11px] text-indigo-200">Alina</span>
+                            <button onclick="playTTS(this, '${escapeQuotes(turn.german)}', '${voice}')" class="text-indigo-200 hover:text-white text-xs p-1" title="Озвучить фразу">
+                                🔊
+                            </button>
+                        </div>
+                        <p class="font-bold text-xs sm:text-sm text-white leading-snug">${escapeHtml(turn.german)}</p>
+                        <p class="diag-trans-text text-xs text-indigo-100/90 font-medium mt-1 leading-snug ${dialogueShowTranslations ? '' : 'hidden'}">${escapeHtml(turn.russian)}</p>
+                    </div>
+                    <div class="w-9 h-9 rounded-2xl overflow-hidden border border-white shadow-2xs shrink-0 mt-0.5">
+                        <img src="/static/img/alina_avatar.jpg" class="alina-profile-avatar w-full h-full object-cover" alt="Alina">
+                    </div>
+                </div>
+            `;
+        }
+    });
+
+    html += `
+            </div>
+
+            <!-- Нижняя кнопка перехода к интерактивному тренажеру -->
+            <div class="pt-3">
+                <button onclick="switchDialogueTab('trainer')" class="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-2xl font-black text-xs sm:text-sm shadow-md hover:opacity-95 transition active:scale-[0.98] flex items-center justify-center gap-2">
+                    <span>🎙 Запустить интерактивный тренажер</span>
+                    <span>➔</span>
+                </button>
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+function toggleDialogueTranslations() {
+    dialogueShowTranslations = !dialogueShowTranslations;
+    document.querySelectorAll('.diag-trans-text').forEach(el => {
+        if (dialogueShowTranslations) el.classList.remove('hidden');
+        else el.classList.add('hidden');
+    });
+    const btnText = document.getElementById('btnTranslationsToggleText');
+    if (btnText) {
+        btnText.textContent = dialogueShowTranslations ? 'Скрыть перевод' : 'Показать перевод';
+    }
+}
+
+function toggleDialogueFullAudio() {
+    if (isDialoguePlayingAll) {
+        stopDialogueFullAudio();
+    } else {
+        startDialogueFullAudio();
+    }
+}
+
+function stopDialogueFullAudio() {
+    isDialoguePlayingAll = false;
+    stopCurrentTTS();
+    const btn = document.getElementById('btnPlayFullDialogue');
+    if (btn) {
+        btn.innerHTML = '<span>▶</span><span>Слушать весь диалог</span>';
+        btn.className = 'px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl transition flex items-center gap-1.5 active:scale-95 shrink-0';
+    }
+    document.querySelectorAll('.dialogue-bubble-highlight').forEach(el => {
+        el.classList.remove('dialogue-bubble-highlight', 'ring-2', 'ring-indigo-400', 'bg-indigo-50/60');
+    });
+}
+
+async function startDialogueFullAudio() {
+    if (!activeDialogue || !activeDialogue.dialogue || activeDialogue.dialogue.length === 0) return;
+    isDialoguePlayingAll = true;
+    dialoguePlayIndex = 0;
+
+    const btn = document.getElementById('btnPlayFullDialogue');
+    if (btn) {
+        btn.innerHTML = '<span>⏹</span><span>Остановить</span>';
+        btn.className = 'px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 active:scale-95 shrink-0';
+    }
+
+    playNextDialogueTurnInSequence();
+}
+
+async function playNextDialogueTurnInSequence() {
+    if (!isDialoguePlayingAll || !activeDialogue) return;
+    if (dialoguePlayIndex >= activeDialogue.dialogue.length) {
+        stopDialogueFullAudio();
+        return;
+    }
+
+    const turn = activeDialogue.dialogue[dialoguePlayIndex];
+    const turnEl = document.getElementById(`diagTurn-${dialoguePlayIndex}`);
+
+    document.querySelectorAll('.dialogue-bubble-highlight').forEach(el => {
+        el.classList.remove('dialogue-bubble-highlight', 'ring-2', 'ring-indigo-400', 'bg-indigo-50/60');
+    });
+
+    if (turnEl) {
+        turnEl.classList.add('dialogue-bubble-highlight', 'ring-2', 'ring-indigo-400', 'bg-indigo-50/60');
+        turnEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    const voice = (turn.speaker === 'user') ? 'de-DE-KatjaNeural' : (turn.voice_hint || activeDialogue.partner_voice || 'de-DE-ConradNeural');
+
+    try {
+        await playDialogueTurnPromise(turn.german, voice);
+    } catch (e) {
+        console.warn('Dialogue sequential audio turn error:', e);
+    }
+
+    if (!isDialoguePlayingAll) return;
+
+    dialoguePlayIndex++;
+    setTimeout(() => {
+        if (isDialoguePlayingAll) playNextDialogueTurnInSequence();
+    }, 600);
+}
+
+function playDialogueTurnPromise(text, voice) {
+    return new Promise((resolve) => {
+        const audio = document.getElementById('globalTTSPlayer') || new Audio();
+        stopCurrentTTS();
+        currentTTSAudio = audio;
+
+        fetch('/api/tts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text, voice: voice })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!isDialoguePlayingAll) { resolve(); return; }
+            if (data.audio_base64) {
+                audio.src = 'data:audio/mp3;base64,' + data.audio_base64;
+                audio.onended = () => resolve();
+                audio.onerror = () => resolve();
+                audio.play().catch(() => resolve());
+            } else {
+                resolve();
+            }
+        })
+        .catch(() => resolve());
+    });
+}
+
+// -------------------------------------------------------------------------
+// ВКЛАДКА 3: ИНТЕРАКТИВНЫЙ ТРЕНАЖЕР (Rollenspiel)
+// -------------------------------------------------------------------------
+function renderDialogueTrainerTab(container) {
+    const userTurns = (activeDialogue.dialogue || []).filter(t => t.speaker === 'user');
+    const totalSteps = userTurns.length;
+
+    // Экран триумфального завершения
+    if (activeTrainerStep >= totalSteps) {
+        renderTrainerCelebration(container);
+        return;
+    }
+
+    const currentTurn = userTurns[activeTrainerStep];
+    const turnIdxInAll = activeDialogue.dialogue.indexOf(currentTurn);
+    const prevPartnerTurn = (turnIdxInAll > 0) ? activeDialogue.dialogue[turnIdxInAll - 1] : null;
+
+    trainerSelectedWords = [];
+
+    const progressPercent = Math.round(((activeTrainerStep) / totalSteps) * 100);
+
+    let html = `
+        <div class="space-y-3.5">
+            <!-- Индикатор прогресса шагов -->
+            <div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-2xs space-y-1.5">
+                <div class="flex items-center justify-between text-xs font-bold text-slate-700">
+                    <span class="flex items-center gap-1.5 text-indigo-600">
+                        <span>🎙</span>
+                        <span>Реплика ${activeTrainerStep + 1} из ${totalSteps}</span>
+                    </span>
+                    <span class="text-emerald-600">+15 XP за ответ</span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                    <div class="bg-gradient-to-r from-indigo-500 to-emerald-500 h-full rounded-full transition-all duration-300" style="width: ${progressPercent}%;"></div>
+                </div>
+            </div>
+
+            <!-- Реплика собеседника (Контекст) -->
+            ${prevPartnerTurn ? `
+                <div class="bg-gradient-to-br from-indigo-50/80 to-blue-50/60 rounded-2xl p-3.5 border border-indigo-200/90 shadow-2xs space-y-1.5">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">${activeDialogue.partner_avatar || '🗣'}</span>
+                            <span class="font-bold text-xs text-indigo-900">${escapeHtml(prevPartnerTurn.speaker_name || activeDialogue.partner_role)}</span>
+                        </div>
+                        <button onclick="playTTS(this, '${escapeQuotes(prevPartnerTurn.german)}', '${prevPartnerTurn.voice_hint || activeDialogue.partner_voice || 'de-DE-ConradNeural'}')" class="px-2 py-1 bg-white hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-2xs active:scale-95">
+                            <span>🔊</span>
+                            <span>Послушать</span>
+                        </button>
+                    </div>
+                    <p class="font-black text-xs sm:text-sm text-slate-900 leading-snug">${escapeHtml(prevPartnerTurn.german)}</p>
+                    <p class="text-xs text-slate-600 font-medium">${escapeHtml(prevPartnerTurn.russian)}</p>
+                </div>
+            ` : ''}
+
+            <!-- Задача для Алины -->
+            <div class="bg-white rounded-2xl p-3.5 border border-slate-200/90 shadow-2xs space-y-3">
+                <div class="flex items-center justify-between gap-2">
+                    <h5 class="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                        <span>🎯</span>
+                        <span>Ваш ответ:</span>
+                    </h5>
+                    <button onclick="toggleTrainerHint()" id="btnTrainerHint" class="text-[11px] text-amber-700 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-xl font-bold transition flex items-center gap-1 border border-amber-200/70">
+                        <span>💡</span>
+                        <span>Подсказка</span>
+                    </button>
+                </div>
+
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-medium text-slate-700 leading-relaxed">
+                    ${escapeHtml(currentTurn.task_prompt)}
+                </div>
+
+                <!-- Подсказка (скрыта по умолчанию) -->
+                <div id="trainerHintBox" class="hidden bg-amber-50/80 border border-amber-200 rounded-xl p-2.5 space-y-1">
+                    <div class="text-[10px] font-bold text-amber-800">💡 Эталонный ответ:</div>
+                    <p class="font-bold text-xs text-amber-950">${escapeHtml(currentTurn.suggested_answer)}</p>
+                    <p class="text-[11px] text-amber-900/80">${escapeHtml(currentTurn.russian)}</p>
+                </div>
+
+                <!-- Поле собранного ответа -->
+                <div class="space-y-1.5">
+                    <label class="block text-[11px] font-bold text-slate-600">Соберите фразу из слов или продиктуйте:</label>
+                    <div id="trainerSentenceDisplay" class="min-h-[52px] p-2.5 bg-slate-50 border-2 border-dashed border-indigo-200 rounded-xl flex flex-wrap items-center gap-1.5 text-xs font-bold text-slate-800 transition">
+                        <span id="trainerPlaceholder" class="text-slate-400 font-normal italic">Нажимайте слова из банка ниже или включите микрофон...</span>
+                    </div>
+                </div>
+
+                <!-- Банк слов (Word Bank Tokens) -->
+                <div class="space-y-2 pt-1">
+                    <div class="flex items-center justify-between text-[11px] text-slate-500">
+                        <span class="font-bold">Банк слов:</span>
+                        <div class="flex items-center gap-2">
+                            <button onclick="trainerUndoLastWord()" class="hover:text-indigo-600 font-semibold transition">⌫ Назад</button>
+                            <span>•</span>
+                            <button onclick="trainerClearSentence()" class="hover:text-rose-600 font-semibold transition">🗑 Сброс</button>
+                        </div>
+                    </div>
+                    <div id="trainerWordBankTokens" class="flex flex-wrap gap-1.5 pt-0.5">
+    `;
+
+    const wordBank = currentTurn.word_bank || currentTurn.suggested_answer.split(/\s+/);
+    // Перемешиваем банк слов для тренировки
+    const shuffledTokens = [...wordBank].map((w, idx) => ({ word: w, idx: idx }));
+    shuffledTokens.sort(() => Math.random() - 0.5);
+
+    shuffledTokens.forEach(t => {
+        html += `
+            <button onclick="trainerPickToken(this, '${escapeQuotes(t.word)}')" class="word-bank-chip" data-token-id="${t.idx}">
+                ${escapeHtml(t.word)}
+            </button>
+        `;
+    });
+
+    html += `
+                    </div>
+                </div>
+
+                <!-- Блок микрофона и проверки -->
+                <div class="flex items-center gap-2 pt-2 border-t border-slate-100">
+                    <button onclick="toggleTrainerDictation()" id="btnTrainerMic" class="p-2.5 sm:px-3 sm:py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition active:scale-95 flex items-center gap-1.5 shrink-0" title="Продиктовать ответ голосом на немецком">
+                        <span id="trainerMicIcon">🎙</span>
+                        <span id="trainerMicText" class="hidden sm:inline">Голос (de)</span>
+                    </button>
+                    <button onclick="checkTrainerAnswer()" id="btnCheckAnswer" class="flex-1 py-2.5 sm:py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:opacity-95 text-white font-black text-xs sm:text-sm rounded-xl shadow-md transition active:scale-95 flex items-center justify-center gap-2">
+                        <span>Проверить ответ</span>
+                        <span>➔</span>
+                    </button>
+                </div>
+
+                <!-- Область обратной связи -->
+                <div id="trainerFeedbackArea" class="hidden pt-1"></div>
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+function trainerPickToken(btn, word) {
+    if (btn.classList.contains('used')) return;
+    btn.classList.add('used');
+
+    trainerSelectedWords.push({ word: word, btn: btn });
+    updateTrainerSentenceDisplay();
+}
+
+function trainerUndoLastWord() {
+    if (trainerSelectedWords.length === 0) return;
+    const last = trainerSelectedWords.pop();
+    if (last && last.btn) {
+        last.btn.classList.remove('used');
+    }
+    updateTrainerSentenceDisplay();
+}
+
+function trainerClearSentence() {
+    trainerSelectedWords.forEach(item => {
+        if (item.btn) item.btn.classList.remove('used');
+    });
+    trainerSelectedWords = [];
+    updateTrainerSentenceDisplay();
+}
+
+function updateTrainerSentenceDisplay() {
+    const display = document.getElementById('trainerSentenceDisplay');
+    if (!display) return;
+
+    if (trainerSelectedWords.length === 0) {
+        display.innerHTML = '<span id="trainerPlaceholder" class="text-slate-400 font-normal italic">Нажимайте слова из банка ниже или включите микрофон...</span>';
+        return;
+    }
+
+    let html = '';
+    trainerSelectedWords.forEach((item, idx) => {
+        html += `
+            <span onclick="trainerRemoveWordAt(${idx})" class="token-pop-enter inline-flex items-center gap-1 bg-indigo-100 text-indigo-900 border border-indigo-200 px-2 py-0.5 rounded-lg text-xs font-bold shadow-2xs cursor-pointer hover:bg-rose-100 hover:text-rose-900 hover:border-rose-200 transition">
+                <span>${escapeHtml(item.word)}</span>
+                <span class="text-[10px] text-slate-400">×</span>
+            </span>
+        `;
+    });
+    display.innerHTML = html;
+}
+
+function trainerRemoveWordAt(idx) {
+    if (idx < 0 || idx >= trainerSelectedWords.length) return;
+    const removed = trainerSelectedWords.splice(idx, 1)[0];
+    if (removed && removed.btn) {
+        removed.btn.classList.remove('used');
+    }
+    updateTrainerSentenceDisplay();
+}
+
+function toggleTrainerHint() {
+    const hintBox = document.getElementById('trainerHintBox');
+    if (hintBox) {
+        hintBox.classList.toggle('hidden');
+    }
+}
+
+function normalizeTrainerGerman(str) {
+    if (!str) return '';
+    return str.toLowerCase()
+        .replace(/[.,!?;:«»"']/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function checkTrainerAnswer() {
+    const userTurns = (activeDialogue.dialogue || []).filter(t => t.speaker === 'user');
+    const currentTurn = userTurns[activeTrainerStep];
+    if (!currentTurn) return;
+
+    // Собрать предложение из токенов
+    let userSentence = trainerSelectedWords.map(i => i.word).join(' ').trim();
+    if (!userSentence) {
+        alert('Пожалуйста, выберите слова из банка или продиктуйте фразу голосом!');
+        return;
+    }
+
+    const normUser = normalizeTrainerGerman(userSentence);
+    const normTarget = normalizeTrainerGerman(currentTurn.suggested_answer);
+
+    const feedbackArea = document.getElementById('trainerFeedbackArea');
+    if (!feedbackArea) return;
+    feedbackArea.classList.remove('hidden');
+
+    const isExact = (normUser === normTarget);
+
+    // Подсчет пересечения слов
+    const userWords = normUser.split(' ');
+    const targetWords = normTarget.split(' ');
+    const overlap = userWords.filter(w => targetWords.includes(w));
+    const ratio = overlap.length / Math.max(targetWords.length, 1);
+
+    const isPass = isExact || (ratio >= 0.65);
+
+    if (isPass) {
+        // Добавляем XP в профиль Алины
+        if (window.lingoEngine && typeof lingoEngine.addXp === 'function') {
+            lingoEngine.addXp(15);
+        } else {
+            let xp = parseInt(localStorage.getItem('ai_coach_xp') || '0', 10);
+            localStorage.setItem('ai_coach_xp', xp + 15);
+            updateCourseProgressUI();
+        }
+
+        if (window.confetti) {
+            confetti({ particleCount: 30, spread: 60, origin: { y: 0.8 } });
+        }
+
+        feedbackArea.innerHTML = `
+            <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="font-black text-xs text-emerald-800 flex items-center gap-1.5">
+                        <span>🎉</span>
+                        <span>Ausgezeichnet, Alina! +15 XP</span>
+                    </span>
+                    <button onclick="playTTS(this, '${escapeQuotes(currentTurn.suggested_answer)}', 'de-DE-KatjaNeural')" class="text-emerald-700 text-xs font-bold p-1">
+                        🔊 Послушать
+                    </button>
+                </div>
+                <p class="text-xs text-emerald-950 font-bold">«${escapeHtml(currentTurn.suggested_answer)}»</p>
+                <p class="text-[11px] text-emerald-800">${escapeHtml(currentTurn.russian)}</p>
+                <button onclick="nextTrainerStep()" class="w-full mt-2 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-xs transition active:scale-95 shadow-xs flex items-center justify-center gap-1">
+                    <span>${(activeTrainerStep + 1 < userTurns.length) ? 'Следующая реплика' : 'Завершить диалог 🎉'}</span>
+                    <span>➔</span>
+                </button>
+            </div>
+        `;
+    } else {
+        feedbackArea.innerHTML = `
+            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 space-y-2">
+                <div class="font-black text-xs text-amber-800 flex items-center gap-1.5">
+                    <span>💡</span>
+                    <span>Хорошая попытка! Правильнее сказать:</span>
+                </div>
+                <p class="text-xs text-amber-950 font-bold">«${escapeHtml(currentTurn.suggested_answer)}»</p>
+                <p class="text-[11px] text-amber-900/80">${escapeHtml(currentTurn.russian)}</p>
+                <div class="flex items-center gap-2 pt-1">
+                    <button onclick="trainerClearSentence(); document.getElementById('trainerFeedbackArea').classList.add('hidden');" class="flex-1 py-2 bg-white hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-xl font-bold text-xs transition active:scale-95">
+                        🔄 Попробовать ещё раз
+                    </button>
+                    <button onclick="nextTrainerStep()" class="flex-1 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs transition active:scale-95">
+                        ➔ Принять и далее
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function nextTrainerStep() {
+    stopTrainerDictation();
+    activeTrainerStep++;
+    const container = document.getElementById('dialogueTabContentArea');
+    if (container) renderDialogueTrainerTab(container);
+}
+
+function resetTrainer() {
+    activeTrainerStep = 0;
+    trainerSelectedWords = [];
+    const container = document.getElementById('dialogueTabContentArea');
+    if (container) renderDialogueTrainerTab(container);
+}
+
+function renderTrainerCelebration(container) {
+    if (window.confetti) {
+        confetti({ particleCount: 70, spread: 80, origin: { y: 0.6 } });
+    }
+
+    // Бонусные 50 XP за полное прохождение сценария
+    if (window.lingoEngine && typeof lingoEngine.addXp === 'function') {
+        lingoEngine.addXp(50);
+    } else {
+        let xp = parseInt(localStorage.getItem('ai_coach_xp') || '0', 10);
+        localStorage.setItem('ai_coach_xp', xp + 50);
+        updateCourseProgressUI();
+    }
+
+    container.innerHTML = `
+        <div class="text-center py-6 px-3 space-y-4 max-w-sm mx-auto">
+            <div class="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-emerald-500 to-teal-500 text-white flex items-center justify-center text-4xl shadow-xl animate-bounce">
+                🏆
+            </div>
+
+            <div class="space-y-1">
+                <h4 class="font-black text-lg text-slate-900">Super gemacht, Alina! 🎉</h4>
+                <p class="text-xs text-slate-600">Вы успешно отработали все реплики в ситуации:</p>
+                <p class="text-sm font-bold text-indigo-700">${escapeHtml(activeDialogue.title_de)}</p>
+            </div>
+
+            <div class="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-3 text-xs font-bold text-emerald-800">
+                ⭐ +50 Бонусных XP начислено за завершение сценария!
+            </div>
+
+            <div class="space-y-2 pt-2">
+                <button onclick="startDialogueLiveCoach()" class="w-full py-3 bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:opacity-95 text-white font-black text-xs sm:text-sm rounded-2xl shadow-md transition active:scale-95 flex items-center justify-center gap-2">
+                    <span>🎙 Запустить живую AI симуляцию с ${escapeHtml(activeDialogue.partner_role)}</span>
+                </button>
+
+                <button onclick="resetTrainer()" class="w-full py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-2xl font-bold text-xs transition active:scale-95">
+                    🔄 Пройти тренажер заново
+                </button>
+
+                <button onclick="setGermanViewMode('dialogues')" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl font-semibold text-xs transition active:scale-95">
+                    ⬅️ К списку всех 18 диалогов
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// Голосовой ввод на немецком в тренажере
+function toggleTrainerDictation() {
+    if (isTrainerDictating) {
+        stopTrainerDictation();
+    } else {
+        startTrainerDictation();
+    }
+}
+
+function startTrainerDictation() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        alert('Голосовой ввод не поддерживается данным браузером. Используйте карточки банка слов!');
+        return;
+    }
+
+    try {
+        if (trainerDictationRecognition) {
+            try { trainerDictationRecognition.abort(); } catch(e) {}
+            trainerDictationRecognition = null;
+        }
+
+        const rec = new SpeechRecognition();
+        rec.lang = 'de-DE'; // Немецкое распознавание речи
+        rec.continuous = false;
+        rec.interimResults = true;
+
+        rec.onstart = () => {
+            isTrainerDictating = true;
+            const btn = document.getElementById('btnTrainerMic');
+            const icon = document.getElementById('trainerMicIcon');
+            const txt = document.getElementById('trainerMicText');
+            if (btn) btn.className = 'p-2.5 sm:px-3 sm:py-2.5 bg-rose-500 text-white rounded-xl font-bold text-xs transition active:scale-95 flex items-center gap-1.5 shrink-0 animate-pulse';
+            if (icon) icon.textContent = '🔴';
+            if (txt) txt.textContent = 'Говорите...';
+        };
+
+        rec.onresult = (e) => {
+            let tr = '';
+            for (let i = e.resultIndex; i < e.results.length; ++i) {
+                tr += e.results[i][0].transcript;
+            }
+            if (tr.trim()) {
+                const words = tr.trim().split(/\s+/);
+                trainerSelectedWords = words.map(w => ({ word: w, btn: null }));
+                updateTrainerSentenceDisplay();
+            }
+        };
+
+        rec.onerror = (e) => {
+            console.warn('Trainer SpeechRecognition error:', e.error);
+            stopTrainerDictation();
+        };
+
+        rec.onend = () => {
+            stopTrainerDictation();
+        };
+
+        trainerDictationRecognition = rec;
+        rec.start();
+    } catch (err) {
+        console.warn('startTrainerDictation error:', err);
+        stopTrainerDictation();
+    }
+}
+
+function stopTrainerDictation() {
+    isTrainerDictating = false;
+    if (trainerDictationRecognition) {
+        try { trainerDictationRecognition.stop(); } catch(e) {}
+        trainerDictationRecognition = null;
+    }
+    const btn = document.getElementById('btnTrainerMic');
+    const icon = document.getElementById('trainerMicIcon');
+    const txt = document.getElementById('trainerMicText');
+    if (btn) btn.className = 'p-2.5 sm:px-3 sm:py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition active:scale-95 flex items-center gap-1.5 shrink-0';
+    if (icon) icon.textContent = '🎙';
+    if (txt) txt.textContent = 'Голос (de)';
+}
+
+function startDialogueLiveCoach() {
+    if (!activeDialogue) return;
+    currentLiveDialogueId = activeDialogue.id;
+    liveCoachMode = 'german_dialogue';
+    LIVE_SILENCE_DELAY_MS = 4500;
+
+    switchTab('live');
+    updateLiveCoachModeUI();
+
+    if (!liveSoundEnabled) {
+        toggleLiveSound();
+    }
+    if (!isLiveActive) {
+        startLiveVoice();
+    }
+
+    const partnerRole = activeDialogue.partner_role || 'Собеседник';
+    const introPrompt = `Hallo! Wir machen jetzt ein Rollenspiel: "${activeDialogue.title_de}". Du spielst "${partnerRole}". Bitte sprich deine erste Replik auf Deutsch mit kurzer russischer Übersetzung!`;
+    handleLiveUserSpeech(introPrompt);
 }
 
 // Регистрация Service Worker для PWA (установка на телефон / iPhone)

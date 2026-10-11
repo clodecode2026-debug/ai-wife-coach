@@ -1,0 +1,3300 @@
+{
+  "total": 18,
+  "dialogues": [
+    {
+      "id": "diag_job_interview",
+      "category": "job",
+      "category_label": "💼 Работа",
+      "level": "B1",
+      "title_de": "Vorstellungsgespräch: Sich vorstellen & Berufserfahrung",
+      "title_ru": "Собеседование: Знакомство и опыт работы",
+      "description_ru": "Реалистичное собеседование в немецкой компании: рассказ о себе, опыт, сильные стороны и график работы.",
+      "partner_role": "Frau Klein (Personalabteilung)",
+      "partner_avatar": "👩‍💼",
+      "partner_voice": "de-DE-KatjaNeural",
+      "user_voice": "de-DE-KatjaNeural",
+      "vocabulary": [
+        {
+          "german": "das Vorstellungsgespräch",
+          "gender": "das",
+          "plural": "die Vorstellungsgespräche",
+          "russian": "собеседование",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Berufserfahrung",
+          "gender": "die",
+          "plural": "die Berufserfahrungen",
+          "russian": "опыт работы",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Bewerbungsunterlagen",
+          "gender": "die_pl",
+          "plural": "die Bewerbungsunterlagen",
+          "russian": "документы для резюме",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Stärke",
+          "gender": "die",
+          "plural": "die Stärken",
+          "russian": "сильная сторона",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Vollzeit",
+          "gender": "die",
+          "plural": "-",
+          "russian": "полная занятость",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Teilzeit",
+          "gender": "die",
+          "plural": "-",
+          "russian": "частичная занятость",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "der Lebenslauf",
+          "gender": "der",
+          "plural": "die Lebensläufe",
+          "russian": "резюме (CV)",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Zuverlässigkeit",
+          "gender": "die",
+          "plural": "-",
+          "russian": "надежность / пунктуальность",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Einarbeitung",
+          "gender": "die",
+          "plural": "-",
+          "russian": "ввод в курс дела",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "das Gehalt",
+          "gender": "das",
+          "plural": "die Gehälter",
+          "russian": "зарплата",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "redemittel": [
+        {
+          "chunk_de": "Ich habe mehrere Jahre Erfahrung als...",
+          "translation_ru": "У меня несколько лет опыта в качестве...",
+          "usage_tip": "Начало рассказа о профессии",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Zu meinen Stärken gehören Zuverlässigkeit und...",
+          "translation_ru": "К моим сильным сторонам относятся надежность и...",
+          "usage_tip": "Ответ о личных качествах",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Ich lerne schnell und arbeite gerne im Team.",
+          "translation_ru": "Я быстро учусь и с удовольствием работаю в команде.",
+          "usage_tip": "Подчеркивает мотивацию",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Wie sieht die Einarbeitungsphase aus?",
+          "translation_ru": "Как выглядит период ввода в должность?",
+          "usage_tip": "Отличный встречный вопрос",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "dialogue": [
+        {
+          "speaker": "partner",
+          "speaker_name": "Frau Klein",
+          "german": "Guten Tag, Frau Alina! Schön, dass Sie da sind. Nehmen Sie doch bitte Platz.",
+          "russian": "Добрый день, госпожа Алина! Рада вас видеть. Присаживайтесь, пожалуйста.",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Guten Tag, Frau Klein. Vielen Dank für die Einladung zum Gespräch.",
+          "russian": "Добрый день, госпожа Кляйн. Большое спасибо за приглашение на собеседование.",
+          "task_prompt": "Поздоровайтесь и поблагодарите за приглашение на собеседование.",
+          "suggested_answer": "Guten Tag, Frau Klein. Vielen Dank für die Einladung zum Gespräch.",
+          "word_bank": [
+            "Guten",
+            "Tag,",
+            "Frau",
+            "Klein.",
+            "Vielen",
+            "Dank",
+            "für",
+            "die",
+            "Einladung",
+            "zum",
+            "Gespräch."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Frau Klein",
+          "german": "Sehr gerne. Erzählen Sie uns bitte kurz über sich und Ihre bisherige Erfahrung.",
+          "russian": "С удовольствием. Расскажите нам, пожалуйста, кратко о себе и вашем предыдущем опыте.",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Ich habe fünf Jahre Erfahrung in diesem Bereich und lerne sehr schnell neue Aufgaben.",
+          "russian": "У меня пять лет опыта в этой сфере, и я очень быстро осваиваю новые задачи.",
+          "task_prompt": "Скажите, что у вас 5 лет опыта в этой сфере и вы быстро учитесь новому.",
+          "suggested_answer": "Ich habe fünf Jahre Erfahrung in diesem Bereich und lerne sehr schnell neue Aufgaben.",
+          "word_bank": [
+            "Ich",
+            "habe",
+            "fünf",
+            "Jahre",
+            "Erfahrung",
+            "in",
+            "diesem",
+            "Bereich",
+            "und",
+            "lerne",
+            "sehr",
+            "schnell",
+            "neue",
+            "Aufgaben."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Frau Klein",
+          "german": "Das klingt hervorragend. Suchen Sie eine Stelle in Vollzeit oder in Teilzeit?",
+          "russian": "Это звучит замечательно. Вы ищете позицию на полную занятость или неполный день?",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Ich bevorzuge eine Teilzeitstelle mit dreißig Stunden pro Woche.",
+          "russian": "Я предпочитаю частичную занятость на 30 часов в неделю.",
+          "task_prompt": "Ответьте, что предпочитаете частичную занятость на 30 часов в неделю.",
+          "suggested_answer": "Ich bevorzuge eine Teilzeitstelle mit dreißig Stunden pro Woche.",
+          "word_bank": [
+            "Ich",
+            "bevorzuge",
+            "eine",
+            "Teilzeitstelle",
+            "mit",
+            "dreißig",
+            "Stunden",
+            "pro",
+            "Woche."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Frau Klein",
+          "german": "Das passt sehr gut zu unserem Profil. Haben Sie noch Fragen an uns?",
+          "russian": "Это очень хорошо подходит нашему профилю. Есть ли у вас еще вопросы к нам?",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Ja, wie sieht die Einarbeitungsphase in den ersten Wochen aus?",
+          "russian": "Да, как выглядит период ввода в курс дела в первые недели?",
+          "task_prompt": "Спросите, как будет проходить обучение и ввод в должность в первые недели.",
+          "suggested_answer": "Ja, wie sieht die Einarbeitungsphase in den ersten Wochen aus?",
+          "word_bank": [
+            "Ja,",
+            "wie",
+            "sieht",
+            "die",
+            "Einarbeitungsphase",
+            "in",
+            "den",
+            "ersten",
+            "Wochen",
+            "aus?"
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Frau Klein",
+          "german": "Sie bekommen eine feste Kollegin zur Seite gestellt. Wir melden uns bis Ende der Woche bei Ihnen!",
+          "russian": "К вам прикрепят постоянную коллегу. Мы свяжемся с вами до конца недели!",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ]
+    },
+    {
+      "id": "diag_krankmeldung",
+      "category": "job",
+      "category_label": "💼 Работа",
+      "level": "A2-B1",
+      "title_de": "Krankmeldung beim Arbeitgeber (Telefonat)",
+      "title_ru": "Звонок на работу при болезни (Больничный)",
+      "description_ru": "Предупреждение шефа о болезни утром, визит к врачу и отправка справки о нетрудоспособности (eAU).",
+      "partner_role": "Herr Weber (Abteilungsleiter)",
+      "partner_avatar": "👨‍💼",
+      "partner_voice": "de-DE-ConradNeural",
+      "user_voice": "de-DE-KatjaNeural",
+      "vocabulary": [
+        {
+          "german": "die Krankmeldung",
+          "gender": "die",
+          "plural": "die Krankmeldungen",
+          "russian": "уведомление о болезни",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Krankschreibung",
+          "gender": "die",
+          "plural": "die Krankschreibungen",
+          "russian": "больничный лист",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Arbeitsunfähigkeit",
+          "gender": "die",
+          "plural": "-",
+          "russian": "нетрудоспособность (AU)",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "das Fieber",
+          "gender": "das",
+          "plural": "-",
+          "russian": "высокая температура",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Vertretung",
+          "gender": "die",
+          "plural": "die Vertretungen",
+          "russian": "замещение на работе",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Genesung",
+          "gender": "die",
+          "plural": "-",
+          "russian": "выздоровление",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "sich krankmelden",
+          "gender": "verb",
+          "plural": "-",
+          "russian": "брать больничный / предупреждать о болезни",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "redemittel": [
+        {
+          "chunk_de": "Ich muss mich leider für heute krankmelden.",
+          "translation_ru": "К сожалению, я вынуждена предупредить, что заболела сегодня.",
+          "usage_tip": "Первая главная фраза звонка",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Ich habe starkes Fieber und gehe gleich zum Arzt.",
+          "translation_ru": "У меня высокая температура, и я сразу иду к врачу.",
+          "usage_tip": "Объяснение причины",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Ich gebe Ihnen Bescheid, sobald ich beim Arzt war.",
+          "translation_ru": "Я сообщу вам, как только побываю у врача.",
+          "usage_tip": "Вежливое обещание держать в курсе",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Meine Kollegin kann meine dringenden Aufgaben übernehmen.",
+          "translation_ru": "Моя коллега может перенять мои срочные задачи.",
+          "usage_tip": "Организация замещения",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "dialogue": [
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Weber",
+          "german": "Firma Schmidt & Partner, Weber am Apparat. Guten Morgen!",
+          "russian": "Фирма Шмидт и Партнеры, Вебер у телефона. Доброе утро!",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Guten Morgen, Herr Weber. Hier spricht Alina. Ich muss mich leider für heute krankmelden.",
+          "russian": "Доброе утро, господин Вебер. Это Алина. К сожалению, я вынуждена предупредить, что сегодня заболела.",
+          "task_prompt": "Поздоровайтесь, назовите свое имя и скажите, что должны отпроситься по болезни на сегодня.",
+          "suggested_answer": "Guten Morgen, Herr Weber. Hier spricht Alina. Ich muss mich leider für heute krankmelden.",
+          "word_bank": [
+            "Guten",
+            "Morgen,",
+            "Herr",
+            "Weber.",
+            "Hier",
+            "spricht",
+            "Alina.",
+            "Ich",
+            "muss",
+            "mich",
+            "leider",
+            "für",
+            "heute",
+            "krankmelden."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Weber",
+          "german": "Oh, das tut mir leid. Was fehlt Ihnen denn? Gehen Sie heute zum Arzt?",
+          "russian": "Ох, сочувствую. Что с вами? Вы пойдете сегодня к врачу?",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Ja, ich habe starkes Fieber und gehe gleich um neun Uhr in die Praxis.",
+          "russian": "Да, у меня сильная температура, и я сразу иду в девять часов к врачу в праксис.",
+          "task_prompt": "Ответьте, что у вас сильная температура и вы идете в 9 часов к врачу.",
+          "suggested_answer": "Ja, ich habe starkes Fieber und gehe gleich um neun Uhr in die Praxis.",
+          "word_bank": [
+            "Ja,",
+            "ich",
+            "habe",
+            "starkes",
+            "Fieber",
+            "und",
+            "gehe",
+            "gleich",
+            "um",
+            "neun",
+            "Uhr",
+            "in",
+            "die",
+            "Praxis."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Weber",
+          "german": "Gut. Bitte senden Sie uns die Krankschreibung, sobald Sie sie haben. Wie sieht es mit Ihren Aufgaben aus?",
+          "russian": "Хорошо. Пожалуйста, отправьте нам больничный, как только он будет. Как обстоят дела с вашими задачами?",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Ich habe meiner Kollegin Julia Bescheid gegeben, sie übernimmt die dringenden Kundenanfragen.",
+          "russian": "Я предупредила коллегу Юлию, она возьмет на себя срочные запросы клиентов.",
+          "task_prompt": "Скажите, что предупредили коллегу Юлию и она возьмет срочные вопросы клиентов.",
+          "suggested_answer": "Ich habe meiner Kollegin Julia Bescheid gegeben, sie übernimmt die dringenden Kundenanfragen.",
+          "word_bank": [
+            "Ich",
+            "habe",
+            "meiner",
+            "Kollegin",
+            "Julia",
+            "Bescheid",
+            "gegeben,",
+            "sie",
+            "übernimmt",
+            "die",
+            "dringenden",
+            "Kundenanfragen."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Weber",
+          "german": "Sehr gut geregelt. Dann ruhen Sie sich aus und gute Besserung!",
+          "russian": "Очень хорошо уладили. Тогда отдыхайте и скорейшего выздоровления!",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Vielen Dank, Herr Weber. Ich melde mich nach dem Arztbesuch wieder. Auf Wiederhören!",
+          "russian": "Большое спасибо, господин Вебер. Я свяжусь с вами после визита к врачу. До свидания!",
+          "task_prompt": "Поблагодарите и скажите, что свяжетесь после врача. Попрощайтесь.",
+          "suggested_answer": "Vielen Dank, Herr Weber. Ich melde mich nach dem Arztbesuch wieder. Auf Wiederhören!",
+          "word_bank": [
+            "Vielen",
+            "Dank,",
+            "Herr",
+            "Weber.",
+            "Ich",
+            "melde",
+            "mich",
+            "nach",
+            "dem",
+            "Arztbesuch",
+            "wieder.",
+            "Auf",
+            "Wiederhören!"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "diag_job_inquiry",
+      "category": "job",
+      "category_label": "💼 Работа",
+      "level": "A2-B1",
+      "title_de": "Telefonische Nachfrage zu einer Stellenanzeige",
+      "title_ru": "Звонок по поводу вакансии",
+      "description_ru": "Уточнение деталей по объявлению о работе: требования к языку, открыта ли вакансия и куда слать резюме.",
+      "partner_role": "Herr Krause (Personalabteilung)",
+      "partner_avatar": "👨‍💼",
+      "partner_voice": "de-DE-ConradNeural",
+      "user_voice": "de-DE-KatjaNeural",
+      "vocabulary": [
+        {
+          "german": "die Stellenanzeige",
+          "gender": "die",
+          "plural": "die Stellenanzeigen",
+          "russian": "объявление о вакансии",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Voraussetzung",
+          "gender": "die",
+          "plural": "die Voraussetzungen",
+          "russian": "требование / условие",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Sprachkenntnisse",
+          "gender": "die_pl",
+          "plural": "die Sprachkenntnisse",
+          "russian": "знания языка",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Bewerbung",
+          "gender": "die",
+          "plural": "die Bewerbungen",
+          "russian": "заявка на работу",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "sich bewerben",
+          "gender": "verb",
+          "plural": "-",
+          "russian": "подавать заявку на работу",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "redemittel": [
+        {
+          "chunk_de": "Ich rufe wegen Ihrer Anzeige auf der Webseite an.",
+          "translation_ru": "Я звоню по поводу вашего объявления на сайте.",
+          "usage_tip": "Указание цели звонка",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Ist die Stelle noch aktuell und offen?",
+          "translation_ru": "Эта вакансия еще актуальна и открыта?",
+          "usage_tip": "Уточнение статуса",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Welche Sprachkenntnisse werden vorausgesetzt?",
+          "translation_ru": "Какое знание языка требуется?",
+          "usage_tip": "Вопрос о языке",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "dialogue": [
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Krause",
+          "german": "Personalabteilung Krause, guten Tag! Wie kann ich Ihnen helfen?",
+          "russian": "Отдел кадров Краузе, добрый день! Чем могу вам помочь?",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Guten Tag. Ich rufe wegen Ihrer Stellenanzeige als Assistentin an. Ist diese Stelle noch frei?",
+          "russian": "Добрый день. Я звоню по поводу вашей вакансии ассистента. Это место еще свободно?",
+          "task_prompt": "Поздоровайтесь, скажите что звоните по поводу вакансии ассистента и спросите, свободна ли она.",
+          "suggested_answer": "Guten Tag. Ich rufe wegen Ihrer Stellenanzeige als Assistentin an. Ist diese Stelle noch frei?",
+          "word_bank": [
+            "Guten",
+            "Tag.",
+            "Ich",
+            "rufe",
+            "wegen",
+            "Ihrer",
+            "Stellenanzeige",
+            "als",
+            "Assistentin",
+            "an.",
+            "Ist",
+            "diese",
+            "Stelle",
+            "noch",
+            "frei?"
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Krause",
+          "german": "Ja, die Position ist noch aktuell. Wir nehmen noch Bewerbungen entgegen.",
+          "russian": "Да, позиция еще актуальна. Мы еще принимаем заявки.",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Reichen Deutschkenntnisse auf dem Niveau B1 für diese Stelle aus?",
+          "russian": "Достаточно ли знания немецкого языка на уровне B1 для этой вакансии?",
+          "task_prompt": "Спросите, достаточно ли уровня немецкого B1 для этой работы.",
+          "suggested_answer": "Reichen Deutschkenntnisse auf dem Niveau B1 für diese Stelle aus?",
+          "word_bank": [
+            "Reichen",
+            "Deutschkenntnisse",
+            "auf",
+            "dem",
+            "Niveau",
+            "B1",
+            "für",
+            "diese",
+            "Stelle",
+            "aus?"
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Krause",
+          "german": "Ja, B1 ist ausreichend, wenn Sie motiviert sind. Senden Sie uns Ihre Unterlagen bitte per E-Mail.",
+          "russian": "Да, B1 вполне достаточно, если вы мотивированы. Отправьте нам ваши документы по электронной почте.",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Vielen Dank für die Auskunft. Ich sende meine Unterlagen heute noch ab. Auf Wiederhören!",
+          "russian": "Большое спасибо за информацию. Я отправлю свои документы уже сегодня. До свидания!",
+          "task_prompt": "Поблагодарите за информацию, скажите что отправите документы сегодня, и попрощайтесь.",
+          "suggested_answer": "Vielen Dank für die Auskunft. Ich sende meine Unterlagen heute noch ab. Auf Wiederhören!",
+          "word_bank": [
+            "Vielen",
+            "Dank",
+            "für",
+            "die",
+            "Auskunft.",
+            "Ich",
+            "sende",
+            "meine",
+            "Unterlagen",
+            "heute",
+            "noch",
+            "ab.",
+            "Auf",
+            "Wiederhören!"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "diag_doctor_appointment",
+      "category": "health",
+      "category_label": "🩺 Врач & Аптека",
+      "level": "A2",
+      "title_de": "Termin beim Arzt vereinbaren (Telefonat)",
+      "title_ru": "Запись к врачу по телефону",
+      "description_ru": "Телефонный разговор с регистратурой праксиса: запись на прием, страховая карта и выбор удобного времени.",
+      "partner_role": "Arzthelferin (Praxis Dr. Becker)",
+      "partner_avatar": "👩‍⚕️",
+      "partner_voice": "de-DE-KatjaNeural",
+      "user_voice": "de-DE-KatjaNeural",
+      "vocabulary": [
+        {
+          "german": "der Termin",
+          "gender": "der",
+          "plural": "die Termine",
+          "russian": "запись / прием",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Krankenversicherungskarte",
+          "gender": "die",
+          "plural": "die Krankenversicherungskarten",
+          "russian": "страховая медицинская карта",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Praxis",
+          "gender": "die",
+          "plural": "die Praxen",
+          "russian": "врачебный кабинет / праксис",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Sprechstunde",
+          "gender": "die",
+          "plural": "die Sprechstunden",
+          "russian": "часы приема",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Beschwerden",
+          "gender": "die_pl",
+          "plural": "die Beschwerden",
+          "russian": "жалобы / симптомы",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "das Wartezimmer",
+          "gender": "das",
+          "plural": "die Wartezimmer",
+          "russian": "зал ожидания",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "redemittel": [
+        {
+          "chunk_de": "Ich möchte bitte einen Termin vereinbaren.",
+          "translation_ru": "Я хотела бы записаться на прием, пожалуйста.",
+          "usage_tip": "Главная фраза звонка в праксис",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Haben Sie diese Woche noch etwas frei?",
+          "translation_ru": "У вас есть свободное время на этой неделе?",
+          "usage_tip": "Запрос ближайшей даты",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Passt es Ihnen am Donnerstagvormittag?",
+          "translation_ru": "Вам подходит в четверг в первой половине дня?",
+          "usage_tip": "Согласование времени",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "dialogue": [
+        {
+          "speaker": "partner",
+          "speaker_name": "Arzthelferin",
+          "german": "Praxis Dr. Becker, guten Tag! Was kann ich für Sie tun?",
+          "russian": "Праксис доктора Беккера, добрый день! Что я могу для вас сделать?",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Guten Tag. Mein Name ist Alina. Ich brauche bitte einen Termin bei Dr. Becker.",
+          "russian": "Добрый день. Меня зовут Алина. Мне нужен прием у доктора Беккера, пожалуйста.",
+          "task_prompt": "Поздоровайтесь, назовите имя и скажите, что вам нужен термин к доктору Беккеру.",
+          "suggested_answer": "Guten Tag. Mein Name ist Alina. Ich brauche bitte einen Termin bei Dr. Becker.",
+          "word_bank": [
+            "Guten",
+            "Tag.",
+            "Mein",
+            "Name",
+            "ist",
+            "Alina.",
+            "Ich",
+            "brauche",
+            "bitte",
+            "einen",
+            "Termin",
+            "bei",
+            "Dr.",
+            "Becker."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Arzthelferin",
+          "german": "Waren Sie schon einmal bei uns in der Praxis oder sind Sie Neupatientin?",
+          "russian": "Вы уже были у нас в праксисе или вы новый пациент?",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Ich bin Neupatientin und habe seit einigen Tagen Rückenschmerzen.",
+          "russian": "Я новый пациент, и у меня уже несколько дней боли в спине.",
+          "task_prompt": "Ответьте, что вы новый пациент и у вас несколько дней болит спина.",
+          "suggested_answer": "Ich bin Neupatientin und habe seit einigen Tagen Rückenschmerzen.",
+          "word_bank": [
+            "Ich",
+            "bin",
+            "Neupatientin",
+            "und",
+            "habe",
+            "seit",
+            "einigen",
+            "Tagen",
+            "Rückenschmerzen."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Arzthelferin",
+          "german": "Verstehe. Wir hätten am Donnerstag um zehn Uhr dreißig einen Termin frei. Geht das bei Ihnen?",
+          "russian": "Понимаю. У нас есть свободное время в четверг в десять тридцать. Вам подходит?",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Ja, Donnerstag um zehn Uhr dreißig passt mir sehr gut.",
+          "russian": "Да, четверг в десять тридцать мне отлично подходит.",
+          "task_prompt": "Согласитесь на четверг в 10:30.",
+          "suggested_answer": "Ja, Donnerstag um zehn Uhr dreißig passt mir sehr gut.",
+          "word_bank": [
+            "Ja,",
+            "Donnerstag",
+            "um",
+            "zehn",
+            "Uhr",
+            "dreißig",
+            "passt",
+            "mir",
+            "sehr",
+            "gut."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Arzthelferin",
+          "german": "Prima. Bringen Sie bitte Ihre Versichertenkarte mit und kommen Sie zehn Minuten früher.",
+          "russian": "Отлично. Возьмите с собой страховую карту и приходите на 10 минут раньше.",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Alles klar, vielen Dank für Ihre Hilfe. Bis Donnerstag!",
+          "russian": "Все понятно, большое спасибо за вашу помощь. До четверга!",
+          "task_prompt": "Поблагодарите за помощь и скажите: 'До четверга!'",
+          "suggested_answer": "Alles klar, vielen Dank für Ihre Hilfe. Bis Donnerstag!",
+          "word_bank": [
+            "Alles",
+            "klar,",
+            "vielen",
+            "Dank",
+            "für",
+            "Ihre",
+            "Hilfe.",
+            "Bis",
+            "Donnerstag!"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "diag_doctor_visit",
+      "category": "health",
+      "category_label": "🩺 Врач & Аптека",
+      "level": "A2-B1",
+      "title_de": "In der Praxis: Untersuchung & Rezept beim Hausarzt",
+      "title_ru": "Приём у терапевта: Жалобы и рецепт",
+      "description_ru": "Разговор с врачом в кабинете: описание симптомов (кашель, горло, температура), получение рецепта и больничного.",
+      "partner_role": "Dr. Schneider (Hausarzt)",
+      "partner_avatar": "👨‍⚕️",
+      "partner_voice": "de-DE-ConradNeural",
+      "user_voice": "de-DE-KatjaNeural",
+      "vocabulary": [
+        {
+          "german": "die Halsschmerzen",
+          "gender": "die_pl",
+          "plural": "die Halsschmerzen",
+          "russian": "боль в горле",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "der Husten",
+          "gender": "der",
+          "plural": "-",
+          "russian": "кашель",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "der Schnupfen",
+          "gender": "der",
+          "plural": "-",
+          "russian": "насморк",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "das Rezept",
+          "gender": "das",
+          "plural": "die Rezepte",
+          "russian": "рецепт на лекарство",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Tablette",
+          "gender": "die",
+          "plural": "die Tabletten",
+          "russian": "таблетка",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Entzündung",
+          "gender": "die",
+          "plural": "die Entzündungen",
+          "russian": "воспаление",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "verschreiben",
+          "gender": "verb",
+          "plural": "-",
+          "russian": "выписывать (лекарство)",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "redemittel": [
+        {
+          "chunk_de": "Ich habe seit drei Tagen starke Halsschmerzen.",
+          "translation_ru": "У меня уже три дня сильно болит горло.",
+          "usage_tip": "Связка с seit + Dativ",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Mir ist schwindelig und ich fühle mich schwach.",
+          "translation_ru": "У меня кружится голова и я чувствую слабость.",
+          "usage_tip": "Описание общего состояния",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Brauche ich dafür ein Rezept?",
+          "translation_ru": "Мне нужен для этого рецепт?",
+          "usage_tip": "Вопрос о лекарстве",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "dialogue": [
+        {
+          "speaker": "partner",
+          "speaker_name": "Dr. Schneider",
+          "german": "Guten Tag, Frau Alina. Nehmen Sie bitte Platz. Was führt Sie zu mir?",
+          "russian": "Добрый день, госпожа Алина. Присаживайтесь, пожалуйста. Что вас ко мне привело?",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Guten Tag, Herr Doktor. Ich habe seit drei Tagen starke Halsschmerzen und Fieber.",
+          "russian": "Добрый день, доктор. У меня уже три дня сильно болит горло и температура.",
+          "task_prompt": "Скажите доктору, что у вас три дня сильно болит горло и держится температура.",
+          "suggested_answer": "Guten Tag, Herr Doktor. Ich habe seit drei Tagen starke Halsschmerzen und Fieber.",
+          "word_bank": [
+            "Guten",
+            "Tag,",
+            "Herr",
+            "Doktor.",
+            "Ich",
+            "habe",
+            "seit",
+            "drei",
+            "Tagen",
+            "starke",
+            "Halsschmerzen",
+            "und",
+            "Fieber."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Dr. Schneider",
+          "german": "Lassen Sie mich kurz in Ihren Hals schauen. Bitte machen Sie den Mund weit auf und sagen Sie 'A'.",
+          "russian": "Позвольте мне взглянуть на ваше горло. Пожалуйста, откройте рот широко и скажите 'А'.",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Aaa... Das Schlucken tut besonders morgens sehr weh.",
+          "russian": "Ааа... Глотать особенно больно по утрам.",
+          "task_prompt": "Скажите, что глотать особенно больно по утрам.",
+          "suggested_answer": "Das Schlucken tut besonders morgens sehr weh.",
+          "word_bank": [
+            "Das",
+            "Schlucken",
+            "tut",
+            "besonders",
+            "morgens",
+            "sehr",
+            "weh."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Dr. Schneider",
+          "german": "Ja, der Rachen ist stark gerötet. Es ist eine virale Entzündung. Ich verschreibe Ihnen Schmerzmittel und Halsspray.",
+          "russian": "Да, горло сильно покрасневшее. Это вирусное воспаление. Я выпишу вам обезболивающее и спрей для горла.",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Brauche ich auch eine Krankschreibung für meinen Arbeitgeber?",
+          "russian": "Мне также понадобится больничный лист для моего работодателя?",
+          "task_prompt": "Спросите доктора, даст ли он больничный лист для работодателя.",
+          "suggested_answer": "Brauche ich auch eine Krankschreibung für meinen Arbeitgeber?",
+          "word_bank": [
+            "Brauche",
+            "ich",
+            "auch",
+            "eine",
+            "Krankschreibung",
+            "für",
+            "meinen",
+            "Arbeitgeber?"
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Dr. Schneider",
+          "german": "Selbstverständlich. Ich schreibe Sie bis Freitag krank. Die eAU geht direkt an Ihre Krankenkasse.",
+          "russian": "Само собой разумеется. Я выпишу вам больничный до пятницы. Электронный больничный уйдет сразу в кассу.",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Vielen Dank, Herr Doktor. Wie oft soll ich die Tabletten einnehmen?",
+          "russian": "Большое спасибо, доктор. Как часто мне принимать таблетки?",
+          "task_prompt": "Поблагодарите и спросите, как часто принимать таблетки.",
+          "suggested_answer": "Vielen Dank, Herr Doktor. Wie oft soll ich die Tabletten einnehmen?",
+          "word_bank": [
+            "Vielen",
+            "Dank,",
+            "Herr",
+            "Doktor.",
+            "Wie",
+            "oft",
+            "soll",
+            "ich",
+            "die",
+            "Tabletten",
+            "einnehmen?"
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Dr. Schneider",
+          "german": "Dreimal täglich nach dem Essen mit viel Wasser. Trinken Sie viel Tee und ruhen Sie sich aus!",
+          "russian": "Трижды в день после еды с большим количеством воды. Пейте много чая и отдыхайте!",
+          "voice_hint": "de-DE-ConradNeural"
+        }
+      ]
+    },
+    {
+      "id": "diag_pharmacy",
+      "category": "health",
+      "category_label": "🩺 Врач & Аптека",
+      "level": "A2",
+      "title_de": "In der Apotheke: Rezept einlösen & Medikamente kaufen",
+      "title_ru": "В аптеке: Покупка лекарств по рецепту",
+      "description_ru": "Покупка лекарств по рецепту от врача и сопутствующих средств (витамины, капли в нос).",
+      "partner_role": "Apothekerin (Löwen-Apotheke)",
+      "partner_avatar": "👩‍⚕️",
+      "partner_voice": "de-DE-KatjaNeural",
+      "user_voice": "de-DE-KatjaNeural",
+      "vocabulary": [
+        {
+          "german": "die Apotheke",
+          "gender": "die",
+          "plural": "die Apotheken",
+          "russian": "аптека",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "das Medikament",
+          "gender": "das",
+          "plural": "die Medikamente",
+          "russian": "лекарство",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Zuzahlung",
+          "gender": "die",
+          "plural": "die Zuzahlungen",
+          "russian": "доплата за лекарство по страховке",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Nebenwirkung",
+          "gender": "die",
+          "plural": "die Nebenwirkungen",
+          "russian": "побочный эффект",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Packungsbeilage",
+          "gender": "die",
+          "plural": "die Packungsbeilagen",
+          "russian": "инструкция-вкладыш к лекарству",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Nasentropfen",
+          "gender": "die_pl",
+          "plural": "die Nasentropfen",
+          "russian": "капли в нос",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "redemittel": [
+        {
+          "chunk_de": "Ich möchte bitte dieses Rezept einlösen.",
+          "translation_ru": "Я хотела бы получить лекарство по этому рецепту.",
+          "usage_tip": "Стандартная фраза в аптеке",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Haben Sie auch etwas Pflanzliches gegen Husten?",
+          "translation_ru": "Есть ли у вас что-то растительное от кашля?",
+          "usage_tip": "Запрос безрецептурного средства",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Wie viel beträgt die Zuzahlung?",
+          "translation_ru": "Сколько составляет доплата?",
+          "usage_tip": "Вопрос о рецептурной доплате",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "dialogue": [
+        {
+          "speaker": "partner",
+          "speaker_name": "Apothekerin",
+          "german": "Guten Tag! Wie kann ich Ihnen helfen?",
+          "russian": "Добрый день! Чем могу вам помочь?",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Guten Tag. Ich möchte bitte dieses Rezept von meinem Arzt einlösen.",
+          "russian": "Добрый день. Я хотела бы получить лекарство по этому рецепту от моего врача.",
+          "task_prompt": "Поздоровайтесь и скажите, что хотите получить лекарство по рецепту от врача.",
+          "suggested_answer": "Guten Tag. Ich möchte bitte dieses Rezept von meinem Arzt einlösen.",
+          "word_bank": [
+            "Guten",
+            "Tag.",
+            "Ich",
+            "möchte",
+            "bitte",
+            "dieses",
+            "Rezept",
+            "von",
+            "meinem",
+            "Arzt",
+            "einlösen."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Apothekerin",
+          "german": "Gerne, zeigen Sie mal bitte. Ja, das Schmerzmittel und das Halsspray haben wir vorrätig. Die Zuzahlung beträgt fünf Euro.",
+          "russian": "С удовольствием, покажите пожалуйста. Да, обезболивающее и спрей для горла есть в наличии. Доплата пять евро.",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Haben Sie außerdem noch ein mildes Nasenspray mit Meersalz?",
+          "russian": "Есть ли у вас кроме того мягкий спрей для носа с морской солью?",
+          "task_prompt": "Спросите, есть ли еще мягкий спрей для носа с морской солью.",
+          "suggested_answer": "Haben Sie außerdem noch ein mildes Nasenspray mit Meersalz?",
+          "word_bank": [
+            "Haben",
+            "Sie",
+            "außerdem",
+            "noch",
+            "ein",
+            "mildes",
+            "Nasenspray",
+            "mit",
+            "Meersalz?"
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Apothekerin",
+          "german": "Ja, dieses hier ist sehr schonend für die Schleimhäute. Das kostet vier Euro fünfzig.",
+          "russian": "Да, вот этот очень щадящий для слизистой. Он стоит 4 евро 50 центов.",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Das nehme ich gerne dazu. Kann ich mit Karte bezahlen?",
+          "russian": "Я с удовольствием возьму его вдобавок. Могу я оплатить картой?",
+          "task_prompt": "Скажите, что берете спрей, и спросите, можно ли оплатить картой.",
+          "suggested_answer": "Das nehme ich gerne dazu. Kann ich mit Karte bezahlen?",
+          "word_bank": [
+            "Das",
+            "nehme",
+            "ich",
+            "gerne",
+            "dazu.",
+            "Kann",
+            "ich",
+            "mit",
+            "Karte",
+            "bezahlen?"
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Apothekerin",
+          "german": "Natürlich, bitte legen Sie die Karte einfach auf das Terminal. Gute Besserung für Sie!",
+          "russian": "Конечно, просто приложите карту к терминалу. Скорейшего вам выздоровления!",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ]
+    },
+    {
+      "id": "diag_buergeramt",
+      "category": "authorities",
+      "category_label": "🏢 Ведомства",
+      "level": "A2-B1",
+      "title_de": "Bürgeramt: Wohnung anmelden (Anmeldung)",
+      "title_ru": "Bürgeramt: Регистрация по месту жительства (Прописка)",
+      "description_ru": "Официальная регистрация по адресу: сдача документов, справка от арендодателя (Wohnungsgeberbestätigung) и подтверждение.",
+      "partner_role": "Herr Schmidt (Bürgeramt Sachbearbeiter)",
+      "partner_avatar": "👨‍💼",
+      "partner_voice": "de-DE-ConradNeural",
+      "user_voice": "de-DE-KatjaNeural",
+      "vocabulary": [
+        {
+          "german": "die Anmeldung",
+          "gender": "die",
+          "plural": "die Anmeldungen",
+          "russian": "прописка / регистрация",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Meldebestätigung",
+          "gender": "die",
+          "plural": "die Meldebestätigungen",
+          "russian": "справка о регистрации",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Wohnungsgeberbestätigung",
+          "gender": "die",
+          "plural": "die Wohnungsgeberbestätigungen",
+          "russian": "справка от арендодателя о заселении",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "der Reisepass",
+          "gender": "der",
+          "plural": "die Reisepässe",
+          "russian": "загранпаспорт",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "der Familienstand",
+          "gender": "der",
+          "plural": "-",
+          "russian": "семейное положение",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "das Formular",
+          "gender": "das",
+          "plural": "die Formulare",
+          "russian": "бланк / формуляр",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "redemittel": [
+        {
+          "chunk_de": "Ich möchte meinen Wohnsitz anmelden.",
+          "translation_ru": "Я хочу зарегистрировать свое место жительства.",
+          "usage_tip": "Главная фраза у стойки",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Hier sind mein Pass und die Bestätigung vom Vermieter.",
+          "translation_ru": "Вот мой паспорт и подтверждение от арендодателя.",
+          "usage_tip": "Передача документов",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Wann erhalte ich die Steuer-ID per Post?",
+          "translation_ru": "Когда я получу налоговый номер по почте?",
+          "usage_tip": "Важный вопрос при регистрации",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "dialogue": [
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Schmidt",
+          "german": "Nummer B-42 bitte! Guten Tag, nehmen Sie Platz. Was ist Ihr Anliegen?",
+          "russian": "Номер B-42, пожалуйста! Добрый день, присаживайтесь. Какой у вас вопрос?",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Guten Tag. Ich bin neu nach Berlin gezogen und möchte meine Wohnung anmelden.",
+          "russian": "Добрый день. Я недавно переехала в Берлин и хочу зарегистрироваться по адресу квартиры.",
+          "task_prompt": "Поздоровайтесь, скажите что переехали и хотите зарегистрировать квартиру.",
+          "suggested_answer": "Guten Tag. Ich bin neu nach Berlin gezogen und möchte meine Wohnung anmelden.",
+          "word_bank": [
+            "Guten",
+            "Tag.",
+            "Ich",
+            "bin",
+            "neu",
+            "nach",
+            "Berlin",
+            "gezogen",
+            "und",
+            "möchte",
+            "meine",
+            "Wohnung",
+            "anmelden."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Schmidt",
+          "german": "Gerne. Haben Sie Ihren Pass und die Wohnungsgeberbestätigung dabei?",
+          "russian": "Охотно. У вас с собой паспорт и справка от арендодателя?",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Ja, hier sind mein Reisepass und das ausgefüllte Formular vom Vermieter.",
+          "russian": "Да, вот мой загранпаспорт и заполненный формуляр от арендодателя.",
+          "task_prompt": "Передайте загранпаспорт и формуляр от арендодателя.",
+          "suggested_answer": "Ja, hier sind mein Reisepass und das ausgefüllte Formular vom Vermieter.",
+          "word_bank": [
+            "Ja,",
+            "hier",
+            "sind",
+            "mein",
+            "Reisepass",
+            "und",
+            "das",
+            "ausgefüllte",
+            "Formular",
+            "vom",
+            "Vermieter."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Schmidt",
+          "german": "Sehr gut, alles vollständig. Sind Sie verheiratet und haben Sie Kinder?",
+          "russian": "Очень хорошо, всё в комплекте. Вы замужем, есть ли у вас дети?",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Ja, ich bin verheiratet. Mein Mann ist auch mit mir umgezogen.",
+          "russian": "Да, я замужем. Мой муж тоже переехал со мной.",
+          "task_prompt": "Ответьте, что замужем и муж переехал вместе с вами.",
+          "suggested_answer": "Ja, ich bin verheiratet. Mein Mann ist auch mit mir umgezogen.",
+          "word_bank": [
+            "Ja,",
+            "ich",
+            "bin",
+            "verheiratet.",
+            "Mein",
+            "Mann",
+            "ist",
+            "auch",
+            "mit",
+            "mir",
+            "umgezogen."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Schmidt",
+          "german": "Ich trage die Daten ein. Bitte prüfen Sie hier Ihre Adresse und unterschreiben Sie unten.",
+          "russian": "Я вношу данные. Проверьте, пожалуйста, здесь ваш адрес и распишитесь внизу.",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Die Adresse stimmt genau. Hier ist meine Unterschrift. Vielen Dank!",
+          "russian": "Адрес указан абсолютно верно. Вот моя подпись. Большое спасибо!",
+          "task_prompt": "Подтвердите правильность адреса, распишитесь и поблагодарите.",
+          "suggested_answer": "Die Adresse stimmt genau. Hier ist meine Unterschrift. Vielen Dank!",
+          "word_bank": [
+            "Die",
+            "Adresse",
+            "stimmt",
+            "genau.",
+            "Hier",
+            "ist",
+            "meine",
+            "Unterschrift.",
+            "Vielen",
+            "Dank!"
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Schmidt",
+          "german": "Hier ist Ihre offizielle Meldebestätigung. Ihre Steuer-ID bekommen Sie in zwei Wochen per Post. Auf Wiedersehen!",
+          "russian": "Вот ваше официальное подтверждение регистрации. Ваш налоговый номер (Steuer-ID) придет через две недели по почте. До свидания!",
+          "voice_hint": "de-DE-ConradNeural"
+        }
+      ]
+    },
+    {
+      "id": "diag_auslaenderbehoerde",
+      "category": "authorities",
+      "category_label": "🏢 Ведомства",
+      "level": "B1",
+      "title_de": "Ausländerbehörde: Aufenthaltstitel verlängern",
+      "title_ru": "Ausländerbehörde: Продление ВНЖ",
+      "description_ru": "Интервью в ведомстве по делам иностранцев: проверка интеграционного сертификата B1, трудового договора и биометрии.",
+      "partner_role": "Frau Meyer (Ausländerbehörde Sachbearbeiterin)",
+      "partner_avatar": "👩‍💼",
+      "partner_voice": "de-DE-KatjaNeural",
+      "user_voice": "de-DE-KatjaNeural",
+      "vocabulary": [
+        {
+          "german": "der Aufenthaltstitel",
+          "gender": "der",
+          "plural": "die Aufenthaltstitel",
+          "russian": "вид на жительство (ВНЖ)",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "das Zertifikat",
+          "gender": "das",
+          "plural": "die Zertifikate",
+          "russian": "сертификат",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "der Arbeitsvertrag",
+          "gender": "der",
+          "plural": "die Arbeitsverträge",
+          "russian": "трудовой договор",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Gehaltsabrechnung",
+          "gender": "die",
+          "plural": "die Gehaltsabrechnungen",
+          "russian": "выписка о зарплате",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "das biometrische Passfoto",
+          "gender": "das",
+          "plural": "die Passfotos",
+          "russian": "биометрическое фото",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "der Lebensunterhalt",
+          "gender": "der",
+          "plural": "-",
+          "russian": "средства к существованию",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "redemittel": [
+        {
+          "chunk_de": "Ich habe einen Termin zur Verlängerung meines Aufenthaltstitels.",
+          "translation_ru": "У меня запись на продление моего вида на жительство.",
+          "usage_tip": "Обозначение цели визита",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Ich habe die B1-Prüfung erfolgreich bestanden.",
+          "translation_ru": "Я успешно сдала экзамен B1.",
+          "usage_tip": "Подтверждение интеграции",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Hier sind die Gehaltsabrechnungen der letzten drei Monate.",
+          "translation_ru": "Вот расчетные листки по зарплате за последние три месяца.",
+          "usage_tip": "Доказательство дохода",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "dialogue": [
+        {
+          "speaker": "partner",
+          "speaker_name": "Frau Meyer",
+          "german": "Guten Tag! Sie haben einen Termin zur Verlängerung Ihrer Aufenthaltserlaubnis. Bitte die Unterlagen.",
+          "russian": "Добрый день! У вас термин на продление вида на жительство. Пожалуйста, ваши документы.",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Guten Tag. Hier sind mein Pass, mein Arbeitsvertrag und die Gehaltsabrechnungen der letzten drei Monate.",
+          "russian": "Добрый день. Вот мой паспорт, трудовой договор и выписки о зарплате за последние три месяца.",
+          "task_prompt": "Передайте паспорт, трудовой договор и выписки о зарплате за три месяца.",
+          "suggested_answer": "Guten Tag. Hier sind mein Pass, mein Arbeitsvertrag und die Gehaltsabrechnungen der letzten drei Monate.",
+          "word_bank": [
+            "Guten",
+            "Tag.",
+            "Hier",
+            "sind",
+            "mein",
+            "Pass,",
+            "mein",
+            "Arbeitsvertrag",
+            "und",
+            "die",
+            "Gehaltsabrechnungen",
+            "der",
+            "letzten",
+            "drei",
+            "Monate."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Frau Meyer",
+          "german": "Haben Sie auch das Zertifikat über den Deutschtest für Zuwanderer (B1) dabei?",
+          "russian": "Есть ли у вас с собой сертификат об экзамене по немецкому языку для иммигрантов (B1)?",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Ja, natürlich. Hier ist mein telc B1 Zertifikat. Ich habe die Prüfung mit gutem Ergebnis bestanden.",
+          "russian": "Да, конечно. Вот мой сертификат telc B1. Я сдала экзамен с хорошим результатом.",
+          "task_prompt": "Передайте сертификат telc B1 и скажите, что сдали экзамен с хорошим результатом.",
+          "suggested_answer": "Ja, natürlich. Hier ist mein telc B1 Zertifikat. Ich habe die Prüfung mit gutem Ergebnis bestanden.",
+          "word_bank": [
+            "Ja,",
+            "natürlich.",
+            "Hier",
+            "ist",
+            "mein",
+            "telc",
+            "B1",
+            "Zertifikat.",
+            "Ich",
+            "habe",
+            "die",
+            "Prüfung",
+            "mit",
+            "gutem",
+            "Ergebnis",
+            "bestanden."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Frau Meyer",
+          "german": "Sehr schön, das erleichtert die Verlängerung erheblich. Jetzt brauche ich noch Ihre Fingerabdrücke für die eAT-Karte.",
+          "russian": "Прекрасно, это существенно упрощает продление. Теперь мне нужны ваши отпечатки пальцев для электронной карты ВНЖ.",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Soll ich den rechten Zeigefinger auf das Lesegerät legen?",
+          "russian": "Мне положить правый указательный палец на сканер?",
+          "task_prompt": "Спросите, нужно ли положить правый указательный палец на сканер.",
+          "suggested_answer": "Soll ich den rechten Zeigefinger auf das Lesegerät legen?",
+          "word_bank": [
+            "Soll",
+            "ich",
+            "den",
+            "rechten",
+            "Zeigefinger",
+            "auf",
+            "das",
+            "Lesegerät",
+            "legen?"
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Frau Meyer",
+          "german": "Genau, zuerst rechts, dann links. Ihre neue Karte wird in vier Wochen fertig sein. Sie erhalten einen Brief zur Abholung.",
+          "russian": "Именно так, сначала справа, потом слева. Ваша новая карта будет готова через четыре недели. Вы получите письмо с приглашением забрать ее.",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ]
+    },
+    {
+      "id": "diag_jobcenter",
+      "category": "authorities",
+      "category_label": "🏢 Ведомства",
+      "level": "A2-B1",
+      "title_de": "Jobcenter: Beratung zu Weiterbildung & Sprachkurs",
+      "title_ru": "Jobcenter: Консультация по курсам и работе",
+      "description_ru": "Беседа с куратором в Jobcenter: получение направления на профессиональный языковой курс (B2 Beruf) и поиск работы.",
+      "partner_role": "Herr Richter (Jobcenter Berater)",
+      "partner_avatar": "👨‍💼",
+      "partner_voice": "de-DE-ConradNeural",
+      "user_voice": "de-DE-KatjaNeural",
+      "vocabulary": [
+        {
+          "german": "die Weiterbildung",
+          "gender": "die",
+          "plural": "die Weiterbildungen",
+          "russian": "повышение квалификации",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "der Berufssprachkurs",
+          "gender": "der",
+          "plural": "die Berufssprachkurse",
+          "russian": "профессиональный языковой курс",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Anerkennung",
+          "gender": "die",
+          "plural": "-",
+          "russian": "признание диплома / квалификации",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "der Bildungsgutschein",
+          "gender": "der",
+          "plural": "die Bildungsgutscheine",
+          "russian": "ваучер на бесплатное обучение",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "der Lebenslauf",
+          "gender": "der",
+          "plural": "die Lebensläufe",
+          "russian": "резюме",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "redemittel": [
+        {
+          "chunk_de": "Ich möchte mich beruflich weiterbilden.",
+          "translation_ru": "Я хочу повысить свою профессиональную квалификацию.",
+          "usage_tip": "Формулировка цели",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Besteht die Möglichkeit, einen B2-Kurs zu besuchen?",
+          "translation_ru": "Есть ли возможность посещать курс уровня B2?",
+          "usage_tip": "Запрос языкового курса",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Mein Diplom befindet sich im Anerkennungsverfahren.",
+          "translation_ru": "Мой диплом находится в процессе признания.",
+          "usage_tip": "Статус образования",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "dialogue": [
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Richter",
+          "german": "Guten Tag, Frau Alina. Wie kann ich Sie bei Ihrer beruflichen Orientierung unterstützen?",
+          "russian": "Добрый день, госпожа Алина. Как я могу поддержать вас в профессиональном плане?",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Guten Tag, Herr Richter. Ich habe das B1-Niveau erreicht und möchte gerne einen Berufssprachkurs B2 machen.",
+          "russian": "Добрый день, господин Рихтер. Я достигла уровня B1 и хотела бы пройти профессиональный языковой курс B2.",
+          "task_prompt": "Скажите, что достигли уровня B1 и хотите пойти на курс немецкого B2 для работы.",
+          "suggested_answer": "Guten Tag, Herr Richter. Ich habe das B1-Niveau erreicht und möchte gerne einen Berufssprachkurs B2 machen.",
+          "word_bank": [
+            "Guten",
+            "Tag,",
+            "Herr",
+            "Richter.",
+            "Ich",
+            "habe",
+            "das",
+            "B1-Niveau",
+            "erreicht",
+            "und",
+            "möchte",
+            "gerne",
+            "einen",
+            "Berufssprachkurs",
+            "B2",
+            "machen."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Richter",
+          "german": "Das ist ein sehr guter Plan. B2 erhöht Ihre Chancen auf dem Arbeitsmarkt deutlich. Haben Sie Ihr B1-Zertifikat dabei?",
+          "russian": "Это отличный план. Уровень B2 существенно повышает ваши шансы на рынке труда. Ваш сертификат B1 с собой?",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Ja, hier ist das Zertifikat. Ich möchte danach im kaufmännischen Bereich arbeiten.",
+          "russian": "Да, вот сертификат. После этого я хотела бы работать в офисной/коммерческой сфере.",
+          "task_prompt": "Передайте сертификат и скажите, что после этого хотите работать в офисной сфере.",
+          "suggested_answer": "Ja, hier ist das Zertifikat. Ich möchte danach im kaufmännischen Bereich arbeiten.",
+          "word_bank": [
+            "Ja,",
+            "hier",
+            "ist",
+            "das",
+            "Zertifikat.",
+            "Ich",
+            "möchte",
+            "danach",
+            "im",
+            "kaufmännischen",
+            "Bereich",
+            "arbeiten."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Richter",
+          "german": "Hervorragend. Ich stelle Ihnen eine Teilnahmeberechtigung für den DeuFöV B2-Kurs aus. Sie können sich bei einer Sprachschule anmelden.",
+          "russian": "Великолепно. Я выписываю вам направление на курс B2. Вы можете зарегистрироваться в языковой школе.",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Vielen herzlichen Dank! Werden auch die Fahrtkosten übernommen?",
+          "russian": "Огромное спасибо! Оплачиваются ли также расходы на проезд?",
+          "task_prompt": "Поблагодарите и спросите, оплачиваются ли расходы на проезд.",
+          "suggested_answer": "Vielen herzlichen Dank! Werden auch die Fahrtkosten übernommen?",
+          "word_bank": [
+            "Vielen",
+            "herzlichen",
+            "Dank!",
+            "Werden",
+            "auch",
+            "die",
+            "Fahrtkosten",
+            "übernommen?"
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Richter",
+          "german": "Ja, füllen Sie dazu einfach diesen Antrag auf Fahrtkostenerstattung aus. Alles Gute für den Kurs!",
+          "russian": "Да, просто заполните это заявление на компенсацию проезда. Всего наилучшего на курсе!",
+          "voice_hint": "de-DE-ConradNeural"
+        }
+      ]
+    },
+    {
+      "id": "diag_hausverwaltung",
+      "category": "housing",
+      "category_label": "🏠 ЖКХ & Жилье",
+      "level": "A2-B1",
+      "title_de": "Hausverwaltung: Heizungsausfall melden (Mängelanzeige)",
+      "title_ru": "ЖЭУ / Домоуправление: Поломка отопления",
+      "description_ru": "Экстренный звонок в домоуправление: батареи ледяные, в квартире холодно, согласование прихода мастера.",
+      "partner_role": "Herr Becker (Hausverwaltung)",
+      "partner_avatar": "🏢",
+      "partner_voice": "de-DE-ConradNeural",
+      "user_voice": "de-DE-KatjaNeural",
+      "vocabulary": [
+        {
+          "german": "die Hausverwaltung",
+          "gender": "die",
+          "plural": "die Hausverwaltungen",
+          "russian": "домоуправление / ЖЭУ",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Heizung",
+          "gender": "die",
+          "plural": "die Heizungen",
+          "russian": "отопление / батарея",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "der Handwerker",
+          "gender": "der",
+          "plural": "die Handwerker",
+          "russian": "мастер / слесарь",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "der Schaden",
+          "gender": "der",
+          "plural": "die Schäden",
+          "russian": "повреждение / поломка",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "der Ausfall",
+          "gender": "der",
+          "plural": "die Ausfälle",
+          "russian": "сбой / отключение",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Warmmiete",
+          "gender": "die",
+          "plural": "-",
+          "russian": "аренда с коммунальными услугами",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "redemittel": [
+        {
+          "chunk_de": "Die Heizung in meiner Wohnung funktioniert seit gestern nicht.",
+          "translation_ru": "Отопление в моей квартире не работает со вчерашнего дня.",
+          "usage_tip": "Четкое описание проблемы",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Die Heizkörper bleiben komplett kalt.",
+          "translation_ru": "Батареи остаются полностью холодными.",
+          "usage_tip": "Уточнение симптома поломки",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Wann kann ein Handwerker vorbeikommen?",
+          "translation_ru": "Когда мастер сможет подойти?",
+          "usage_tip": "Запрос визита мастера",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "dialogue": [
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Becker",
+          "german": "Hausverwaltung Becker & Co, guten Tag. Becker hier.",
+          "russian": "Домоуправление Беккер и Ко, добрый день. Беккер у телефона.",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Guten Tag, Herr Becker. Hier spricht Alina aus der Goethestraße 12, drittes Obergeschoss.",
+          "russian": "Добрый день, господин Беккер. Говорит Алина с Гётештрассе 12, третий этаж.",
+          "task_prompt": "Поздоровайтесь, назовите свое имя, адрес и этаж.",
+          "suggested_answer": "Guten Tag, Herr Becker. Hier spricht Alina aus der Goethestraße 12, drittes Obergeschoss.",
+          "word_bank": [
+            "Guten",
+            "Tag,",
+            "Herr",
+            "Becker.",
+            "Hier",
+            "spricht",
+            "Alina",
+            "aus",
+            "der",
+            "Goethestraße",
+            "12,",
+            "drittes",
+            "Obergeschoss."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Becker",
+          "german": "Guten Tag, Frau Alina. Worum geht es?",
+          "russian": "Добрый день, госпожа Алина. В чем дело?",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Die Heizung in der gesamten Wohnung ist ausgefallen und alle Heizkörper sind eiskalt.",
+          "russian": "Отопление во всей квартире отключилось, и все батареи ледяные.",
+          "task_prompt": "Сообщите, что отопление во всей квартире сломалось и батареи ледяные.",
+          "suggested_answer": "Die Heizung in der gesamten Wohnung ist ausgefallen und alle Heizkörper sind eiskalt.",
+          "word_bank": [
+            "Die",
+            "Heizung",
+            "in",
+            "der",
+            "gesamten",
+            "Wohnung",
+            "ist",
+            "ausgefallen",
+            "und",
+            "alle",
+            "Heizkörper",
+            "sind",
+            "eiskalt."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Becker",
+          "german": "Das ist natürlich bei diesen Temperaturen sehr unangenehm. Haben die Nachbarn dasselbe Problem?",
+          "russian": "При такой температуре это, конечно, крайне неприятно. У соседей та же проблема?",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Ja, ich habe bei Frau Müller nebenan nachgefragt, bei ihr geht die Heizung auch nicht.",
+          "russian": "Да, я спросила у госпожи Мюллер по соседству, у нее отопление тоже не работает.",
+          "task_prompt": "Скажите, что спросили у соседки госпожи Мюллер, у нее тоже не работает.",
+          "suggested_answer": "Ja, ich habe bei Frau Müller nebenan nachgefragt, bei ihr geht die Heizung auch nicht.",
+          "word_bank": [
+            "Ja,",
+            "ich",
+            "habe",
+            "bei",
+            "Frau",
+            "Müller",
+            "nebenan",
+            "nachgefragt,",
+            "bei",
+            "ihr",
+            "geht",
+            "die",
+            "Heizung",
+            "auch",
+            "nicht."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Becker",
+          "german": "Dann liegt es wohl an der zentralen Heizanlage im Keller. Ich schicke sofort den Notdienst der Heizungsfirma.",
+          "russian": "Значит, дело в центральной котельной в подвале. Я немедленно отправляю аварийную службу отопительной компании.",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Wann können wir ungefähr mit dem Techniker rechnen?",
+          "russian": "Когда примерно мы можем ожидать техника?",
+          "task_prompt": "Спросите, когда примерно ожидать техника.",
+          "suggested_answer": "Wann können wir ungefähr mit dem Techniker rechnen?",
+          "word_bank": [
+            "Wann",
+            "können",
+            "wir",
+            "ungefähr",
+            "mit",
+            "dem",
+            "Techniker",
+            "rechnen?"
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Becker",
+          "german": "Der Handwerker ist in spätestens zwei Stunden vor Ort. Er hat einen Schlüssel zum Keller.",
+          "russian": "Мастер прибудет максимум через два часа. У него есть ключ от подвала.",
+          "voice_hint": "de-DE-ConradNeural"
+        }
+      ]
+    },
+    {
+      "id": "diag_wohnungsbesichtigung",
+      "category": "housing",
+      "category_label": "🏠 ЖКХ & Жилье",
+      "level": "B1",
+      "title_de": "Wohnungsbesichtigung: Gespräch mit Vermieter / Makler",
+      "title_ru": "Просмотр квартиры: Разговор с арендодателем",
+      "description_ru": "Осмотр квартиры для съема: вопросы о залоге (Kaution), коммунальных услугах (Nebenkosten), Schufa и подача документов.",
+      "partner_role": "Herr Fischer (Vermieter)",
+      "partner_avatar": "🔑",
+      "partner_voice": "de-DE-ConradNeural",
+      "user_voice": "de-DE-KatjaNeural",
+      "vocabulary": [
+        {
+          "german": "die Wohnungsbesichtigung",
+          "gender": "die",
+          "plural": "die Besichtigungen",
+          "russian": "просмотр квартиры",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Kaltmiete",
+          "gender": "die",
+          "plural": "-",
+          "russian": "аренда без коммунальных услуг",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Kaution",
+          "gender": "die",
+          "plural": "die Kautionen",
+          "russian": "залог за квартиру",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Nebenkosten",
+          "gender": "die_pl",
+          "plural": "die Nebenkosten",
+          "russian": "коммунальные расходы",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Einbauküche",
+          "gender": "die",
+          "plural": "die Einbauküchen",
+          "russian": "встроенная кухня",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die SCHUFA-Auskunft",
+          "gender": "die",
+          "plural": "-",
+          "russian": "кредитный рейтинг SCHUFA",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "redemittel": [
+        {
+          "chunk_de": "Wie hoch sind die Nebenkosten und was ist darin enthalten?",
+          "translation_ru": "Каков размер коммунальных и что в них входит?",
+          "usage_tip": "Главный финансовый вопрос",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Ist die Einbauküche in der Miete inbegriffen?",
+          "translation_ru": "Встроена ли кухня в стоимость аренды?",
+          "usage_tip": "Уточнение мебелировки",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Ich habe alle Unterlagen inklusive SCHUFA und Gehaltsnachweisen vorbereitet.",
+          "translation_ru": "Я подготовила все документы, включая SCHUFA и справки о доходах.",
+          "usage_tip": "Демонстрация готовности",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "dialogue": [
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Fischer",
+          "german": "Guten Tag! Kommen Sie gerne herein. Das ist die 3-Zimmer-Wohnung mit Balkon.",
+          "russian": "Добрый день! Проходите, пожалуйста. Это 3-комнатная квартира с балконом.",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Guten Tag, Herr Fischer. Die Wohnung wirkt sehr hell und geräumig. Wie hoch ist die Warmmiete?",
+          "russian": "Добрый день, господин Фишер. Квартира выглядит очень светлой и просторной. Какова арендная плата с коммуналкой?",
+          "task_prompt": "Похвалите квартиру (светлая и просторная) и спросите размер Warmmiete.",
+          "suggested_answer": "Guten Tag, Herr Fischer. Die Wohnung wirkt sehr hell und geräumig. Wie hoch ist die Warmmiete?",
+          "word_bank": [
+            "Guten",
+            "Tag,",
+            "Herr",
+            "Fischer.",
+            "Die",
+            "Wohnung",
+            "wirkt",
+            "sehr",
+            "hell",
+            "und",
+            "geräumig.",
+            "Wie",
+            "hoch",
+            "ist",
+            "die",
+            "Warmmiete?"
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Fischer",
+          "german": "Die Kaltmiete beträgt 850 Euro, dazu kommen 200 Euro Nebenkosten inklusive Heizung. Also 1050 Euro Warmmiete.",
+          "russian": "Базовая аренда 850 евро плюс 200 евро коммунальные услуги включая отопление. Итого 1050 евро полная аренда.",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Ist die schöne Einbauküche in der Miete enthalten oder muss sie abgelöst werden?",
+          "russian": "Красивая встроенная кухня включена в аренду или за нее нужно заплатить предыдущему жильцу?",
+          "task_prompt": "Спросите, включена ли встроенная кухня в аренду или нужно выкупать.",
+          "suggested_answer": "Ist die schöne Einbauküche in der Miete enthalten oder muss sie abgelöst werden?",
+          "word_bank": [
+            "Ist",
+            "die",
+            "schöne",
+            "Einbauküche",
+            "in",
+            "der",
+            "Miete",
+            "enthalten",
+            "oder",
+            "muss",
+            "sie",
+            "abgelöst",
+            "werden?"
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Fischer",
+          "german": "Die Küche gehört zur Wohnung und kostet keinen Aufpreis. Die Kaution beträgt drei Kaltmieten.",
+          "russian": "Кухня принадлежит квартире и идет без доплаты. Залог составляет три базовые аренды.",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Das passt perfekt. Ich habe die SCHUFA-Auskunft und unsere Gehaltsnachweise bereits in einer Mappe dabei.",
+          "russian": "Это идеально подходит. У меня с собой уже подготовлена папка со справкой SCHUFA и подтверждением доходов.",
+          "task_prompt": "Скажите, что это идеально и у вас уже с собой папка со справкой SCHUFA и доходами.",
+          "suggested_answer": "Das passt perfekt. Ich habe die SCHUFA-Auskunft und unsere Gehaltsnachweise bereits in einer Mappe dabei.",
+          "word_bank": [
+            "Das",
+            "passt",
+            "perfekt.",
+            "Ich",
+            "habe",
+            "die",
+            "SCHUFA-Auskunft",
+            "und",
+            "unsere",
+            "Gehaltsnachweise",
+            "bereits",
+            "in",
+            "einer",
+            "Mappe",
+            "dabei."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Fischer",
+          "german": "Sehr vorbildlich! Ich gebe Ihnen die Mappe des Vermieters. Ich entscheide mich bis Montag.",
+          "russian": "Очень образцово! Я беру ваши документы. Я приму решение до понедельника.",
+          "voice_hint": "de-DE-ConradNeural"
+        }
+      ]
+    },
+    {
+      "id": "diag_nachbarn_ruhezeit",
+      "category": "housing",
+      "category_label": "🏠 ЖКХ & Жилье",
+      "level": "A2-B1",
+      "title_de": "Nachbarschaft: Gespräch über Ruhezeit & Hausordnung",
+      "title_ru": "Соседи: Разговор о тишине и правилах дома",
+      "description_ru": "Вежливое, тактичное урегулирование шума после 22:00 с соседом по лестничной площадке.",
+      "partner_role": "Herr Wagner (Nachbar)",
+      "partner_avatar": "🧔",
+      "partner_voice": "de-DE-ConradNeural",
+      "user_voice": "de-DE-KatjaNeural",
+      "vocabulary": [
+        {
+          "german": "die Ruhezeit",
+          "gender": "die",
+          "plural": "die Ruhezeiten",
+          "russian": "время тишины (обычно 22:00-06:00)",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Hausordnung",
+          "gender": "die",
+          "plural": "die Hausordnungen",
+          "russian": "правила внутреннего распорядка дома",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "der Lärm",
+          "gender": "der",
+          "plural": "-",
+          "russian": "шум",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Rücksicht",
+          "gender": "die",
+          "plural": "-",
+          "russian": "внимание / уважение к другим",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Musik leiser stellen",
+          "gender": "phrase",
+          "plural": "-",
+          "russian": "сделать музыку потише",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "redemittel": [
+        {
+          "chunk_de": "Entschuldigen Sie bitte die Störung zu später Stunde.",
+          "translation_ru": "Извините, пожалуйста, за беспокойство в поздний час.",
+          "usage_tip": "Вежливое начало разговора",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Könnten Sie bitte die Musik etwas leiser machen?",
+          "translation_ru": "Не могли бы вы сделать музыку чуть тише?",
+          "usage_tip": "Корректная просьба в Konjunktiv II",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Mein Kind schläft bereits und wird davon wach.",
+          "translation_ru": "Мой ребенок уже спит и просыпается от этого.",
+          "usage_tip": "Человеческая аргументация",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "dialogue": [
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Wagner",
+          "german": "Ja bitte? Wer ist da um diese Uhrzeit?",
+          "russian": "Да, слушаю? Кто там в такое время?",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Guten Abend, Herr Wagner. Entschuldigen Sie bitte die späte Störung. Ich wohne direkt unter Ihnen.",
+          "russian": "Добрый вечер, господин Вагнер. Извините за позднее беспокойство. Я живу прямо под вами.",
+          "task_prompt": "Поздоровайтесь вежливо, извинитесь за поздний визит и скажите, что живете прямо под ним.",
+          "suggested_answer": "Guten Abend, Herr Wagner. Entschuldigen Sie bitte die späte Störung. Ich wohne direkt unter Ihnen.",
+          "word_bank": [
+            "Guten",
+            "Abend,",
+            "Herr",
+            "Wagner.",
+            "Entschuldigen",
+            "Sie",
+            "bitte",
+            "die",
+            "späte",
+            "Störung.",
+            "Ich",
+            "wohne",
+            "direkt",
+            "unter",
+            "Ihnen."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Wagner",
+          "german": "Ach so, guten Abend! Gibt es ein Problem?",
+          "russian": "А, вот как, добрый вечер! Какая-то проблема?",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Die Bässe von Ihrer Musik sind unten sehr laut. Könnten Sie die Musik bitte etwas leiser stellen?",
+          "russian": "Басы от вашей музыки внизу очень громкие. Не могли бы вы сделать музыку немного тише?",
+          "task_prompt": "Скажите, что басы музыки внизу очень громкие, и вежливо попросите сделать потише.",
+          "suggested_answer": "Die Bässe von Ihrer Musik sind unten sehr laut. Könnten Sie die Musik bitte etwas leiser stellen?",
+          "word_bank": [
+            "Die",
+            "Bässe",
+            "von",
+            "Ihrer",
+            "Musik",
+            "sind",
+            "unten",
+            "sehr",
+            "laut.",
+            "Könnten",
+            "Sie",
+            "die",
+            "Musik",
+            "bitte",
+            "etwas",
+            "leiser",
+            "stellen?"
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Wagner",
+          "german": "Oh, tut mir leid, das war mir nicht bewusst! Wir haben Besuch und haben gar nicht auf die Uhr geschaut.",
+          "russian": "Ох, извините, я не отдавал себе отчета! У нас гости, и мы даже не посмотрели на часы.",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Vielen Dank für Ihr Verständnis. Mein Kind schläft schon und muss morgen früh in die Schule.",
+          "russian": "Большое спасибо за понимание. Мой ребенок уже спит, и ему завтра рано в школу.",
+          "task_prompt": "Поблагодарите за понимание и поясните, что ребенок уже спит.",
+          "suggested_answer": "Vielen Dank für Ihr Verständnis. Mein Kind schläft schon und muss morgen früh in die Schule.",
+          "word_bank": [
+            "Vielen",
+            "Dank",
+            "für",
+            "Ihr",
+            "Verständnis.",
+            "Mein",
+            "Kind",
+            "schläft",
+            "schon",
+            "und",
+            "muss",
+            "morgen",
+            "früh",
+            "in",
+            "die",
+            "Schule."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Wagner",
+          "german": "Selbstverständlich, ich drehe sofort leiser. Schönen Abend noch!",
+          "russian": "Само собой, я сейчас же убавлю громкость. Хорошего вечера!",
+          "voice_hint": "de-DE-ConradNeural"
+        }
+      ]
+    },
+    {
+      "id": "diag_bank_account",
+      "category": "services",
+      "category_label": "🛒 Быт & Банк",
+      "level": "A2-B1",
+      "title_de": "Bank: Girokonto eröffnen & Online-Banking",
+      "title_ru": "Банк: Открытие счёта (Girokonto)",
+      "description_ru": "Визит в отделение банка: выбор счета, дебетовая карта (Girocard), онлайн-банкинг и переводы.",
+      "partner_role": "Frau Sommer (Bankberaterin)",
+      "partner_avatar": "💳",
+      "partner_voice": "de-DE-KatjaNeural",
+      "user_voice": "de-DE-KatjaNeural",
+      "vocabulary": [
+        {
+          "german": "das Girokonto",
+          "gender": "das",
+          "plural": "die Girokonten",
+          "russian": "текущий расчетный счет",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Girocard",
+          "gender": "die",
+          "plural": "die Girocards",
+          "russian": "дебетовая банковская карта (EC)",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Überweisung",
+          "gender": "die",
+          "plural": "die Überweisungen",
+          "russian": "банковский перевод",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "der Dauerauftrag",
+          "gender": "der",
+          "plural": "die Daueraufträge",
+          "russian": "регулярный автоплатеж (за аренду)",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Kontoführungsgebühr",
+          "gender": "die",
+          "plural": "die Gebühren",
+          "russian": "комиссия за ведение счета",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die PIN",
+          "gender": "die",
+          "plural": "die PINs",
+          "russian": "пин-код карты",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "redemittel": [
+        {
+          "chunk_de": "Ich möchte ein neues Girokonto eröffnen.",
+          "translation_ru": "Я хотела бы открыть новый текущий счет.",
+          "usage_tip": "Главный запрос в банке",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Fallen monatliche Kontoführungsgebühren an?",
+          "translation_ru": "Взимается ли ежемесячная комиссия за ведение счета?",
+          "usage_tip": "Вопрос о комиссиях",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Wie lange dauert es, bis die Karte per Post ankommt?",
+          "translation_ru": "Сколько времени займет доставка карты по почте?",
+          "usage_tip": "Уточнение сроков",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "dialogue": [
+        {
+          "speaker": "partner",
+          "speaker_name": "Frau Sommer",
+          "german": "Guten Tag! Willkommen bei der Sparkasse. Wie kann ich Ihnen helfen?",
+          "russian": "Добрый день! Добро пожаловать в Sparkasse. Чем могу вам помочь?",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Guten Tag. Ich möchte gerne ein Girokonto für mein Gehalt eröffnen.",
+          "russian": "Добрый день. Я хотела бы открыть текущий счет для моей зарплаты.",
+          "task_prompt": "Поздоровайтесь и скажите, что хотите открыть текущий счет (Girokonto) для зарплаты.",
+          "suggested_answer": "Guten Tag. Ich möchte gerne ein Girokonto für mein Gehalt eröffnen.",
+          "word_bank": [
+            "Guten",
+            "Tag.",
+            "Ich",
+            "möchte",
+            "gerne",
+            "ein",
+            "Girokonto",
+            "für",
+            "mein",
+            "Gehalt",
+            "eröffnen."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Frau Sommer",
+          "german": "Sehr gerne! Haben Sie Ihren Pass und Ihre Meldebestätigung dabei?",
+          "russian": "С удовольствием! У вас с собой паспорт и справка о регистрации?",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Ja, hier sind mein Reisepass und die aktuelle Meldebescheinigung.",
+          "russian": "Да, вот мой загранпаспорт и актуальная справка о регистрации.",
+          "task_prompt": "Передайте загранпаспорт и справку о регистрации.",
+          "suggested_answer": "Ja, hier sind mein Reisepass und die aktuelle Meldebescheinigung.",
+          "word_bank": [
+            "Ja,",
+            "hier",
+            "sind",
+            "mein",
+            "Reisepass",
+            "und",
+            "die",
+            "aktuelle",
+            "Meldebescheinigung."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Frau Sommer",
+          "german": "Wunderbar. Das Konto kostet 3 Euro im Monat inklusive Girocard und Online-Banking-App.",
+          "russian": "Замечательно. Счет стоит 3 евро в месяц включая дебетовую карту и мобильное приложение.",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Kann ich mit der Girocard auch kontaktlos bezahlen und Geld am Automaten abheben?",
+          "russian": "Могу ли я дебетовой картой оплачивать бесконтактно и снимать деньги в банкомате?",
+          "task_prompt": "Спросите, можно ли платить бесконтактно и снимать наличные в банкомате.",
+          "suggested_answer": "Kann ich mit der Girocard auch kontaktlos bezahlen und Geld am Automaten abheben?",
+          "word_bank": [
+            "Kann",
+            "ich",
+            "mit",
+            "der",
+            "Girocard",
+            "auch",
+            "kontaktlos",
+            "bezahlen",
+            "und",
+            "Geld",
+            "am",
+            "Automaten",
+            "abheben?"
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Frau Sommer",
+          "german": "Ja, an allen Sparkassen-Automaten deutschlandweit kostenlos. Die Karte und die PIN kommen in getrennten Briefen in etwa 5 Tagen.",
+          "russian": "Да, во всех банкоматах Sparkasse по всей Германии бесплатно. Карта и ПИН придут в отдельных письмах примерно через 5 дней.",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ]
+    },
+    {
+      "id": "diag_post_dhl",
+      "category": "services",
+      "category_label": "🛒 Быт & Банк",
+      "level": "A2",
+      "title_de": "Bei der Post / DHL: Paket versenden & Einschreiben",
+      "title_ru": "На почте: Отправка посылки и заказное письмо",
+      "description_ru": "Отправка заказного письма в ведомство (Einschreiben) и посылка с отслеживанием.",
+      "partner_role": "Herr Müller (Postbeamter)",
+      "partner_avatar": "📦",
+      "partner_voice": "de-DE-ConradNeural",
+      "user_voice": "de-DE-KatjaNeural",
+      "vocabulary": [
+        {
+          "german": "das Paket",
+          "gender": "das",
+          "plural": "die Pakete",
+          "russian": "посылка",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "das Einschreiben",
+          "gender": "das",
+          "plural": "die Einschreiben",
+          "russian": "заказное письмо (с уведомлением)",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Sendungsverfolgung",
+          "gender": "die",
+          "plural": "-",
+          "russian": "отслеживание посылки (трек-номер)",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Briefmarke",
+          "gender": "die",
+          "plural": "die Briefmarken",
+          "russian": "почтовая марка",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "der Absender",
+          "gender": "der",
+          "plural": "die Absender",
+          "russian": "отправитель",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "der Empfänger",
+          "gender": "der",
+          "plural": "die Empfänger",
+          "russian": "получатель",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "redemittel": [
+        {
+          "chunk_de": "Ich möchte diesen Brief als Einschreiben mit Rückschein versenden.",
+          "translation_ru": "Я хочу отправить это письмо заказным с уведомлением о вручении.",
+          "usage_tip": "Важно для ведомств и расторжения договоров",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Gibt es dafür eine Sendungsnummer?",
+          "translation_ru": "Есть ли для этого номер отслеживания?",
+          "usage_tip": "Запрос трек-номера",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "dialogue": [
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Müller",
+          "german": "Der Nächste bitte! Guten Tag, was darf es sein?",
+          "russian": "Следующий, пожалуйста! Добрый день, что у вас?",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Guten Tag. Ich möchte diesen wichtigen Brief an die Krankenkasse als Einschreiben verschicken.",
+          "russian": "Добрый день. Я хочу отправить это важное письмо в больничную кассу заказным письмом.",
+          "task_prompt": "Скажите, что хотите отправить важное письмо в больничную кассу заказным письмом (Einschreiben).",
+          "suggested_answer": "Guten Tag. Ich möchte diesen wichtigen Brief an die Krankenkasse als Einschreiben verschicken.",
+          "word_bank": [
+            "Guten",
+            "Tag.",
+            "Ich",
+            "möchte",
+            "diesen",
+            "wichtigen",
+            "Brief",
+            "an",
+            "die",
+            "Krankenkasse",
+            "als",
+            "Einschreiben",
+            "verschicken."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Müller",
+          "german": "Möchten Sie ein Einwurf-Einschreiben oder ein Einschreiben mit persönlicher Übergabe?",
+          "russian": "Вы хотите заказное в почтовый ящик или с личным вручением в руки?",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Mit persönlicher Übergabe bitte, damit ich einen sicheren Nachweis habe.",
+          "russian": "С личным вручением, пожалуйста, чтобы у меня было надежное подтверждение.",
+          "task_prompt": "Выберите вариант с личным вручением (mit persönlicher Übergabe).",
+          "suggested_answer": "Mit persönlicher Übergabe bitte, damit ich einen sicheren Nachweis habe.",
+          "word_bank": [
+            "Mit",
+            "persönlicher",
+            "Übergabe",
+            "bitte,",
+            "damit",
+            "ich",
+            "einen",
+            "sicheren",
+            "Nachweis",
+            "habe."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Herr Müller",
+          "german": "Das macht dann 4 Euro 30. Hier ist Ihre Quittung mit der Sendungsnummer zum Nachverfolgen.",
+          "russian": "С вас 4 евро 30 центов. Вот ваша квитанция с номером отслеживания.",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Super, vielen Dank für die schnelle Bearbeitung. Einen schönen Tag noch!",
+          "russian": "Супер, большое спасибо за быстрое оформление. Хорошего вам дня!",
+          "task_prompt": "Поблагодарите за быстрое оформление и пожелайте хорошего дня.",
+          "suggested_answer": "Super, vielen Dank für die schnelle Bearbeitung. Einen schönen Tag noch!",
+          "word_bank": [
+            "Super,",
+            "vielen",
+            "Dank",
+            "für",
+            "die",
+            "schnelle",
+            "Bearbeitung.",
+            "Einen",
+            "schönen",
+            "Tag",
+            "noch!"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "diag_reklamation",
+      "category": "services",
+      "category_label": "🛒 Быт & Банк",
+      "level": "A2",
+      "title_de": "Reklamation im Geschäft: Umtausch & Kassenbon",
+      "title_ru": "Возврат товара в магазине (Рекламация)",
+      "description_ru": "Возврат дефектного товара или неподходящего размера с чеком, возврат денег или обмен.",
+      "partner_role": "Verkäuferin (Kundenservice)",
+      "partner_avatar": "🛍️",
+      "partner_voice": "de-DE-KatjaNeural",
+      "user_voice": "de-DE-KatjaNeural",
+      "vocabulary": [
+        {
+          "german": "der Kassenbon",
+          "gender": "der",
+          "plural": "die Kassenbons",
+          "russian": "кассовый чек",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Reklamation",
+          "gender": "die",
+          "plural": "die Reklamationen",
+          "russian": "претензия / возврат",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "der Umtausch",
+          "gender": "der",
+          "plural": "-",
+          "russian": "обмен товара",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Rückerstattung",
+          "gender": "die",
+          "plural": "die Rückerstattungen",
+          "russian": "возврат денег",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "beschädigt",
+          "gender": "adj",
+          "plural": "-",
+          "russian": "поврежденный / дефектный",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "redemittel": [
+        {
+          "chunk_de": "Ich möchte diesen Artikel reklamieren, weil er beschädigt ist.",
+          "translation_ru": "Я хочу вернуть этот товар, так как он поврежден.",
+          "usage_tip": "Объяснение претензии",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Ich habe den Kassenbon hier dabei.",
+          "translation_ru": "У меня с собой есть кассовый чек.",
+          "usage_tip": "Предъявление чека",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Bekomme ich das Geld zurück oder einen Gutschein?",
+          "translation_ru": "Я получу деньги обратно или подарочный сертификат?",
+          "usage_tip": "Вопрос о форме возврата",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "dialogue": [
+        {
+          "speaker": "partner",
+          "speaker_name": "Verkäuferin",
+          "german": "Guten Tag, Kundenservice. Wie kann ich Ihnen helfen?",
+          "russian": "Добрый день, служба поддержки клиентов. Чем могу помочь?",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Guten Tag. Ich habe diesen Wasserkocher gestern gekauft, aber er heizt leider nicht.",
+          "russian": "Добрый день. Я купила этот чайник вчера, но он, к сожалению, не нагревает.",
+          "task_prompt": "Скажите, что купили вчера этот чайник, но он не греет воду.",
+          "suggested_answer": "Guten Tag. Ich habe diesen Wasserkocher gestern gekauft, aber er heizt leider nicht.",
+          "word_bank": [
+            "Guten",
+            "Tag.",
+            "Ich",
+            "habe",
+            "diesen",
+            "Wasserkocher",
+            "gestern",
+            "gekauft,",
+            "aber",
+            "er",
+            "heizt",
+            "leider",
+            "nicht."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Verkäuferin",
+          "german": "Oh, das tut mir leid. Haben Sie den Kassenbon und die Originalverpackung dabei?",
+          "russian": "Ох, извините. У вас с собой чек и оригинальная упаковка?",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Ja, hier ist der Beleg und der Karton ist auch unbeschädigt.",
+          "russian": "Да, вот чек, и коробка тоже не повреждена.",
+          "task_prompt": "Передайте чек и подтвердите сохранность коробки.",
+          "suggested_answer": "Ja, hier ist der Beleg und der Karton ist auch unbeschädigt.",
+          "word_bank": [
+            "Ja,",
+            "hier",
+            "ist",
+            "der",
+            "Beleg",
+            "und",
+            "der",
+            "Karton",
+            "ist",
+            "auch",
+            "unbeschädigt."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Verkäuferin",
+          "german": "Möchten Sie das Gerät gegen ein neues umtauschen oder möchten Sie den Betrag erstattet bekommen?",
+          "russian": "Вы хотите обменять прибор на новый или хотите получить возврат суммы?",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Ich hätte gerne mein Geld zurück auf die Karte gebucht.",
+          "russian": "Я хотела бы, чтобы мне вернули деньги обратно на карту.",
+          "task_prompt": "Попросите вернуть деньги обратно на карту.",
+          "suggested_answer": "Ich hätte gerne mein Geld zurück auf die Karte gebucht.",
+          "word_bank": [
+            "Ich",
+            "hätte",
+            "gerne",
+            "mein",
+            "Geld",
+            "zurück",
+            "auf",
+            "die",
+            "Karte",
+            "gebucht."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Verkäuferin",
+          "german": "Gerne. Stecken Sie bitte Ihre Karte ein. Das Geld ist in 1-2 Tagen auf Ihrem Konto. Entschuldigen Sie die Umstände!",
+          "russian": "С удовольствием. Вставьте карту. Деньги поступят через 1-2 дня. Извините за неудобства!",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ]
+    },
+    {
+      "id": "diag_kita_eltern",
+      "category": "exam",
+      "category_label": "🎓 Семья & Экзамен B1",
+      "level": "A2-B1",
+      "title_de": "Kita & Kindergarten: Gespräch mit der Erzieherin",
+      "title_ru": "Детский сад: Разговор с воспитателем",
+      "description_ru": "Обсуждение адаптации ребенка в немецком садике (Kita), питание, дневной сон и дружба с детьми.",
+      "partner_role": "Frau Lindner (Erzieherin)",
+      "partner_avatar": "🧸",
+      "partner_voice": "de-DE-KatjaNeural",
+      "user_voice": "de-DE-KatjaNeural",
+      "vocabulary": [
+        {
+          "german": "die Erzieherin",
+          "gender": "die",
+          "plural": "die Erzieherinnen",
+          "russian": "воспитательница",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Eingewöhnung",
+          "gender": "die",
+          "plural": "-",
+          "russian": "период адаптации / привыкания",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "der Mittagsschlaf",
+          "gender": "der",
+          "plural": "-",
+          "russian": "дневной сон",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Hausschuhe",
+          "gender": "die_pl",
+          "plural": "die Hausschuhe",
+          "russian": "сменная обувь / тапочки",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Wechselsachen",
+          "gender": "die_pl",
+          "plural": "die Wechselsachen",
+          "russian": "сменная одежда",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "redemittel": [
+        {
+          "chunk_de": "Wie hat sich mein Kind heute in der Gruppe eingelebt?",
+          "translation_ru": "Как мой ребенок освоился сегодня в группе?",
+          "usage_tip": "Вопрос о самочувствии ребенка",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Hat er beim Mittagessen gut gegessen?",
+          "translation_ru": "Он хорошо поел во время обеда?",
+          "usage_tip": "Вопрос о питании",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Soll ich für morgen noch Gummistiefel mitbringen?",
+          "translation_ru": "Нужно ли принести на завтра резиновые сапоги?",
+          "usage_tip": "Организационный вопрос",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "dialogue": [
+        {
+          "speaker": "partner",
+          "speaker_name": "Frau Lindner",
+          "german": "Guten Tag, Frau Alina! Schön, dass Sie zum Abholen da sind.",
+          "russian": "Добрый день, госпожа Алина! Рада, что вы пришли забрать ребенка.",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Guten Tag, Frau Lindner. Wie war der Tag heute? Hat alles gut geklappt?",
+          "russian": "Добрый день, госпожа Линднер. Как прошел день? Все ли прошло хорошо?",
+          "task_prompt": "Поздоровайтесь и спросите, как прошел день и все ли было в порядке.",
+          "suggested_answer": "Guten Tag, Frau Lindner. Wie war der Tag heute? Hat alles gut geklappt?",
+          "word_bank": [
+            "Guten",
+            "Tag,",
+            "Frau",
+            "Lindner.",
+            "Wie",
+            "war",
+            "der",
+            "Tag",
+            "heute?",
+            "Hat",
+            "alles",
+            "gut",
+            "geklappt?"
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Frau Lindner",
+          "german": "Sehr gut! Er hat heute schön mit den anderen Kindern im Garten gespielt und auch beim Mittagessen brav gegessen.",
+          "russian": "Очень хорошо! Он сегодня прекрасно играл с другими детьми в саду и за обедом тоже хорошо покушал.",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Das beruhigt mich sehr. Hat er auch beim Mittagsschlaf zur Ruhe gefunden?",
+          "russian": "Это меня очень успокаивает. Удалось ли ему успокоиться во время дневного сна?",
+          "task_prompt": "Скажите, что это успокаивает, и спросите про дневной сон.",
+          "suggested_answer": "Das beruhigt mich sehr. Hat er auch beim Mittagsschlaf zur Ruhe gefunden?",
+          "word_bank": [
+            "Das",
+            "beruhigt",
+            "mich",
+            "sehr.",
+            "Hat",
+            "er",
+            "auch",
+            "beim",
+            "Mittagsschlaf",
+            "zur",
+            "Ruhe",
+            "gefunden?"
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Frau Lindner",
+          "german": "Ja, er ist nach zehn Minuten friedlich eingeschlafen. Bitte bringen Sie für morgen noch Regensachen mit, wir wollen raus.",
+          "russian": "Да, он через 10 минут мирно уснул. Пожалуйста, принесите на завтра дождевую одежду, мы пойдем на улицу.",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Alles klar, ich packe die Matschhose und die Stiefel in den Rucksack. Bis morgen früh!",
+          "russian": "Все понятно, я положу непромокаемые штаны и сапожки в рюкзак. До завтрашнего утра!",
+          "task_prompt": "Пообещайте положить сапожки и штаны в рюкзак и попрощайтесь.",
+          "suggested_answer": "Alles klar, ich packe die Matschhose und die Stiefel in den Rucksack. Bis morgen früh!",
+          "word_bank": [
+            "Alles",
+            "klar,",
+            "ich",
+            "packe",
+            "die",
+            "Matschhose",
+            "und",
+            "die",
+            "Stiefel",
+            "in",
+            "den",
+            "Rucksack.",
+            "Bis",
+            "morgen",
+            "früh!"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "diag_dtz_planen",
+      "category": "exam",
+      "category_label": "🎓 Семья & Экзамен B1",
+      "level": "B1",
+      "title_de": "telc DTZ / B1: Gemeinsam etwas planen (Prüfungsdialog)",
+      "title_ru": "Экзамен B1 / DTZ: Совместное планирование",
+      "description_ru": "Официальный формат части 3 устного экзамена telc DTZ / Goethe B1: планирование прощального праздника с партнером по экзамену.",
+      "partner_role": "Maxim (Prüfungspartner)",
+      "partner_avatar": "🎓",
+      "partner_voice": "de-DE-ConradNeural",
+      "user_voice": "de-DE-KatjaNeural",
+      "vocabulary": [
+        {
+          "german": "der Vorschlag",
+          "gender": "der",
+          "plural": "die Vorschläge",
+          "russian": "предложение",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Überraschungsparty",
+          "gender": "die",
+          "plural": "die Partys",
+          "russian": "вечеринка-сюрприз",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "das Geschenk",
+          "gender": "das",
+          "plural": "die Geschenke",
+          "russian": "подарок",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Einladung",
+          "gender": "die",
+          "plural": "die Einladungen",
+          "russian": "приглашение",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "vorschlagen",
+          "gender": "verb",
+          "plural": "-",
+          "russian": "предлагать",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "sich einigen",
+          "gender": "verb",
+          "plural": "-",
+          "russian": "прийти к согласию / договориться",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "redemittel": [
+        {
+          "chunk_de": "Wie wäre es, wenn wir am Samstag feiern?",
+          "translation_ru": "Как насчет того, чтобы отпраздновать в субботу?",
+          "usage_tip": "Внесение предложения (B1)",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Das ist eine tolle Idee, aber ich würde lieber...",
+          "translation_ru": "Это отличная идея, но я бы предпочла...",
+          "usage_tip": "Дипломатичная альтернатива",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Wer kümmert sich um die Getränke und das Essen?",
+          "translation_ru": "Кто позаботится о напитках и еде?",
+          "usage_tip": "Распределение задач",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "dialogue": [
+        {
+          "speaker": "partner",
+          "speaker_name": "Maxim",
+          "german": "Hallo Alina! Unsere Kollegin Sarah verlässt nächste Woche das Team. Wollen wir eine kleine Abschiedsfeier planen?",
+          "russian": "Привет, Алина! Наша коллега Сара на следующей неделе уходит из команды. Хочешь спланировать небольшой прощальный праздник?",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Hallo Maxim! Das ist eine wunderbare Idee. Wann und wo wollen wir die Feier veranstalten?",
+          "russian": "Привет, Максим! Это прекрасная идея. Когда и где мы хотим устроить праздник?",
+          "task_prompt": "Согласитесь с идеей и спросите, когда и где устроить праздник.",
+          "suggested_answer": "Hallo Maxim! Das ist eine wunderbare Idee. Wann und wo wollen wir die Feier veranstalten?",
+          "word_bank": [
+            "Hallo",
+            "Maxim!",
+            "Das",
+            "ist",
+            "eine",
+            "wunderbare",
+            "Idee.",
+            "Wann",
+            "und",
+            "wo",
+            "wollen",
+            "wir",
+            "die",
+            "Feier",
+            "veranstalten?"
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Maxim",
+          "german": "Ich schlage vor, wir machen das am Freitagnachmittag direkt im Konferenzraum. Was hältst du davon?",
+          "russian": "Я предлагаю сделать это в пятницу во второй половине дня прямо в конференц-зале. Что ты об этом думаешь?",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Der Konferenzraum ist perfekt. Ich kann mich um den Kuchen und die Getränke kümmern.",
+          "russian": "Конференц-зал отлично подходит. Я могу позаботиться о пироге и напитках.",
+          "task_prompt": "Одобрите выбор зала и предложите взять на себя пирог и напитки.",
+          "suggested_answer": "Der Konferenzraum ist perfekt. Ich kann mich um den Kuchen und die Getränke kümmern.",
+          "word_bank": [
+            "Der",
+            "Konferenzraum",
+            "ist",
+            "perfekt.",
+            "Ich",
+            "kann",
+            "mich",
+            "um",
+            "den",
+            "Kuchen",
+            "und",
+            "die",
+            "Getränke",
+            "kümmern."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Maxim",
+          "german": "Super, danke! Und wie machen wir das mit dem Geschenk? Sollten wir Geld von allen Kollegen sammeln?",
+          "russian": "Супер, спасибо! А как мы поступим с подарком? Нам стоит собрать деньги со всех коллег?",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Ja, ich schreibe eine E-Mail an das Team und bitte jeden um einen kleinen Beitrag von fünf Euro.",
+          "russian": "Да, я напишу письмо команде и попрошу каждого сделать небольшой взнос в пять евро.",
+          "task_prompt": "Предложите написать письмо команде и собрать по 5 евро с человека.",
+          "suggested_answer": "Ja, ich schreibe eine E-Mail an das Team und bitte jeden um einen kleinen Beitrag von fünf Euro.",
+          "word_bank": [
+            "Ja,",
+            "ich",
+            "schreibe",
+            "eine",
+            "E-Mail",
+            "an",
+            "das",
+            "Team",
+            "und",
+            "bitte",
+            "jeden",
+            "um",
+            "einen",
+            "kleinen",
+            "Beitrag",
+            "von",
+            "fünf",
+            "Euro."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Maxim",
+          "german": "Abgemacht! Dann kaufe ich einen Gutschein und eine schöne Abschiedskarte. Wir sind ein tolles Team!",
+          "russian": "Договорились! Тогда я куплю подарочную карту и красивую прощальную открытку. Мы отличная команда!",
+          "voice_hint": "de-DE-ConradNeural"
+        }
+      ]
+    },
+    {
+      "id": "diag_dtz_bild",
+      "category": "exam",
+      "category_label": "🎓 Семья & Экзамен B1",
+      "level": "B1",
+      "title_de": "telc DTZ: Bildbeschreibung & eigene Erfahrung (Prüfung)",
+      "title_ru": "Экзамен B1 / DTZ: Описание картинки и опыт",
+      "description_ru": "Часть 2 устного экзамена DTZ: структурированное описание ситуации на фото (врачебный прием) и рассказ о личной адаптации в Германии.",
+      "partner_role": "Prüfer Herr Braun",
+      "partner_avatar": "👨‍🏫",
+      "partner_voice": "de-DE-ConradNeural",
+      "user_voice": "de-DE-KatjaNeural",
+      "vocabulary": [
+        {
+          "german": "der Vordergrund",
+          "gender": "der",
+          "plural": "-",
+          "russian": "передний план",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "der Hintergrund",
+          "gender": "der",
+          "plural": "-",
+          "russian": "задний план",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Erfahrung",
+          "gender": "die",
+          "plural": "die Erfahrungen",
+          "russian": "личный опыт",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "die Situation",
+          "gender": "die",
+          "plural": "die Situationen",
+          "russian": "ситуация",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "german": "darstellen",
+          "gender": "verb",
+          "plural": "-",
+          "russian": "изображать / представлять",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "redemittel": [
+        {
+          "chunk_de": "Auf diesem Bild sehe ich eine Situation in einer Arztpraxis.",
+          "translation_ru": "На этой картинке я вижу ситуацию во врачебном кабинете.",
+          "usage_tip": "Введение в описание (DTZ Teil 2)",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "Im Vordergrund sitzt eine Ärztin und untersucht einen Patienten.",
+          "translation_ru": "На переднем плане сидит врач и осматривает пациента.",
+          "usage_tip": "Локализация деталей",
+          "voice_hint": "de-DE-KatjaNeural"
+        },
+        {
+          "chunk_de": "In meinem Heimatland läuft das ähnlich ab, allerdings...",
+          "translation_ru": "На моей родине это происходит похоже, однако...",
+          "usage_tip": "Сравнение с личным опытом",
+          "voice_hint": "de-DE-KatjaNeural"
+        }
+      ],
+      "dialogue": [
+        {
+          "speaker": "partner",
+          "speaker_name": "Prüfer",
+          "german": "Frau Alina, bitte beschreiben Sie nun das Bild und erzählen Sie von Ihren eigenen Erfahrungen.",
+          "russian": "Госпожа Алина, опишите теперь изображение и расскажите о собственном опыте.",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Auf dem Foto sehe ich eine Arztpraxis. Im Vordergrund sitzt eine freundliche Ärztin im weißen Kittel.",
+          "russian": "На фото я вижу врачебный кабинет. На переднем плане сидит доброжелательная врач в белом халате.",
+          "task_prompt": "Начните описание: на фото праксис, на переднем плане сидит доброжелательная врач в белом халате.",
+          "suggested_answer": "Auf dem Foto sehe ich eine Arztpraxis. Im Vordergrund sitzt eine freundliche Ärztin im weißen Kittel.",
+          "word_bank": [
+            "Auf",
+            "dem",
+            "Foto",
+            "sehe",
+            "ich",
+            "eine",
+            "Arztpraxis.",
+            "Im",
+            "Vordergrund",
+            "sitzt",
+            "eine",
+            "freundliche",
+            "Ärztin",
+            "im",
+            "weißen",
+            "Kittel."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Prüfer",
+          "german": "Sehr gut. Was sehen Sie noch und welche Atmosphäre herrscht dort?",
+          "russian": "Очень хорошо. Что вы видите еще и какая там царит атмосфера?",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Der Raum ist hell und modern. Die Ärztin hört dem Patienten aufmerksam zu, die Stimmung wirkt ruhig und vertrauensvoll.",
+          "russian": "Помещение светлое и современное. Врач внимательно слушает пациента, атмосфера кажется спокойной и доверительной.",
+          "task_prompt": "Опишите атмосферу: светлая комната, врач внимательно слушает, спокойная обстановка.",
+          "suggested_answer": "Der Raum ist hell und modern. Die Ärztin hört dem Patienten aufmerksam zu, die Stimmung wirkt ruhig und vertrauensvoll.",
+          "word_bank": [
+            "Der",
+            "Raum",
+            "ist",
+            "hell",
+            "und",
+            "modern.",
+            "Die",
+            "Ärztin",
+            "hört",
+            "dem",
+            "Patienten",
+            "aufmerksam",
+            "zu,",
+            "die",
+            "Stimmung",
+            "wirkt",
+            "ruhig",
+            "und",
+            "vertrauensvoll."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Prüfer",
+          "german": "Haben Sie in Deutschland schon ähnliche Erfahrungen beim Arzt gemacht?",
+          "russian": "Были ли у вас в Германии похожие впечатления при визите к врачу?",
+          "voice_hint": "de-DE-ConradNeural"
+        },
+        {
+          "speaker": "user",
+          "speaker_name": "Alina",
+          "german": "Ja, ich war vor kurzem beim Hausarzt. Mit der Versichertenkarte war alles sehr gut organisiert und der Arzt war sehr geduldig mit meinem Deutsch.",
+          "russian": "Да, недавно я была у терапевта. Со страховой картой все было отлично организовано, и врач был очень терпелив к моему немецкому.",
+          "task_prompt": "Расскажите о своем опыте: недавно были у врача, всё отлично организовано и врач был терпелив.",
+          "suggested_answer": "Ja, ich war vor kurzem beim Hausarzt. Mit der Versichertenkarte war alles sehr gut organisiert und der Arzt war sehr geduldig mit meinem Deutsch.",
+          "word_bank": [
+            "Ja,",
+            "ich",
+            "war",
+            "vor",
+            "kurzem",
+            "beim",
+            "Hausarzt.",
+            "Mit",
+            "der",
+            "Versichertenkarte",
+            "war",
+            "alles",
+            "sehr",
+            "gut",
+            "organisiert",
+            "und",
+            "der",
+            "Arzt",
+            "war",
+            "sehr",
+            "geduldig",
+            "mit",
+            "meinem",
+            "Deutsch."
+          ]
+        },
+        {
+          "speaker": "partner",
+          "speaker_name": "Prüfer",
+          "german": "Vielen Dank, Frau Alina. Das war eine sehr flüssige und gelungene Bildbeschreibung!",
+          "russian": "Большое спасибо, госпожа Алина. Это было очень беглое и удачное описание картинки!",
+          "voice_hint": "de-DE-ConradNeural"
+        }
+      ]
+    }
+  ]
+}

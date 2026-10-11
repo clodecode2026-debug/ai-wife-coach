@@ -25,6 +25,7 @@ from library import get_library_items
 from storage import s3_storage
 from books.psychology_books import get_psychology_books, PSYCHOLOGY_BOOKS, get_book_by_id
 from books.german_course import get_german_course, GERMAN_COURSE_DATA
+from books.german_dialogues import get_german_dialogues, get_dialogue_by_id, get_dialogues_by_category, GERMAN_DIALOGUES_DATA
 
 # Пин-код и авторизация
 APP_PIN = os.environ.get("APP_PIN", "2509").strip()
@@ -115,6 +116,7 @@ class ChatRequest(BaseModel):
     is_voice_mode: bool = False
     mode: Optional[str] = "coach"  # "coach" | "german"
     german_lesson_id: Optional[int] = None
+    dialogue_id: Optional[str] = None
     book_id: Optional[str] = None
     depth_mode: Optional[str] = "express"
 
@@ -184,21 +186,38 @@ def api_chat(req: ChatRequest, _auth: bool = Depends(require_auth)):
         german_context = None
         book_context = find_book_context(session_id, req.book_id)
 
-        # РЕЖИМ СПЕЦИАЛИЗИРОВАННОГО НЕМЕЦКОГО РЕЧЕВОГО КОУЧА
+        # РЕЖИМ СПЕЦИАЛИЗИРОВАННОГО НЕМЕЦКОГО РЕЧЕВОГО КОУЧА / ДИАЛОГА
         if req.mode == "german":
-            # Изолируем историю немецкого языка, чтобы НЕ сбивать психологическую память и настройки Алины!
-            session_id = f"german_live_{req.session_id}"
-            lessons = GERMAN_COURSE_DATA.get("lessons", [])
-            lesson_id = req.german_lesson_id or 1
-            german_lesson = next((l for l in lessons if (l.get("id") == lesson_id or l.get("day") == lesson_id)), lessons[0] if lessons else None)
-            if german_lesson:
-                german_context = {
-                    "title": german_lesson.get("title", ""),
-                    "level": german_lesson.get("level", "A1+"),
-                    "grammar": german_lesson.get("grammar", ""),
-                    "situation": german_lesson.get("dialogue_simulator", {}).get("situation", ""),
-                    "vocabulary": german_lesson.get("vocabulary", [])
-                }
+            if req.dialogue_id:
+                session_id = f"german_diag_{req.dialogue_id}_{req.session_id}"
+                diag = get_dialogue_by_id(req.dialogue_id)
+                if diag:
+                    german_context = {
+                        "is_roleplay_dialogue": True,
+                        "dialogue_id": diag.get("id"),
+                        "title_de": diag.get("title_de", ""),
+                        "title_ru": diag.get("title_ru", ""),
+                        "level": diag.get("level", "A2-B1"),
+                        "partner_role": diag.get("partner_role", "Немецкий собеседник"),
+                        "partner_voice": diag.get("partner_voice", "de-DE-KatjaNeural"),
+                        "situation": diag.get("description_ru", ""),
+                        "redemittel": diag.get("redemittel", []),
+                        "vocabulary": diag.get("vocabulary", [])
+                    }
+            else:
+                # Изолируем историю немецкого языка, чтобы НЕ сбивать психологическую память и настройки Алины!
+                session_id = f"german_live_{req.session_id}"
+                lessons = GERMAN_COURSE_DATA.get("lessons", [])
+                lesson_id = req.german_lesson_id or 1
+                german_lesson = next((l for l in lessons if (l.get("id") == lesson_id or l.get("day") == lesson_id)), lessons[0] if lessons else None)
+                if german_lesson:
+                    german_context = {
+                        "title": german_lesson.get("title", ""),
+                        "level": german_lesson.get("level", "A1+"),
+                        "grammar": german_lesson.get("grammar", ""),
+                        "situation": german_lesson.get("dialogue_simulator", {}).get("situation", ""),
+                        "vocabulary": german_lesson.get("vocabulary", [])
+                    }
 
         history = db_manager.get_chat_history(session_id)
         dossier = db_manager.get_dossier()
@@ -233,7 +252,10 @@ def api_chat(req: ChatRequest, _auth: bool = Depends(require_auth)):
         audio_base64 = None
         if req.is_voice_mode and HAS_EDGE_TTS:
             try:
-                voice = "de-DE-SeraphinaMultilingualNeural" if (req.mode == "german") else "ru-RU-SvetlanaNeural"
+                if req.mode == "german":
+                    voice = (german_context.get("partner_voice") if (german_context and german_context.get("partner_voice")) else "de-DE-SeraphinaMultilingualNeural")
+                else:
+                    voice = "ru-RU-SvetlanaNeural"
                 clean_text = clean_speech_text(reply)
                 if clean_text:
                     async def _gen_tts_audio():
@@ -259,18 +281,35 @@ def api_chat_stream(req: ChatRequest, _auth: bool = Depends(require_auth)):
     book_context = find_book_context(session_id, req.book_id)
 
     if req.mode == "german":
-        session_id = f"german_live_{req.session_id}"
-        lessons = GERMAN_COURSE_DATA.get("lessons", [])
-        lesson_id = req.german_lesson_id or 1
-        german_lesson = next((l for l in lessons if (l.get("id") == lesson_id or l.get("day") == lesson_id)), lessons[0] if lessons else None)
-        if german_lesson:
-            german_context = {
-                "title": german_lesson.get("title", ""),
-                "level": german_lesson.get("level", "A1+"),
-                "grammar": german_lesson.get("grammar", ""),
-                "situation": german_lesson.get("dialogue_simulator", {}).get("situation", ""),
-                "vocabulary": german_lesson.get("vocabulary", [])
-            }
+        if req.dialogue_id:
+            session_id = f"german_diag_{req.dialogue_id}_{req.session_id}"
+            diag = get_dialogue_by_id(req.dialogue_id)
+            if diag:
+                german_context = {
+                    "is_roleplay_dialogue": True,
+                    "dialogue_id": diag.get("id"),
+                    "title_de": diag.get("title_de", ""),
+                    "title_ru": diag.get("title_ru", ""),
+                    "level": diag.get("level", "A2-B1"),
+                    "partner_role": diag.get("partner_role", "Немецкий собеседник"),
+                    "partner_voice": diag.get("partner_voice", "de-DE-KatjaNeural"),
+                    "situation": diag.get("description_ru", ""),
+                    "redemittel": diag.get("redemittel", []),
+                    "vocabulary": diag.get("vocabulary", [])
+                }
+        else:
+            session_id = f"german_live_{req.session_id}"
+            lessons = GERMAN_COURSE_DATA.get("lessons", [])
+            lesson_id = req.german_lesson_id or 1
+            german_lesson = next((l for l in lessons if (l.get("id") == lesson_id or l.get("day") == lesson_id)), lessons[0] if lessons else None)
+            if german_lesson:
+                german_context = {
+                    "title": german_lesson.get("title", ""),
+                    "level": german_lesson.get("level", "A1+"),
+                    "grammar": german_lesson.get("grammar", ""),
+                    "situation": german_lesson.get("dialogue_simulator", {}).get("situation", ""),
+                    "vocabulary": german_lesson.get("vocabulary", [])
+                }
 
     history = db_manager.get_chat_history(session_id)
     dossier = db_manager.get_dossier()
@@ -286,7 +325,10 @@ def api_chat_stream(req: ChatRequest, _auth: bool = Depends(require_auth)):
             logger.warning(f"Voice cleanup fallback warning (stream): {clean_err}")
 
     db_manager.save_message(session_id, "user", user_msg)
-    voice = "de-DE-SeraphinaMultilingualNeural" if (req.mode == "german") else "ru-RU-SvetlanaNeural"
+    if req.mode == "german":
+        voice = (german_context.get("partner_voice") if (german_context and german_context.get("partner_voice")) else "de-DE-SeraphinaMultilingualNeural")
+    else:
+        voice = "ru-RU-SvetlanaNeural"
 
     def event_generator():
         sentence_buffer = ""
@@ -377,6 +419,19 @@ async def api_books():
 @app.get('/api/german/course')
 async def api_german_course_data():
     return GERMAN_COURSE_DATA
+
+@app.get('/api/german/dialogues')
+async def api_german_dialogues(category: Optional[str] = None):
+    if category and category.lower() != "all":
+        return {"total": len(get_dialogues_by_category(category)), "dialogues": get_dialogues_by_category(category)}
+    return get_german_dialogues()
+
+@app.get('/api/german/dialogues/{dialogue_id}')
+async def api_german_dialogue_item(dialogue_id: str):
+    diag = get_dialogue_by_id(dialogue_id)
+    if not diag:
+        raise HTTPException(status_code=404, detail="Диалог не найден")
+    return diag
 
 @app.get("/api/german/card")
 async def api_german_card(level: str = "A1"):

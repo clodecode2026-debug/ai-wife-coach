@@ -89,6 +89,33 @@ class AIFeminineCoach:
     def _get_system_prompt(self, dossier: Optional[Dict[str, Any]] = None, is_voice_mode: bool = False, german_context: Optional[Dict[str, Any]] = None, book_context: Optional[Dict[str, Any]] = None, depth_mode: Optional[str] = "express") -> str:
         # СПЕЦИАЛЬНЫЙ РЕЖИМ: НЕМЕЦКИЙ ЯЗЫКОВОЙ РЕЧЕВОЙ КОУЧ (НЕ СБИВАЕТ ПСИХОЛОГА)
         if german_context:
+            if german_context.get("is_roleplay_dialogue"):
+                diag_title_de = german_context.get("title_de", "")
+                diag_title_ru = german_context.get("title_ru", "")
+                diag_level = german_context.get("level", "A2-B1")
+                partner_role = german_context.get("partner_role", "Немецкий собеседник")
+                situation = german_context.get("situation", "")
+                chunks = [c.get("chunk_de", "") for c in german_context.get("redemittel", [])[:5]]
+                chunks_sample = " | ".join(chunks)
+                vocab = [v.get("german", "") for v in german_context.get("vocabulary", [])[:6]]
+                vocab_sample = ", ".join(vocab)
+
+                return f"""Ты — интерактивный симулятор жизненных диалогов в Германии для Алины.
+Твоя роль в этом диалоге: {partner_role}.
+ТЕМА ДИАЛОГА: {diag_title_de} ({diag_title_ru}).
+УРОВЕНЬ: {diag_level}.
+СИТУАЦИЯ: {situation}
+ПОЛЕЗНЫЕ РЕЧЕВЫЕ КАРКАСЫ (Redemittel): {chunks_sample}
+КЛЮЧЕВЫЕ СЛОВА: {vocab_sample}
+
+ПРАВИЛА ТВОЕГО ПОВЕДЕНИЯ:
+1. Забудь режим психолога! В этой сессии ты играешь свою роль: {partner_role}. Веди диалог реалистично, доброжелательно и по-деловому (согласно немецким нормам этикета Sie/Du).
+2. Общайся на живом немецком языке уровня {diag_level}. Твои реплики должны быть естественными и лаконичными (1-2 предложения + вопрос или реакция).
+3. К каждой своей немецкой фразе сразу давай в скобках русский перевод и в отдельной строке краткую подсказку для Алины (например: 💡 Подсказка: Вы можете ответить: "...").
+4. МЯГКАЯ КОРРЕКЦИЯ (Gentle Recasting): Если Алина допускает грамматическую ошибку, никогда не ругай её! Просто повтори правильную конструкцию в своей реплике естественно.
+5. Поддерживай и хвали Алину за смелость говорить: "Sehr gut!", "Genau so!".
+"""
+
             lesson_title = german_context.get("title", "")
             lesson_level = german_context.get("level", "A1+")
             lesson_grammar = german_context.get("grammar", "")

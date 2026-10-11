@@ -638,25 +638,34 @@
                             <span id="dialogueDetailLevelBadge" class="font-bold text-indigo-600">B1</span>
                         </div>
                     </div>
-                    <button onclick="startDialogueLiveCoach()" class="px-2.5 py-1.5 bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white font-bold text-xs rounded-xl transition flex items-center gap-1 active:scale-95 shadow-2xs shrink-0" title="Живая голосовая симуляция с этим персонажем">
+                    <!-- Регулировка скорости воспроизведения немецкого (0.75x / 0.85x / 1.0x) -->
+                    <button onclick="cycleGermanSpeed()" id="dialogueSpeedBtn" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 font-bold text-xs rounded-xl transition flex items-center gap-1 active:scale-95 shadow-2xs shrink-0" title="Переключить скорость речи на немецком">
+                        <span id="dialogueSpeedIcon">🐢</span>
+                        <span id="dialogueSpeedText">0.75x</span>
+                    </button>
+                    <button onclick="startDialogueLiveCoach()" class="px-2.5 py-1.5 bg-gradient-to-r from-fuchsia-600 to-pink-600 text-white font-bold text-xs rounded-xl transition flex items-center gap-1 active:scale-95 shadow-2xs shrink-0" title="Живая симуляция с AI-наставником">
                         <span>🎙</span>
                         <span class="hidden sm:inline">Live AI</span>
                     </button>
                 </div>
 
-                <!-- 3 Вкладки (Сегментированный переключатель) -->
-                <div class="bg-slate-200/60 p-1 rounded-2xl flex items-center gap-1 mb-2.5 shrink-0 border border-slate-200">
-                    <button onclick="switchDialogueTab('vocab')" id="diagTabBtn-vocab" class="flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 bg-white text-indigo-700 shadow-xs border border-white">
-                        <span>📚</span>
-                        <span>Словарь</span>
+                <!-- 4 Пошаговые вкладки (От простого к сложному) -->
+                <div class="bg-slate-200/60 p-1 rounded-2xl flex items-center gap-1 mb-2.5 shrink-0 border border-slate-200 text-xs">
+                    <button onclick="switchDialogueTab('vocab')" id="diagTabBtn-vocab" class="flex-1 py-1.5 px-1 rounded-xl font-bold transition flex items-center justify-center gap-0.5 sm:gap-1 bg-white text-indigo-700 shadow-xs border border-white">
+                        <span>🔤</span>
+                        <span class="truncate">1. Слова</span>
                     </button>
-                    <button onclick="switchDialogueTab('script')" id="diagTabBtn-script" class="flex-1 py-1.5 px-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1">
+                    <button onclick="switchDialogueTab('chunks')" id="diagTabBtn-chunks" class="flex-1 py-1.5 px-1 rounded-xl font-semibold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-0.5 sm:gap-1">
+                        <span>🧩</span>
+                        <span class="truncate">2. Чанки</span>
+                    </button>
+                    <button onclick="switchDialogueTab('script')" id="diagTabBtn-script" class="flex-1 py-1.5 px-1 rounded-xl font-semibold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-0.5 sm:gap-1">
                         <span>📜</span>
-                        <span>Диалог</span>
+                        <span class="truncate">3. Диалог</span>
                     </button>
-                    <button onclick="switchDialogueTab('trainer')" id="diagTabBtn-trainer" class="flex-1 py-1.5 px-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1">
+                    <button onclick="switchDialogueTab('trainer')" id="diagTabBtn-trainer" class="flex-1 py-1.5 px-1 rounded-xl font-semibold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-0.5 sm:gap-1">
                         <span>🎙</span>
-                        <span>Тренажер</span>
+                        <span class="truncate">4. Тренажер</span>
                     </button>
                 </div>
 
@@ -1104,7 +1113,7 @@
     <audio id="liveGlobalAudioPlayer" preload="auto" playsinline webkit-playsinline class="hidden"></audio>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    <script src="/static/duolingo/duolingo.js?v=31"></script>
-    <script src="/static/app.js?v=31"></script>
+    <script src="/static/duolingo/duolingo.js?v=32"></script>
+    <script src="/static/app.js?v=32"></script>
 </body>
 </html>

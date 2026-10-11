@@ -956,6 +956,11 @@ async function playTTS(btn, text, voice) {
 
     const startAudioPlayback = (audioSrc) => {
         player.src = audioSrc;
+        if (selectedVoice && selectedVoice.startsWith('de-DE')) {
+            player.playbackRate = currentGermanSpeechRate || 0.75;
+        } else {
+            player.playbackRate = 1.0;
+        }
         currentTTSAudio = player;
         currentTTSBtn = targetBtn;
         currentTTSText = cleanText;
@@ -1035,6 +1040,40 @@ function updateLiveSoundUI() {
 }
 
 let liveSlowVoiceEnabled = localStorage.getItem('ai_coach_live_slow') === 'true';
+let currentGermanSpeechRate = parseFloat(localStorage.getItem('ai_coach_german_speech_rate') || '0.75');
+let currentDialogueCardIdx = 0;
+let isDialogueCardFlipped = false;
+
+function updateDialogueSpeedUI() {
+    const icon = document.getElementById('dialogueSpeedIcon');
+    const text = document.getElementById('dialogueSpeedText');
+    if (!text) return;
+    text.textContent = `${currentGermanSpeechRate}x`;
+    if (icon) {
+        if (currentGermanSpeechRate <= 0.75) icon.textContent = '🐢';
+        else if (currentGermanSpeechRate <= 0.85) icon.textContent = '🚶';
+        else icon.textContent = '🐇';
+    }
+}
+
+function cycleGermanSpeed() {
+    if (currentGermanSpeechRate <= 0.75) {
+        currentGermanSpeechRate = 0.85;
+    } else if (currentGermanSpeechRate <= 0.85) {
+        currentGermanSpeechRate = 1.0;
+    } else {
+        currentGermanSpeechRate = 0.75;
+    }
+    localStorage.setItem('ai_coach_german_speech_rate', currentGermanSpeechRate.toString());
+    updateDialogueSpeedUI();
+    if (currentLiveAudio) {
+        currentLiveAudio.playbackRate = currentGermanSpeechRate;
+    }
+    if (currentTTSAudio) {
+        currentTTSAudio.playbackRate = currentGermanSpeechRate;
+    }
+    showToastNotification(`Скорость немецкой речи: ${currentGermanSpeechRate}x ${currentGermanSpeechRate <= 0.75 ? '🐢' : currentGermanSpeechRate <= 0.85 ? '🚶' : '🐇'}`);
+}
 
 function updateLiveSlowUI() {
     const text = document.getElementById('liveSlowText');
@@ -1057,7 +1096,10 @@ function toggleSlowVoiceMode() {
     liveSlowVoiceEnabled = !liveSlowVoiceEnabled;
     localStorage.setItem('ai_coach_live_slow', liveSlowVoiceEnabled);
     if (currentLiveAudio) {
-        currentLiveAudio.playbackRate = liveSlowVoiceEnabled ? 0.8 : 1.0;
+        const effectiveRate = (liveCoachMode === 'german' || liveCoachMode === 'german_dialogue') 
+            ? (currentGermanSpeechRate || 0.75) 
+            : (liveSlowVoiceEnabled ? 0.8 : 1.0);
+        currentLiveAudio.playbackRate = effectiveRate;
     }
     updateLiveSlowUI();
 }
@@ -1295,7 +1337,7 @@ function startBrowserSpeechRecognition() {
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
         const isAndroid = /Android/i.test(navigator.userAgent);
         liveRecognition = new SpeechRecognition();
-        liveRecognition.lang = (liveCoachMode === 'german') ? 'de-DE' : 'ru-RU';
+        liveRecognition.lang = (liveCoachMode === 'german' || liveCoachMode === 'german_dialogue') ? 'de-DE' : 'ru-RU';
         // На iOS и Android continuous: true вызывает сбросы и повторные бипы (ding) микрофона каждые 2 секунды.
         // Поэтому на мобильных ставим continuous = false и мягко накапливаем текст между сессиями.
         liveRecognition.continuous = !(isIOS || isAndroid);
@@ -1471,10 +1513,10 @@ function playNextInAudioQueue() {
         }
         const blob = new Blob([bytes], { type: 'audio/mpeg' });
         const player = document.getElementById('liveGlobalAudioPlayer') || new Audio();
-        player.src = URL.createObjectURL(blob);
-        if (liveSlowVoiceEnabled) {
-            player.playbackRate = 0.8;
-        }
+        const effectiveRate = (liveCoachMode === 'german' || liveCoachMode === 'german_dialogue')
+            ? (currentGermanSpeechRate || 0.75)
+            : (liveSlowVoiceEnabled ? 0.8 : 1.0);
+        player.playbackRate = effectiveRate;
         currentLiveAudio = player;
 
         currentLiveAudio.onended = () => {
@@ -1691,9 +1733,10 @@ async function playLiveTTS(text) {
             const blob = await res.blob();
             const player = document.getElementById('liveGlobalAudioPlayer') || new Audio();
             player.src = URL.createObjectURL(blob);
-            if (liveSlowVoiceEnabled) {
-                player.playbackRate = 0.8;
-            }
+            const effectiveRate = (liveCoachMode === 'german' || liveCoachMode === 'german_dialogue')
+                ? (currentGermanSpeechRate || 0.75)
+                : (liveSlowVoiceEnabled ? 0.8 : 1.0);
+            player.playbackRate = effectiveRate;
             currentLiveAudio = player;
 
             // КАК ТОЛЬКО КОУЧ ИЛИ ТРЕНЕР ЗАКОНЧИЛ ГОВОРИТЬ -> ВКЛЮЧАЕТСЯ МИКРОФОН (ВОПРОС-ОТВЕТ)
@@ -1749,9 +1792,10 @@ async function playLiveAudioBase64(base64Data) {
 
             const player = document.getElementById('liveGlobalAudioPlayer') || new Audio();
             player.src = URL.createObjectURL(blob);
-            if (liveSlowVoiceEnabled) {
-                player.playbackRate = 0.8;
-            }
+            const effectiveRate = (liveCoachMode === 'german' || liveCoachMode === 'german_dialogue')
+                ? (currentGermanSpeechRate || 0.75)
+                : (liveSlowVoiceEnabled ? 0.8 : 1.0);
+            player.playbackRate = effectiveRate;
             currentLiveAudio = player;
 
             currentLiveAudio.onended = () => {
@@ -1870,9 +1914,12 @@ function startDictationSession() {
             chatDictationRecognition = null;
         }
 
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        const isAndroid = /Android/i.test(navigator.userAgent);
+
         const rec = new SpeechRecognition();
         rec.lang = 'ru-RU';
-        rec.continuous = true;
+        rec.continuous = !(isIOS || isAndroid);
         rec.interimResults = true;
 
         rec.onresult = (e) => {
@@ -1891,11 +1938,12 @@ function startDictationSession() {
             }
 
             if (currentFinal) {
-                chatDictationSessionFinal = (chatDictationSessionFinal + ' ' + currentFinal).replace(/\s+/g, ' ').trim();
+                chatDictationSessionFinal = deduplicateSpokenText(chatDictationSessionFinal + ' ' + currentFinal);
             }
             chatDictationCurrentInterim = currentInterim;
 
-            const spokenSoFar = (chatDictationSessionFinal + ' ' + currentInterim).replace(/\s+/g, ' ').trim();
+            const spokenRaw = (chatDictationSessionFinal + ' ' + currentInterim).replace(/\s+/g, ' ').trim();
+            const spokenSoFar = deduplicateSpokenText(spokenRaw);
             const input = document.getElementById('chatInput');
             if (input && spokenSoFar) {
                 input.value = (chatDictationBaseText + spokenSoFar).trim();
@@ -1913,7 +1961,7 @@ function startDictationSession() {
         rec.onend = () => {
             // Фиксируем промежуточный текст перед перезапуском
             if (chatDictationCurrentInterim) {
-                chatDictationSessionFinal = (chatDictationSessionFinal + ' ' + chatDictationCurrentInterim).replace(/\s+/g, ' ').trim();
+                chatDictationSessionFinal = deduplicateSpokenText(chatDictationSessionFinal + ' ' + chatDictationCurrentInterim);
                 chatDictationCurrentInterim = '';
             }
 
@@ -1926,7 +1974,7 @@ function startDictationSession() {
                     if (isChatDictating && !chatDictationRecognition) {
                         startDictationSession();
                     }
-                }, 150);
+                }, 100);
             }
         };
 
@@ -1960,7 +2008,7 @@ async function stopChatDictation() {
     }
 
     if (chatDictationCurrentInterim) {
-        chatDictationSessionFinal = (chatDictationSessionFinal + ' ' + chatDictationCurrentInterim).replace(/\s+/g, ' ').trim();
+        chatDictationSessionFinal = deduplicateSpokenText(chatDictationSessionFinal + ' ' + chatDictationCurrentInterim);
         chatDictationCurrentInterim = '';
     }
 
@@ -3842,21 +3890,24 @@ function openGermanDialogueDetail(dialogueId) {
     if (!activeDialogue) return;
     activeDialogueTab = 'vocab';
     activeTrainerStep = 0;
+    currentDialogueCardIdx = 0;
+    isDialogueCardFlipped = false;
     trainerSelectedWords = [];
     stopDialogueFullAudio();
     stopTrainerDictation();
+    updateDialogueSpeedUI();
     setGermanViewMode('dialogue_detail');
 }
 
 function switchDialogueTab(tab) {
     activeDialogueTab = tab;
-    ['vocab', 'script', 'trainer'].forEach(t => {
+    ['vocab', 'chunks', 'script', 'trainer'].forEach(t => {
         const btn = document.getElementById('diagTabBtn-' + t);
         if (btn) {
             if (t === tab) {
-                btn.className = 'flex-1 py-1.5 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 bg-white text-indigo-700 shadow-xs border border-white';
+                btn.className = 'flex-1 py-1.5 px-1 rounded-xl font-bold transition flex items-center justify-center gap-0.5 sm:gap-1 bg-white text-indigo-700 shadow-xs border border-white';
             } else {
-                btn.className = 'flex-1 py-1.5 px-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-1';
+                btn.className = 'flex-1 py-1.5 px-1 rounded-xl font-semibold text-slate-600 hover:text-slate-900 transition flex items-center justify-center gap-0.5 sm:gap-1';
             }
         }
     });
@@ -3876,11 +3927,15 @@ function renderDialogueDetailView() {
     if (partnerEl) partnerEl.textContent = `${activeDialogue.partner_avatar || '🗣'} ${activeDialogue.partner_role}`;
     if (levelEl) levelEl.textContent = activeDialogue.level;
 
+    updateDialogueSpeedUI();
+
     const contentArea = document.getElementById('dialogueTabContentArea');
     if (!contentArea) return;
 
     if (activeDialogueTab === 'vocab') {
         renderDialogueVocabTab(contentArea);
+    } else if (activeDialogueTab === 'chunks') {
+        renderDialogueChunksTab(contentArea);
     } else if (activeDialogueTab === 'script') {
         renderDialogueScriptTab(contentArea);
     } else if (activeDialogueTab === 'trainer') {
@@ -3888,12 +3943,57 @@ function renderDialogueDetailView() {
     }
 }
 
+function flipDialogueCard() {
+    isDialogueCardFlipped = !isDialogueCardFlipped;
+    const cardEl = document.getElementById('dialogueFlashcardWidget');
+    if (cardEl) {
+        cardEl.classList.toggle('flipped', isDialogueCardFlipped);
+    }
+    const frontSide = document.getElementById('dialogueCardFront');
+    const backSide = document.getElementById('dialogueCardBack');
+    if (frontSide && backSide) {
+        if (isDialogueCardFlipped) {
+            frontSide.classList.add('hidden');
+            backSide.classList.remove('hidden');
+        } else {
+            frontSide.classList.remove('hidden');
+            backSide.classList.add('hidden');
+        }
+    }
+}
+
+function nextDialogueCard() {
+    if (!activeDialogue || !activeDialogue.vocabulary || activeDialogue.vocabulary.length === 0) return;
+    isDialogueCardFlipped = false;
+    currentDialogueCardIdx = (currentDialogueCardIdx + 1) % activeDialogue.vocabulary.length;
+    if (window.lingoEngine && typeof lingoEngine.addXp === 'function') {
+        lingoEngine.addXp(2);
+    }
+    const contentArea = document.getElementById('dialogueTabContentArea');
+    if (contentArea) renderDialogueVocabTab(contentArea);
+}
+
+function prevDialogueCard() {
+    if (!activeDialogue || !activeDialogue.vocabulary || activeDialogue.vocabulary.length === 0) return;
+    isDialogueCardFlipped = false;
+    currentDialogueCardIdx = (currentDialogueCardIdx - 1 + activeDialogue.vocabulary.length) % activeDialogue.vocabulary.length;
+    const contentArea = document.getElementById('dialogueTabContentArea');
+    if (contentArea) renderDialogueVocabTab(contentArea);
+}
+
 // -------------------------------------------------------------------------
-// ВКЛАДКА 1: СЛОВАРЬ И РЕЧЕВЫЕ КАРКАСЫ (Wortschatz & Redemittel)
+// ВКЛАДКА 1: СЛОВАРЬ И ИНТЕРАКТИВНЫЕ КАРТОЧКИ (Wortschatz & Flashcards)
 // -------------------------------------------------------------------------
 function renderDialogueVocabTab(container) {
     const vocab = activeDialogue.vocabulary || [];
-    const redemittel = activeDialogue.redemittel || [];
+    const currentCard = (vocab.length > 0) ? (vocab[currentDialogueCardIdx] || vocab[0]) : null;
+
+    let badgeClass = 'badge-die';
+    if (currentCard) {
+        if (currentCard.gender === 'der') badgeClass = 'badge-der';
+        else if (currentCard.gender === 'das') badgeClass = 'badge-das';
+        else if (currentCard.gender === 'die Pl.' || currentCard.gender === 'pl') badgeClass = 'badge-die-pl';
+    }
 
     let html = `
         <div class="space-y-4">
@@ -3906,24 +4006,84 @@ function renderDialogueVocabTab(container) {
                 <p class="text-[11px] text-slate-600 leading-relaxed">${escapeHtml(activeDialogue.description_ru)}</p>
             </div>
 
-            <!-- Раздел 1: Ключевая лексика (Wortschatz) -->
-            <div class="space-y-2">
+            <!-- Шаг 1: Интерактивная карточка со словом (Flashcard Flip Widget) -->
+            ${currentCard ? `
+                <div class="bg-gradient-to-br from-indigo-50/90 via-purple-50/40 to-white border border-indigo-200/90 rounded-2xl p-4 shadow-2xs space-y-3">
+                    <div class="flex items-center justify-between text-xs font-bold">
+                        <span class="flex items-center gap-1.5 text-indigo-950 font-black">
+                            <span>🎴</span>
+                            <span>Карточка ${currentDialogueCardIdx + 1} из ${vocab.length}</span>
+                        </span>
+                        <span class="text-indigo-700 bg-white border border-indigo-200 px-2.5 py-0.5 rounded-full text-[10px] font-black shadow-2xs">+2 XP за слово</span>
+                    </div>
+
+                    <!-- Интерактивная карточка (нажмите для переворота) -->
+                    <div onclick="flipDialogueCard()" id="dialogueFlashcardWidget" class="cursor-pointer bg-white border-2 border-indigo-200 hover:border-indigo-400 rounded-2xl p-5 shadow-sm text-center min-h-[145px] flex flex-col justify-center items-center transition-all duration-200 active:scale-[0.99] select-none">
+                        <div id="dialogueCardFront" class="${isDialogueCardFlipped ? 'hidden' : 'block'} space-y-2 w-full">
+                            <div>
+                                <span class="inline-block text-[11px] font-black px-2.5 py-0.5 rounded-md ${badgeClass}">
+                                    ${escapeHtml(currentCard.gender || 'Wort')}
+                                </span>
+                            </div>
+                            <div class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                                ${escapeHtml(currentCard.german)}
+                            </div>
+                            <div class="text-[11px] text-indigo-600 font-semibold pt-1">
+                                👆 Нажмите, чтобы увидеть перевод
+                            </div>
+                        </div>
+
+                        <div id="dialogueCardBack" class="${isDialogueCardFlipped ? 'block' : 'hidden'} space-y-2 w-full">
+                            <div class="text-base sm:text-lg font-black text-indigo-950">
+                                ${escapeHtml(currentCard.russian)}
+                            </div>
+                            ${currentCard.plural ? `<div class="text-xs text-purple-700 font-bold">Plural: ${escapeHtml(currentCard.plural)}</div>` : ''}
+                            ${currentCard.example ? `<div class="text-xs text-slate-600 italic bg-slate-50 p-2 rounded-xl mt-1 border border-slate-100">„${escapeHtml(currentCard.example)}“</div>` : ''}
+                            <div class="text-[10px] text-slate-400 font-medium pt-1">
+                                👆 Нажмите, чтобы вернуться к слову
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Панель управления карточкой -->
+                    <div class="flex items-center justify-between gap-2 pt-0.5">
+                        <button onclick="prevDialogueCard()" class="px-3 py-2 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold transition active:scale-95 shadow-2xs">
+                            ⬅ Назад
+                        </button>
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="playTTS(this, '${escapeQuotes(currentCard.german)}', '${currentCard.voice_hint || activeDialogue.partner_voice || 'de-DE-KatjaNeural'}')" class="px-3 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 rounded-xl text-xs font-bold transition active:scale-95 shadow-2xs flex items-center gap-1" title="Озвучить немецкое слово медленно">
+                                <span>🔊</span>
+                                <span>🐢 ${currentGermanSpeechRate}x</span>
+                            </button>
+                            <button onclick="flipDialogueCard()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition active:scale-95 shadow-2xs">
+                                🔄 Перевернуть
+                            </button>
+                        </div>
+                        <button onclick="nextDialogueCard()" class="px-3 py-2 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold transition active:scale-95 shadow-2xs">
+                            Вперёд ➔
+                        </button>
+                    </div>
+                </div>
+            ` : ''}
+
+            <!-- Раздел: Полный список ключевой лексики (Wortschatz) -->
+            <div class="space-y-2 pt-1">
                 <div class="flex items-center justify-between px-1">
                     <h5 class="text-xs font-black text-slate-800 flex items-center gap-1.5">
                         <span>📚</span>
-                        <span>Ключевая лексика (${vocab.length} слов)</span>
+                        <span>Все слова темы (${vocab.length} слов)</span>
                     </h5>
-                    <span class="text-[10px] text-slate-400 font-medium">Нажмите 🔊 для произношения</span>
+                    <span class="text-[10px] text-slate-400 font-medium">Нажмите 🔊 для звука</span>
                 </div>
 
                 <div class="space-y-2">
     `;
 
     vocab.forEach((w) => {
-        let badgeClass = 'badge-die';
-        if (w.gender === 'der') badgeClass = 'badge-der';
-        else if (w.gender === 'das') badgeClass = 'badge-das';
-        else if (w.gender === 'die Pl.' || w.gender === 'pl') badgeClass = 'badge-die-pl';
+        let bClass = 'badge-die';
+        if (w.gender === 'der') bClass = 'badge-der';
+        else if (w.gender === 'das') bClass = 'badge-das';
+        else if (w.gender === 'die Pl.' || w.gender === 'pl') bClass = 'badge-die-pl';
 
         const voiceToUse = w.voice_hint || activeDialogue.partner_voice || 'de-DE-KatjaNeural';
 
@@ -3932,13 +4092,13 @@ function renderDialogueVocabTab(container) {
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 flex-wrap">
                         <span class="font-black text-xs sm:text-sm text-slate-900">${escapeHtml(w.german)}</span>
-                        ${w.gender ? `<span class="text-[10px] font-bold px-2 py-0.2 rounded-md ${badgeClass}">${escapeHtml(w.gender)}</span>` : ''}
+                        ${w.gender ? `<span class="text-[10px] font-bold px-2 py-0.2 rounded-md ${bClass}">${escapeHtml(w.gender)}</span>` : ''}
                     </div>
                     <p class="text-xs text-slate-600 font-medium mt-0.5">${escapeHtml(w.russian)}</p>
                     ${w.plural ? `<p class="text-[10px] text-purple-700/80 font-semibold mt-0.5">Plural: ${escapeHtml(w.plural)}</p>` : ''}
                     ${w.example ? `<p class="text-[10px] text-slate-400 italic mt-0.5">„${escapeHtml(w.example)}“</p>` : ''}
                 </div>
-                <button onclick="playTTS(this, '${escapeQuotes(w.german)}', '${voiceToUse}')" class="p-2 sm:px-3 sm:py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl font-bold text-xs transition active:scale-95 flex items-center gap-1 shrink-0" title="Озвучить немецкое слово">
+                <button onclick="playTTS(this, '${escapeQuotes(w.german)}', '${voiceToUse}')" class="p-2 sm:px-3 sm:py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl font-bold text-xs transition active:scale-95 flex items-center gap-1 shrink-0" title="Озвучить слово">
                     <span>🔊</span>
                 </button>
             </div>
@@ -3949,36 +4109,69 @@ function renderDialogueVocabTab(container) {
                 </div>
             </div>
 
-            <!-- Раздел 2: Речевые каркасы (Redemittel) -->
-            <div class="space-y-2 pt-2">
+            <!-- Нижняя кнопка перехода к Шагу 2 (Чанки) -->
+            <div class="pt-3">
+                <button onclick="switchDialogueTab('chunks')" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-2xl font-black text-xs sm:text-sm shadow-md hover:opacity-95 transition active:scale-[0.98] flex items-center justify-center gap-2">
+                    <span>Шаг 2. Перейти к речевым чанкам (Redemittel)</span>
+                    <span>➔</span>
+                </button>
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+// -------------------------------------------------------------------------
+// ВКЛАДКА 2: РЕЧЕВЫЕ КАРКАСЫ И ЧАНКИ (Redemittel B1)
+// -------------------------------------------------------------------------
+function renderDialogueChunksTab(container) {
+    const redemittel = activeDialogue.redemittel || [];
+
+    let html = `
+        <div class="space-y-4">
+            <!-- Инфо-баннер методики чанков -->
+            <div class="bg-gradient-to-br from-indigo-50 to-blue-50/70 border border-indigo-200/90 rounded-2xl p-3.5 space-y-1">
+                <div class="flex items-center gap-1.5 text-xs font-black text-indigo-950">
+                    <span>🧩</span>
+                    <span>Речевые чанки и каркасы (Redemittel B1)</span>
+                </div>
+                <p class="text-[11px] text-slate-600 leading-relaxed">
+                    Чанки — это готовые фразовые блоки из 3-4 слов. Запоминайте их целиком: так речь льётся на автомате без запинок и размышлений о падежах!
+                </p>
+            </div>
+
+            <!-- Список чанков -->
+            <div class="space-y-2.5">
                 <div class="flex items-center justify-between px-1">
                     <h5 class="text-xs font-black text-slate-800 flex items-center gap-1.5">
                         <span>💡</span>
-                        <span>Готовые фразы и каркасы (${redemittel.length} чанков)</span>
+                        <span>Готовые конструкции (${redemittel.length} чанков)</span>
                     </h5>
-                    <span class="text-[10px] text-indigo-600 font-semibold">Шаблоны B1</span>
+                    <span class="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200/60">Шаблоны B1</span>
                 </div>
-
                 <div class="space-y-2">
     `;
 
     redemittel.forEach((c) => {
         const voiceToUse = c.voice_hint || activeDialogue.partner_voice || 'de-DE-KatjaNeural';
-
         html += `
-            <div class="bg-gradient-to-br from-white to-indigo-50/30 rounded-2xl p-3 border border-indigo-100 shadow-2xs flex items-center justify-between gap-2.5">
-                <div class="flex-1 min-w-0">
-                    <div class="font-bold text-xs sm:text-sm text-indigo-950">${escapeHtml(c.chunk_de)}</div>
-                    <div class="text-xs text-slate-600 font-medium mt-0.5">${escapeHtml(c.translation_ru)}</div>
-                    ${c.usage_tip ? `
-                        <div class="inline-block mt-1 bg-amber-50 border border-amber-200/70 text-amber-800 text-[10px] font-semibold px-2 py-0.5 rounded-md">
-                            💡 ${escapeHtml(c.usage_tip)}
-                        </div>
-                    ` : ''}
+            <div class="bg-white hover:border-indigo-300 rounded-2xl p-3.5 border border-slate-200/90 shadow-2xs space-y-2 transition">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="flex-1 min-w-0">
+                        <div class="font-black text-xs sm:text-sm text-indigo-950 leading-snug">${escapeHtml(c.chunk_de)}</div>
+                        <div class="text-xs text-slate-600 font-medium mt-1">${escapeHtml(c.translation_ru)}</div>
+                    </div>
+                    <button onclick="playTTS(this, '${escapeQuotes(c.chunk_de)}', '${voiceToUse}')" class="p-2 sm:px-3 sm:py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl font-bold text-xs transition active:scale-95 flex items-center gap-1 shrink-0" title="Озвучить чанк медленно">
+                        <span>🔊</span>
+                    </button>
                 </div>
-                <button onclick="playTTS(this, '${escapeQuotes(c.chunk_de)}', '${voiceToUse}')" class="p-2 sm:px-3 sm:py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl font-bold text-xs transition active:scale-95 flex items-center gap-1 shrink-0" title="Озвучить речевой каркас">
-                    <span>🔊</span>
-                </button>
+                ${c.usage_tip ? `
+                    <div class="bg-amber-50/80 border border-amber-200/70 text-amber-900 text-[10px] font-semibold px-2.5 py-1 rounded-xl flex items-center gap-1.5">
+                        <span>💡</span>
+                        <span>${escapeHtml(c.usage_tip)}</span>
+                    </div>
+                ` : ''}
             </div>
         `;
     });
@@ -3987,10 +4180,10 @@ function renderDialogueVocabTab(container) {
                 </div>
             </div>
 
-            <!-- Нижняя кнопка перехода к эталонному диалогу -->
+            <!-- Нижняя кнопка перехода к Шагу 3 (Диалог) -->
             <div class="pt-3">
                 <button onclick="switchDialogueTab('script')" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-2xl font-black text-xs sm:text-sm shadow-md hover:opacity-95 transition active:scale-[0.98] flex items-center justify-center gap-2">
-                    <span>Перейти к эталонному диалогу</span>
+                    <span>Шаг 3. Перейти к эталонному диалогу</span>
                     <span>➔</span>
                 </button>
             </div>
@@ -4073,7 +4266,7 @@ function renderDialogueScriptTab(container) {
             <!-- Нижняя кнопка перехода к интерактивному тренажеру -->
             <div class="pt-3">
                 <button onclick="switchDialogueTab('trainer')" class="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-2xl font-black text-xs sm:text-sm shadow-md hover:opacity-95 transition active:scale-[0.98] flex items-center justify-center gap-2">
-                    <span>🎙 Запустить интерактивный тренажер</span>
+                    <span>Шаг 4. Запустить интерактивный тренажер реплик</span>
                     <span>➔</span>
                 </button>
             </div>
@@ -4184,6 +4377,7 @@ function playDialogueTurnPromise(text, voice) {
             if (!isDialoguePlayingAll) { resolve(); return; }
             const url = URL.createObjectURL(blob);
             audio.src = url;
+            audio.playbackRate = currentGermanSpeechRate || 0.75;
             audio.onended = () => resolve();
             audio.onerror = () => resolve();
             audio.play().catch(() => resolve());
@@ -4545,6 +4739,53 @@ function renderTrainerCelebration(container) {
     `;
 }
 
+function levenshteinDistance(s1, s2) {
+    if (!s1) return (s2 || '').length;
+    if (!s2) return s1.length;
+    s1 = s1.toLowerCase();
+    s2 = s2.toLowerCase();
+    const d = [];
+    for (let i = 0; i <= s1.length; i++) {
+        d[i] = [i];
+    }
+    for (let j = 0; j <= s2.length; j++) {
+        d[0][j] = j;
+    }
+    for (let i = 1; i <= s1.length; i++) {
+        for (let j = 1; j <= s2.length; j++) {
+            const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
+            d[i][j] = Math.min(
+                d[i - 1][j] + 1,
+                d[i][j - 1] + 1,
+                d[i - 1][j - 1] + cost
+            );
+        }
+    }
+    return d[s1.length][s2.length];
+}
+
+function snapSpokenWordToBank(spokenWord, bankWords) {
+    const cleanSpoken = (spokenWord || '').toLowerCase().replace(/[.,!?;:«»"']/g, '').trim();
+    if (!cleanSpoken || !bankWords || bankWords.length === 0) return spokenWord;
+
+    let bestMatch = spokenWord;
+    let minDistance = 999;
+
+    for (const bankWord of bankWords) {
+        const cleanBank = bankWord.toLowerCase().replace(/[.,!?;:«»"']/g, '').trim();
+        if (cleanBank === cleanSpoken) {
+            return bankWord;
+        }
+        const dist = levenshteinDistance(cleanSpoken, cleanBank);
+        const maxAllowed = Math.max(1, Math.min(3, Math.floor(cleanBank.length * 0.4)));
+        if (dist <= maxAllowed && dist < minDistance) {
+            minDistance = dist;
+            bestMatch = bankWord;
+        }
+    }
+    return bestMatch;
+}
+
 // Голосовой ввод на немецком в тренажере
 function toggleTrainerDictation() {
     if (isTrainerDictating) {
@@ -4588,8 +4829,30 @@ function startTrainerDictation() {
                 tr += e.results[i][0].transcript;
             }
             if (tr.trim()) {
-                const words = tr.trim().split(/\s+/);
-                trainerSelectedWords = words.map(w => ({ word: w, btn: null }));
+                const spokenTokens = tr.trim().split(/\s+/);
+                const userTurns = (activeDialogue.dialogue || []).filter(t => t.speaker === 'user');
+                const currentTurn = userTurns[activeTrainerStep];
+                const bank = (currentTurn && currentTurn.word_bank) 
+                    ? currentTurn.word_bank 
+                    : (currentTurn ? currentTurn.suggested_answer.split(/\s+/) : []);
+
+                // Сбрасываем выбранные ранее чипы в интерфейсе
+                trainerSelectedWords.forEach(i => { if (i.btn) i.btn.classList.remove('used'); });
+                trainerSelectedWords = [];
+
+                const bankButtons = Array.from(document.querySelectorAll('#trainerWordBankTokens .word-bank-chip'));
+
+                spokenTokens.forEach(sp => {
+                    const snapped = snapSpokenWordToBank(sp, bank);
+                    const matchingBtn = bankButtons.find(b => !b.classList.contains('used') && normalizeTrainerGerman(b.textContent) === normalizeTrainerGerman(snapped));
+                    if (matchingBtn) {
+                        matchingBtn.classList.add('used');
+                        trainerSelectedWords.push({ word: snapped, btn: matchingBtn });
+                    } else {
+                        trainerSelectedWords.push({ word: snapped, btn: null });
+                    }
+                });
+
                 updateTrainerSentenceDisplay();
             }
         };

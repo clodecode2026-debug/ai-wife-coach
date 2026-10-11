@@ -4171,22 +4171,22 @@ function playDialogueTurnPromise(text, voice) {
         stopCurrentTTS();
         currentTTSAudio = audio;
 
-        fetch('/api/tts', {
+        fetch('/api/voice/tts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: text, voice: voice })
         })
-        .then(res => res.json())
-        .then(data => {
+        .then(res => {
+            if (!res.ok) throw new Error('TTS failed');
+            return res.blob();
+        })
+        .then(blob => {
             if (!isDialoguePlayingAll) { resolve(); return; }
-            if (data.audio_base64) {
-                audio.src = 'data:audio/mp3;base64,' + data.audio_base64;
-                audio.onended = () => resolve();
-                audio.onerror = () => resolve();
-                audio.play().catch(() => resolve());
-            } else {
-                resolve();
-            }
+            const url = URL.createObjectURL(blob);
+            audio.src = url;
+            audio.onended = () => resolve();
+            audio.onerror = () => resolve();
+            audio.play().catch(() => resolve());
         })
         .catch(() => resolve());
     });

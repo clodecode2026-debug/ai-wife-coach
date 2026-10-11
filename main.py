@@ -555,6 +555,7 @@ def clean_speech_text(text: str) -> str:
     return re.sub(r'\s+', ' ', text).strip()
 
 @app.post("/api/voice/tts")
+@app.post("/api/tts")
 async def api_tts(req: TTSRequest):
     if not HAS_EDGE_TTS:
         raise HTTPException(status_code=500, detail="edge-tts не установлена")

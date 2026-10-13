@@ -7,8 +7,9 @@
  * ФУНКЦИОНАЛ:
  * 1. window.GeminiLiveCoach — глобальный унифицированный движок:
  *    - Поддержка AudioWorklet 16кГц PCM (iPhone Safari, Android, Desktop)
- *    - Потоковый плеер 24кГц PCM без задержек и щелчков
- *    - Двусторонний VAD, Barge-in (перебивание голосом в реальном времени)
+ *    - Потоковый плеер 24кГц PCM БЕЗ НАЛОЖЕНИЯ ГОЛОСОВ (строго последовательный шедулинг)
+ *    - Выбор из 5 качественных голосов: Aoede, Kore, Puck, Fenrir, Charon
+ *    - Двусторонний VAD, Barge-in (мгновенное прерывание)
  *    - Управление из вкладки #tab-live ("Голос"), модального окна и диалогов
  * 2. Уютный оверлей с пульсирующим 3D-орбом и субтитрами (автономный режим)
  * --------------------------------------------------------------------------------
@@ -83,18 +84,19 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 8px;
     }
-    .coach-mode-select {
+    .coach-mode-select, .coach-voice-select {
       background: rgba(255, 255, 255, 0.12);
       border: 1px solid rgba(255, 255, 255, 0.2);
       color: #ffffff;
-      padding: 8px 14px;
+      padding: 8px 12px;
       border-radius: 20px;
-      font-size: 14px;
+      font-size: 13px;
       outline: none;
       cursor: pointer;
     }
-    .coach-mode-select option {
+    .coach-mode-select option, .coach-voice-select option {
       background: #1e1b4b;
       color: #ffffff;
     }
@@ -108,6 +110,7 @@
       border-radius: 50%;
       font-size: 18px;
       cursor: pointer;
+      shrink: 0;
     }
 
     /* Пульсирующий Орб */
@@ -198,13 +201,22 @@
   triggerBtn.innerHTML = `<span class="coach-live-pulse-dot"></span><span>Голосовой коуч</span>`;
   document.body.appendChild(triggerBtn);
 
+  const initialSavedVoice = localStorage.getItem('ai_coach_voice_name') || 'Aoede';
+
   const modal = document.createElement('div');
   modal.id = 'coach-live-modal';
   modal.innerHTML = `
     <div class="coach-live-header">
       <select id="coach-mode-select" class="coach-mode-select">
-        <option value="coach" selected>🧘 Личный коуч (Психолог)</option>
-        <option value="german">🇩🇪 Практика немецкого (A1-B2)</option>
+        <option value="coach" selected>🧘 Личный коуч</option>
+        <option value="german">🇩🇪 Немецкий (A1-B2)</option>
+      </select>
+      <select id="coach-voice-select" class="coach-voice-select" title="Выбор голоса">
+        <option value="Aoede" ${initialSavedVoice === 'Aoede' ? 'selected' : ''}>👩 Aoede (Тёплый)</option>
+        <option value="Kore" ${initialSavedVoice === 'Kore' ? 'selected' : ''}>🌸 Kore (Нежный)</option>
+        <option value="Puck" ${initialSavedVoice === 'Puck' ? 'selected' : ''}>✨ Puck (Бодрый)</option>
+        <option value="Fenrir" ${initialSavedVoice === 'Fenrir' ? 'selected' : ''}>🧔 Fenrir (Мужской)</option>
+        <option value="Charon" ${initialSavedVoice === 'Charon' ? 'selected' : ''}>🎓 Charon (Мудрый)</option>
       </select>
       <button id="coach-close-modal" class="coach-close-btn" title="Закрыть">✕</button>
     </div>
@@ -286,7 +298,7 @@
   `;
 
   // --------------------------------------------------------------------------
-  // AUDIO STREAMER (Плеер входящего звука 24кГц от Gemini)
+  // AUDIO STREAMER (Плеер входящего звука 24кГц от Gemini БЕЗ НАЛОЖЕНИЙ)
   // --------------------------------------------------------------------------
   class AudioStreamer {
     constructor(ctx) {
@@ -300,6 +312,8 @@
       this.analyser.fftSize = 128;
       this.gainNode.connect(this.analyser);
       this.analyser.connect(this.context.destination);
+      this.activeSources = [];
+      this.scheduleTimer = null;
     }
 
     addPCM16(bytes) {
@@ -309,15 +323,21 @@
         float32[i] = view.getInt16(i * 2, true) / 32768;
       }
       this.audioQueue.push(float32);
-      if (!this.isPlaying) {
-        this.isPlaying = true;
+
+      // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Время следующего чанка строго в будущем, без наложений!
+      if (this.scheduledTime < this.context.currentTime) {
         this.scheduledTime = this.context.currentTime + 0.05;
-        this.schedule();
       }
+
+      this.isPlaying = true;
+      this.schedule();
     }
 
     schedule() {
-      while (this.audioQueue.length > 0 && this.scheduledTime < this.context.currentTime + 0.25) {
+      if (!this.isPlaying) return;
+
+      const scheduleAhead = 0.45;
+      while (this.audioQueue.length > 0 && this.scheduledTime < this.context.currentTime + scheduleAhead) {
         const data = this.audioQueue.shift();
         const buffer = this.context.createBuffer(1, data.length, this.inputSampleRate);
         buffer.getChannelData(0).set(data);
@@ -325,26 +345,53 @@
         source.buffer = buffer;
         source.connect(this.gainNode);
         source.start(this.scheduledTime);
+        this.activeSources.push(source);
+
+        source.onended = () => {
+          const idx = this.activeSources.indexOf(source);
+          if (idx !== -1) this.activeSources.splice(idx, 1);
+          if (this.activeSources.length === 0 && this.audioQueue.length === 0) {
+            this.isPlaying = false;
+          }
+        };
+
         this.scheduledTime += buffer.duration;
       }
-      if (this.audioQueue.length > 0) {
-        setTimeout(() => this.schedule(), 40);
-      } else {
+
+      if (this.scheduleTimer) {
+        clearTimeout(this.scheduleTimer);
+        this.scheduleTimer = null;
+      }
+
+      if (this.audioQueue.length > 0 || this.scheduledTime > this.context.currentTime) {
+        this.scheduleTimer = setTimeout(() => this.schedule(), 35);
+      } else if (this.activeSources.length === 0) {
         this.isPlaying = false;
       }
     }
 
     stop() {
+      if (this.scheduleTimer) {
+        clearTimeout(this.scheduleTimer);
+        this.scheduleTimer = null;
+      }
       this.audioQueue = [];
       this.isPlaying = false;
       this.scheduledTime = 0;
+
+      // Остановка всех играющих фрагментов, чтобы исключить наложение голосов при прерывании
+      for (const s of this.activeSources) {
+        try { s.stop(); s.disconnect(); } catch(e){}
+      }
+      this.activeSources = [];
+
       if (this.gainNode) {
         try {
           this.gainNode.gain.cancelScheduledValues(this.context.currentTime);
           this.gainNode.gain.setValueAtTime(0, this.context.currentTime);
           setTimeout(() => {
             if (this.gainNode) this.gainNode.gain.setValueAtTime(1, this.context.currentTime);
-          }, 50);
+          }, 40);
         } catch(e) {}
       }
     }
@@ -370,6 +417,7 @@
   let isMicMuted = false;
   let isModalActive = false;
   let currentMode = 'coach';
+  let currentVoice = initialSavedVoice;
   let activeCallbacks = {};
   let lastUserEnergy = 0;
 
@@ -384,18 +432,23 @@
     }
   }
 
-  // Запуск сессии Gemini Live
+  // Запуск сессии Gemini Live (с гарантией единственного подключения)
   async function startGeminiSession(options = {}) {
+    const savedVoice = localStorage.getItem('ai_coach_voice_name') || 'Aoede';
     const {
       mode = 'coach',
       customPrompt = null,
-      voice = 'Aoede',
+      voice = (window.currentLiveVoice || savedVoice),
       useModal = false,
       callbacks = {}
     } = options;
 
+    // КРИТИЧЕСКИ ВАЖНО: полностью завершаем предыдущую сессию перед новым стартом!
+    stopGeminiSession();
+
     activeCallbacks = callbacks || {};
     currentMode = mode;
+    currentVoice = voice;
 
     try {
       if (activeCallbacks.onStatus) activeCallbacks.onStatus('ПОДКЛЮЧЕНИЕ...', 'CONNECTING');
@@ -406,6 +459,8 @@
         triggerBtn.style.display = 'none';
         const statusLbl = document.getElementById('coach-status-label');
         if (statusLbl) statusLbl.textContent = 'ПОДКЛЮЧЕНИЕ К GEMINI LIVE...';
+        const voiceSel = document.getElementById('coach-voice-select');
+        if (voiceSel) voiceSel.value = voice;
       }
 
       await unlockAudio();
@@ -440,7 +495,7 @@
 
       streamer = new AudioStreamer(audioCtx);
 
-      // WebSocket подключение
+      // WebSocket подключение к Gemini Live
       const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsUrl = `${proto}//${window.location.host}/api/voice/live`;
       ws = new WebSocket(wsUrl);
@@ -484,7 +539,9 @@
             const raw = atob(msg.data);
             const bytes = new Uint8Array(raw.length);
             for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
-            streamer.addPCM16(bytes);
+            if (streamer) {
+              streamer.addPCM16(bytes);
+            }
 
           } else if (msg.type === "interrupted") {
             if (streamer) streamer.stop();
@@ -523,7 +580,7 @@
       workletNode.port.onmessage = (ev) => {
         if (ev.data.event === "chunk") {
           lastUserEnergy = ev.data.energy || 0;
-          if (activeCallbacks.onAudioEnergy && !streamer.isPlaying) {
+          if (activeCallbacks.onAudioEnergy && streamer && !streamer.isPlaying) {
             activeCallbacks.onAudioEnergy(lastUserEnergy);
           }
           if (ws && ws.readyState === WebSocket.OPEN && isConnected) {
@@ -561,7 +618,13 @@
 
   function stopGeminiSession() {
     if (ws) {
-      try { ws.close(); } catch(e){}
+      try {
+        ws.onopen = null;
+        ws.onmessage = null;
+        ws.onerror = null;
+        ws.onclose = null;
+        ws.close();
+      } catch(e){}
       ws = null;
     }
     if (micStream) {
@@ -676,17 +739,37 @@
 
   // События кнопок модального окна
   triggerBtn.addEventListener('click', () => {
-    // Если приложение на вкладке 'live', запускаем сессию прямо во вкладке
     if (window.currentTab === 'live' && typeof window.startLiveVoice === 'function') {
       window.startLiveVoice();
     } else {
       const modeSelect = document.getElementById('coach-mode-select');
+      const voiceSelect = document.getElementById('coach-voice-select');
       startGeminiSession({
         mode: modeSelect ? modeSelect.value : 'coach',
+        voice: voiceSelect ? voiceSelect.value : (localStorage.getItem('ai_coach_voice_name') || 'Aoede'),
         useModal: true
       });
     }
   });
+
+  const modalVoiceSel = document.getElementById('coach-voice-select');
+  if (modalVoiceSel) {
+    modalVoiceSel.addEventListener('change', (e) => {
+      const newVoice = e.target.value;
+      localStorage.setItem('ai_coach_voice_name', newVoice);
+      if (typeof window.setLiveVoice === 'function') {
+        window.setLiveVoice(newVoice);
+      }
+      if (isConnected) {
+        const modeSelect = document.getElementById('coach-mode-select');
+        startGeminiSession({
+          mode: modeSelect ? modeSelect.value : 'coach',
+          voice: newVoice,
+          useModal: true
+        });
+      }
+    });
+  }
 
   document.getElementById('coach-close-modal').addEventListener('click', stopGeminiSession);
   document.getElementById('coach-hangup-btn').addEventListener('click', stopGeminiSession);
@@ -708,8 +791,10 @@
       if (streamer && streamer.isPlaying) return streamer.getEnergy();
       return lastUserEnergy;
     },
+    getVoice: () => currentVoice,
     openModal: (mode = 'coach') => {
-      startGeminiSession({ mode, useModal: true });
+      const voice = localStorage.getItem('ai_coach_voice_name') || 'Aoede';
+      startGeminiSession({ mode, voice, useModal: true });
     },
     closeModal: stopGeminiSession,
     setTriggerButtonVisible: (visible) => {

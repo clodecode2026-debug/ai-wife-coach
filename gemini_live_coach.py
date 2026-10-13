@@ -74,6 +74,9 @@ SYSTEM_PROMPTS = {
 # Kore - нежный, спокойный женский
 # Puck - бодрый, дружелюбный нейтральный
 # Fenrir - спокойный мужской
+# Charon - мудрый, бархатный мужской
+SUPPORTED_VOICES = ["Aoede", "Kore", "Puck", "Fenrir", "Charon"]
+
 DEFAULT_VOICES = {
     "coach": "Aoede",
     "german": "Aoede"
@@ -153,7 +156,8 @@ async def gemini_live_websocket(client_ws: WebSocket):
             # 1. Инициализация сессии Gemini Live
             if msg_type == "start":
                 mode = data.get("mode", "coach")
-                voice_name = data.get("voice", DEFAULT_VOICES.get(mode, "Aoede"))
+                requested_voice = data.get("voice", "").strip()
+                voice_name = requested_voice if requested_voice in SUPPORTED_VOICES else DEFAULT_VOICES.get(mode, "Aoede")
 
                 keys = get_gemini_api_keys()
                 gemini_ws = None

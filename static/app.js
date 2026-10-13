@@ -200,6 +200,7 @@ let LIVE_SILENCE_DELAY_MS = 2500; // 2.5 сек для максимальной 
 let liveCoachMode = 'coach'; // 'coach' | 'german'
 let currentLiveGermanLessonId = 1;
 let currentVoiceEngine = localStorage.getItem('ai_coach_voice_engine') || 'gemini_live'; // 'gemini_live' | 'classic'
+let currentLiveVoice = localStorage.getItem('ai_coach_voice_name') || 'Aoede'; // 'Aoede' | 'Kore' | 'Puck' | 'Fenrir' | 'Charon'
 let geminiVisualizerRaf = null;
 
 // Разблокировка системного звука на iOS Safari при первом же тапе пользователя
@@ -1137,6 +1138,71 @@ function toggleLiveSound() {
 // 🎙️ ЕДИНАЯ СИСТЕМА ГОЛОСА: GEMINI LIVE (ОСНОВНОЙ) + CLASSIC WEB SPEECH (РЕЗЕРВ)
 // ============================================================================
 
+function updateVoiceUI() {
+    const txt = document.getElementById('liveVoiceText');
+    const icon = document.getElementById('liveVoiceIcon');
+    if (txt) txt.textContent = `Голос: ${currentLiveVoice}`;
+    if (icon) {
+        if (currentLiveVoice === 'Aoede') icon.textContent = '👩';
+        else if (currentLiveVoice === 'Kore') icon.textContent = '🌸';
+        else if (currentLiveVoice === 'Puck') icon.textContent = '✨';
+        else if (currentLiveVoice === 'Fenrir') icon.textContent = '🧔';
+        else if (currentLiveVoice === 'Charon') icon.textContent = '🎓';
+        else icon.textContent = '🎙️';
+    }
+
+    // Подсветка активного голоса в модальном окне
+    document.querySelectorAll('[data-voice-btn]').forEach(btn => {
+        const v = btn.getAttribute('data-voice-btn');
+        const check = btn.querySelector('.voice-check-icon');
+        if (v === currentLiveVoice) {
+            btn.classList.add('border-pink-400', 'bg-pink-500/20');
+            btn.classList.remove('border-white/10');
+            if (check) check.classList.remove('hidden');
+        } else {
+            btn.classList.remove('border-pink-400', 'bg-pink-500/20');
+            btn.classList.add('border-white/10');
+            if (check) check.classList.add('hidden');
+        }
+    });
+}
+
+function toggleVoiceSelectorModal() {
+    const modal = document.getElementById('voiceSelectorModal');
+    if (modal) {
+        if (modal.classList.contains('hidden')) {
+            updateVoiceUI();
+            modal.classList.remove('hidden');
+        } else {
+            modal.classList.add('hidden');
+        }
+    }
+}
+
+function closeVoiceSelectorModal() {
+    const modal = document.getElementById('voiceSelectorModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function setLiveVoice(voiceName) {
+    currentLiveVoice = voiceName;
+    localStorage.setItem('ai_coach_voice_name', voiceName);
+    updateVoiceUI();
+    closeVoiceSelectorModal();
+
+    if (typeof showToast === 'function') {
+        showToast(`✨ Выбран голос: ${voiceName}`);
+    }
+
+    // Если сейчас идет живой разговор с Gemini Live — перезапускаем сессию с новым голосом без пауз
+    if (isLiveActive && currentVoiceEngine === 'gemini_live' && window.GeminiLiveCoach && window.GeminiLiveCoach.isConnected()) {
+        startLiveVoice();
+    }
+}
+window.setLiveVoice = setLiveVoice;
+window.toggleVoiceSelectorModal = toggleVoiceSelectorModal;
+window.closeVoiceSelectorModal = closeVoiceSelectorModal;
+
 function updateVoiceEngineUI() {
     const btn = document.getElementById('liveEngineToggleBtn');
     const icon = document.getElementById('liveEngineIcon');
@@ -1168,6 +1234,7 @@ function updateVoiceEngineUI() {
                 : ((liveCoachMode === 'german') ? '🐢 Резервный режим • Немецкий (TTS)' : '🐢 Резервный режим • Алина & Коуч');
         }
     }
+    updateVoiceUI();
 }
 
 function toggleVoiceEngine() {
@@ -1215,6 +1282,19 @@ async function startGeminiLiveVoice(customPrompt = null) {
         console.warn('GeminiLiveCoach не загружен, переключаемся на резервный режим');
         return startClassicLiveVoice();
     }
+
+    // 1. ПОЛНОСТЬЮ ГЛУШИМ КЛАССИЧЕСКИЙ РЕЖИМ (чтобы исключить одновременную речь несколькими голосами!)
+    stopClassicLiveVoice();
+    const p1 = document.getElementById('liveGlobalAudioPlayer');
+    if (p1) { try { p1.pause(); p1.currentTime = 0; } catch(e){} }
+    const p2 = document.getElementById('globalTTSPlayer');
+    if (p2) { try { p2.pause(); p2.currentTime = 0; } catch(e){} }
+    if (currentLiveAudio) {
+        try { currentLiveAudio.pause(); } catch(e){}
+        currentLiveAudio = null;
+    }
+    stopAudioVisualizer();
+    stopBrowserSpeechRecognition();
 
     primeAudioForIOS(document.getElementById('liveGlobalAudioPlayer'));
 
@@ -1289,7 +1369,7 @@ async function startGeminiLiveVoice(customPrompt = null) {
     const started = await window.GeminiLiveCoach.start({
         mode: targetMode,
         customPrompt: customPrompt,
-        voice: 'Aoede',
+        voice: currentLiveVoice,
         callbacks: {
             onStatus: (stText, stateKey) => {
                 if (statusText) {
@@ -1366,6 +1446,11 @@ async function startGeminiLiveVoice(customPrompt = null) {
 // РЕЗЕРВНЫЙ РЕЖИМ (CLASSIC WEB SPEECH API + EDGE TTS)
 // ----------------------------------------------------------------------------
 async function startClassicLiveVoice() {
+    // 1. ПОЛНОСТЬЮ ГЛУШИМ GEMINI LIVE ПЕРЕД СТАРТОМ РЕЗЕРВНОГО РЕЖИМА
+    if (window.GeminiLiveCoach && window.GeminiLiveCoach.isConnected()) {
+        window.GeminiLiveCoach.stop();
+    }
+
     // Гарантируем разблокировку на iPhone
     primeAudioForIOS(document.getElementById('liveGlobalAudioPlayer'));
 
@@ -1830,7 +1915,13 @@ async function handleLiveUserSpeech(text) {
     if (statusText) statusText.textContent = '🤔 Обдумываю ответ... (микрофон выключен)';
     if (transcript) transcript.textContent = `Вы: «${text}»`;
 
-    // Сброс очередей стриминга
+    // КРИТИЧЕСКИ ВАЖНО: Если включен Gemini Live — передаем текст строго в него и НЕ запускаем Edge TTS!
+    if (currentVoiceEngine === 'gemini_live' && window.GeminiLiveCoach && window.GeminiLiveCoach.isConnected()) {
+        window.GeminiLiveCoach.sendText(text);
+        return;
+    }
+
+    // Сброс очередей стриминга (для классического режима)
     liveAudioQueue = [];
     isPlayingAudioQueue = false;
     liveStreamIsDone = false;
@@ -1989,9 +2080,10 @@ async function playLiveTTS(text) {
                 .replace(/[💡🇩🇪🎙️✨⭐🎁📖💬🔥❤️🐢🦉]/g, '')
                 .replace(/\s+/g, ' ').trim();
 
+            const isMaleVoice = (currentLiveVoice === 'Fenrir' || currentLiveVoice === 'Charon');
             const voiceToUse = (liveCoachMode === 'german') 
-                ? "de-DE-SeraphinaMultilingualNeural" 
-                : "ru-RU-SvetlanaNeural";
+                ? (isMaleVoice ? "de-DE-FlorianMultilingualNeural" : "de-DE-SeraphinaMultilingualNeural") 
+                : (isMaleVoice ? "ru-RU-DmitryNeural" : "ru-RU-SvetlanaNeural");
 
             const res = await fetch('/api/voice/tts', {
                 method: 'POST',

@@ -26,6 +26,7 @@ from storage import s3_storage
 from books.psychology_books import get_psychology_books, PSYCHOLOGY_BOOKS, get_book_by_id
 from books.german_course import get_german_course, GERMAN_COURSE_DATA
 from books.german_dialogues import get_german_dialogues, get_dialogue_by_id, get_dialogues_by_category, GERMAN_DIALOGUES_DATA
+from gemini_live_coach import router as gemini_live_router
 
 # Пин-код и авторизация
 APP_PIN = os.environ.get("APP_PIN", "2509").strip()
@@ -58,6 +59,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="AI Wife Coach Super-App", version="3.1.0")
+app.include_router(gemini_live_router)
 
 # Монтируем статику
 app.mount("/static", StaticFiles(directory="static"), name="static")

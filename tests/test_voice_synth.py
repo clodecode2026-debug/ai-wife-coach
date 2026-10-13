@@ -2,7 +2,10 @@
 import asyncio
 import edge_tts
 
-async def test_voices():
+def test_voices():
+    asyncio.run(_test_voices_async())
+
+async def _test_voices_async():
     sample = "Hallo Alina! Keine Panik. Wie geht es dir heute? Привет, Алина! Как твои дела сегодня?"
     
     # 1. Проверяем de-DE-SeraphinaMultilingualNeural

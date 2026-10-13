@@ -199,6 +199,8 @@ let speechSilenceTimer = null;
 let LIVE_SILENCE_DELAY_MS = 2500; // 2.5 сек для максимальной отзывчивости на мобильных
 let liveCoachMode = 'coach'; // 'coach' | 'german'
 let currentLiveGermanLessonId = 1;
+let currentVoiceEngine = localStorage.getItem('ai_coach_voice_engine') || 'gemini_live'; // 'gemini_live' | 'classic'
+let geminiVisualizerRaf = null;
 
 // Разблокировка системного звука на iOS Safari при первом же тапе пользователя
 function primeAudioForIOS(audioEl) {
@@ -241,6 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDossier();
     updateAlinaAvatarUI();
     updateLiveSoundUI();
+    updateVoiceEngineUI();
     updateLearnedCountUI();
     updateCourseProgressUI();
     updateChatModeUI();
@@ -317,6 +320,17 @@ function switchTab(tabId) {
             currentGermanMode = 'hub';
         }
         renderGermanPlatform();
+    }
+
+    // Скрываем плавающую кнопку live-коуча во вкладке live, чтобы не дублировать управление
+    const floatLiveBtn = document.getElementById('coach-live-trigger-btn');
+    if (floatLiveBtn) {
+        floatLiveBtn.style.display = (tabId === 'live') ? 'none' : 'flex';
+    }
+
+    if (tabId === 'live') {
+        updateVoiceEngineUI();
+        updateLiveCoachModeUI();
     }
 }
 
@@ -1119,16 +1133,71 @@ function toggleLiveSound() {
     updateLiveSoundUI();
 }
 
+// ============================================================================
+// 🎙️ ЕДИНАЯ СИСТЕМА ГОЛОСА: GEMINI LIVE (ОСНОВНОЙ) + CLASSIC WEB SPEECH (РЕЗЕРВ)
+// ============================================================================
+
+function updateVoiceEngineUI() {
+    const btn = document.getElementById('liveEngineToggleBtn');
+    const icon = document.getElementById('liveEngineIcon');
+    const text = document.getElementById('liveEngineText');
+    const badge = document.getElementById('liveModeBadge');
+
+    if (currentVoiceEngine === 'gemini_live') {
+        if (btn) {
+            btn.className = 'text-[11px] px-2.5 py-1 rounded-lg bg-emerald-500/30 border border-emerald-400 text-emerald-200 flex items-center gap-1 transition shadow-xs cursor-pointer hover:bg-emerald-500/40';
+        }
+        if (icon) icon.textContent = '⚡';
+        if (text) text.textContent = 'Gemini Live';
+        if (badge) {
+            badge.className = 'px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full text-[11px] font-semibold border border-emerald-500/30';
+            badge.textContent = (liveCoachMode === 'german_dialogue')
+                ? '⚡ Gemini Live • Ролевой диалог'
+                : ((liveCoachMode === 'german') ? '⚡ Gemini Live • Немецкий речевой коуч' : '⚡ Gemini Live • Алина & Коуч');
+        }
+    } else {
+        if (btn) {
+            btn.className = 'text-[11px] px-2.5 py-1 rounded-lg bg-amber-500/30 border border-amber-400 text-amber-200 flex items-center gap-1 transition shadow-xs cursor-pointer hover:bg-amber-500/40';
+        }
+        if (icon) icon.textContent = '🐢';
+        if (text) text.textContent = 'Резерв (Classic)';
+        if (badge) {
+            badge.className = 'px-2.5 py-0.5 bg-amber-500/20 text-amber-300 rounded-full text-[11px] font-semibold border border-amber-500/30';
+            badge.textContent = (liveCoachMode === 'german_dialogue')
+                ? '🐢 Резервный режим • Ролевой диалог'
+                : ((liveCoachMode === 'german') ? '🐢 Резервный режим • Немецкий (TTS)' : '🐢 Резервный режим • Алина & Коуч');
+        }
+    }
+}
+
+function toggleVoiceEngine() {
+    const wasActive = isLiveActive || (window.GeminiLiveCoach && window.GeminiLiveCoach.isConnected());
+    if (wasActive) {
+        stopLiveVoice();
+    }
+    currentVoiceEngine = (currentVoiceEngine === 'gemini_live') ? 'classic' : 'gemini_live';
+    localStorage.setItem('ai_coach_voice_engine', currentVoiceEngine);
+    updateVoiceEngineUI();
+    if (typeof showToast === 'function') {
+        if (currentVoiceEngine === 'gemini_live') {
+            showToast('⚡ Включен основной режим: Gemini Multimodal Live (живой разговор без пауз)');
+        } else {
+            showToast('🐢 Включен резервный режим: Web Speech API + Edge TTS');
+        }
+    }
+}
+
 async function toggleLiveVoiceState() {
     // Разблокируем аудиосистему iOS прямо в синхронном стеке клика
     primeAudioForIOS(document.getElementById('liveGlobalAudioPlayer'));
     primeAudioForIOS(document.getElementById('globalTTSPlayer'));
 
-    if (!isLiveActive) {
+    const isGeminiConnected = (window.GeminiLiveCoach && window.GeminiLiveCoach.isConnected());
+    if (!isLiveActive && !isGeminiConnected) {
         startLiveVoice();
     } else {
-        // Если коуч сейчас говорит, а пользователь нажал на фото — даем возможность перебить и сразу сказать
-        if (liveTurnState === 'SPEAKING' && currentLiveAudio) {
+        // Если коуч сейчас говорит в классическом режиме, а пользователь нажал на фото — даем возможность перебить
+        if (currentVoiceEngine === 'classic' && liveTurnState === 'SPEAKING' && currentLiveAudio) {
             try { currentLiveAudio.pause(); } catch(e){}
             currentLiveAudio = null;
             passTurnToUser();
@@ -1138,7 +1207,165 @@ async function toggleLiveVoiceState() {
     }
 }
 
-async function startLiveVoice() {
+// ----------------------------------------------------------------------------
+// ОСНОВНОЙ РЕЖИМ: GEMINI MULTIMODAL LIVE
+// ----------------------------------------------------------------------------
+async function startGeminiLiveVoice(customPrompt = null) {
+    if (!window.GeminiLiveCoach) {
+        console.warn('GeminiLiveCoach не загружен, переключаемся на резервный режим');
+        return startClassicLiveVoice();
+    }
+
+    primeAudioForIOS(document.getElementById('liveGlobalAudioPlayer'));
+
+    isLiveActive = true;
+    liveTurnState = 'LISTENING';
+    isAITalking = false;
+
+    const statusText = document.getElementById('liveStatusText');
+    const btn = document.getElementById('liveMainBtn');
+    const transcript = document.getElementById('liveTranscript');
+    const overlay = document.getElementById('liveListeningOverlay');
+    const halo = document.getElementById('liveAvatarHalo');
+    const ring = document.getElementById('livePulseRing');
+    const bars = document.querySelectorAll('.voice-bar');
+
+    if (btn) btn.textContent = 'Завершить разговор';
+    if (overlay) overlay.classList.remove('opacity-0');
+    if (transcript) {
+        transcript.textContent = (liveCoachMode === 'german' || liveCoachMode === 'german_dialogue')
+            ? 'Gemini Live: Verbinde mit Deutsch-Coach...'
+            : 'Gemini Live: Подключаюсь к коучу...';
+    }
+    if (statusText) statusText.textContent = '⚡ Подключение к Gemini Live...';
+
+    // Запуск 60 FPS аудио-визуализатора для Gemini Live
+    function loopGeminiVisualizer() {
+        if (!isLiveActive || currentVoiceEngine !== 'gemini_live') return;
+
+        const energy = window.GeminiLiveCoach ? window.GeminiLiveCoach.getEnergy() : 0;
+        const isSpeaking = window.GeminiLiveCoach ? window.GeminiLiveCoach.isAudioPlaying() : false;
+
+        if (isSpeaking) {
+            // Модель говорит: живая сиренево-розовая звуковая волна
+            const t = Date.now() / 130;
+            bars.forEach((bar, idx) => {
+                const wave = Math.sin(t + idx * 0.9) * 0.5 + 0.5;
+                const h = Math.round(5 + wave * (10 + energy * 30));
+                bar.style.height = `${h}px`;
+                bar.style.backgroundColor = '#ec4899';
+            });
+            if (halo && ring) {
+                const scale = 1.02 + energy * 0.08 + Math.sin(t) * 0.02;
+                halo.style.transform = `scale(${scale})`;
+                ring.style.borderColor = 'rgba(236, 72, 153, 0.9)';
+                ring.style.boxShadow = `0 0 ${Math.round(20 + energy * 35)}px rgba(236, 72, 153, 0.85)`;
+            }
+        } else if (liveTurnState === 'LISTENING') {
+            // Пользователь говорит или слушает
+            const t = Date.now() / 160;
+            bars.forEach((bar, idx) => {
+                const base = Math.sin(t + idx * 0.7) * 0.5 + 0.5;
+                const h = Math.round(4 + base * (6 + energy * 28));
+                bar.style.height = `${h}px`;
+                bar.style.backgroundColor = energy > 0.08 ? '#f43f5e' : '#fb7185';
+            });
+            if (halo && ring) {
+                const scale = 1.0 + energy * 0.06;
+                halo.style.transform = `scale(${scale})`;
+                ring.style.borderColor = energy > 0.08 ? 'rgba(244, 63, 94, 0.9)' : 'rgba(244, 63, 94, 0.35)';
+                ring.style.boxShadow = energy > 0.08 ? '0 0 25px rgba(244, 63, 94, 0.75)' : '0 0 10px rgba(244, 63, 94, 0.2)';
+            }
+        }
+
+        geminiVisualizerRaf = requestAnimationFrame(loopGeminiVisualizer);
+    }
+
+    if (geminiVisualizerRaf) cancelAnimationFrame(geminiVisualizerRaf);
+    geminiVisualizerRaf = requestAnimationFrame(loopGeminiVisualizer);
+
+    const targetMode = (liveCoachMode === 'german' || liveCoachMode === 'german_dialogue') ? 'german' : 'coach';
+
+    const started = await window.GeminiLiveCoach.start({
+        mode: targetMode,
+        customPrompt: customPrompt,
+        voice: 'Aoede',
+        callbacks: {
+            onStatus: (stText, stateKey) => {
+                if (statusText) {
+                    if (stateKey === 'LISTENING') {
+                        statusText.textContent = (targetMode === 'german')
+                            ? '🎙️ Говорите по-немецки... (Gemini Live слушает)'
+                            : '🎙️ Слушаю вас, Алина... Говорите свободно!';
+                        liveTurnState = 'LISTENING';
+                    } else if (stateKey === 'SPEAKING') {
+                        statusText.textContent = (targetMode === 'german')
+                            ? '🔊 Коуч говорит по-немецки...'
+                            : '🔊 Коуч отвечает...';
+                        liveTurnState = 'SPEAKING';
+                    } else {
+                        statusText.textContent = stText;
+                    }
+                }
+            },
+            onTranscript: (speaker, text, isModel) => {
+                if (transcript) {
+                    transcript.textContent = text;
+                }
+            },
+            onInterrupted: () => {
+                liveTurnState = 'LISTENING';
+                if (statusText) {
+                    statusText.textContent = '🎙️ Слушаю вас, Алина...';
+                }
+            },
+            onTurnComplete: () => {
+                liveTurnState = 'LISTENING';
+                if (statusText) {
+                    statusText.textContent = (targetMode === 'german')
+                        ? '🎙️ Ваша очередь говорить по-немецки...'
+                        : '🎙️ Ваша очередь говорить, Алина...';
+                }
+            },
+            onError: (errMsg) => {
+                console.warn('Gemini Live error:', errMsg);
+                if (typeof showToast === 'function') {
+                    showToast('⚠️ Gemini Live временно недоступен — автоматически переключаем на резервный режим!');
+                }
+                currentVoiceEngine = 'classic';
+                localStorage.setItem('ai_coach_voice_engine', 'classic');
+                updateVoiceEngineUI();
+                stopLiveVoice();
+                startClassicLiveVoice();
+            },
+            onEnded: () => {
+                isLiveActive = false;
+                liveTurnState = 'IDLE';
+                if (btn) btn.textContent = 'Начать говорить';
+                if (statusText) statusText.textContent = 'Разговор завершен. Нажмите на фото, чтобы продолжить.';
+                if (overlay) overlay.classList.add('opacity-0');
+                if (halo) halo.style.transform = 'scale(1)';
+                if (geminiVisualizerRaf) {
+                    cancelAnimationFrame(geminiVisualizerRaf);
+                    geminiVisualizerRaf = null;
+                }
+                bars.forEach(b => b.style.height = '4px');
+            }
+        }
+    });
+
+    if (!started) {
+        console.warn('Не удалось запустить Gemini Live, переход на резервный');
+        currentVoiceEngine = 'classic';
+        updateVoiceEngineUI();
+        return startClassicLiveVoice();
+    }
+}
+
+// ----------------------------------------------------------------------------
+// РЕЗЕРВНЫЙ РЕЖИМ (CLASSIC WEB SPEECH API + EDGE TTS)
+// ----------------------------------------------------------------------------
+async function startClassicLiveVoice() {
     // Гарантируем разблокировку на iPhone
     primeAudioForIOS(document.getElementById('liveGlobalAudioPlayer'));
 
@@ -1154,7 +1381,7 @@ async function startLiveVoice() {
     const overlay = document.getElementById('liveListeningOverlay');
 
     if (statusText) {
-        statusText.textContent = (liveCoachMode === 'german') 
+        statusText.textContent = (liveCoachMode === 'german' || liveCoachMode === 'german_dialogue') 
             ? '🎙️ Ваша очередь говорить по-немецки... (микрофон включен)' 
             : '🎙️ Слушаю вас, Алина... Говорите свободно! (микрофон включен)';
     }
@@ -1168,7 +1395,7 @@ async function startLiveVoice() {
     startBrowserSpeechRecognition();
 }
 
-function stopLiveVoice() {
+function stopClassicLiveVoice() {
     isLiveActive = false;
     liveTurnState = 'IDLE';
     isAITalking = false;
@@ -1205,6 +1432,44 @@ function stopLiveVoice() {
         try { currentLiveAudio.pause(); } catch(e){}
         currentLiveAudio = null;
     }
+}
+
+// ----------------------------------------------------------------------------
+// ОБЩИЕ ТОЧКИ ВХОДА (УНИФИЦИРОВАННЫЙ ДИСПЕТЧЕР)
+// ----------------------------------------------------------------------------
+async function startLiveVoice(customPrompt = null) {
+    updateVoiceEngineUI();
+    if (currentVoiceEngine === 'gemini_live' && window.GeminiLiveCoach) {
+        return startGeminiLiveVoice(customPrompt);
+    } else {
+        return startClassicLiveVoice();
+    }
+}
+
+function stopLiveVoice() {
+    if (window.GeminiLiveCoach && window.GeminiLiveCoach.isConnected()) {
+        window.GeminiLiveCoach.stop();
+    }
+    stopClassicLiveVoice();
+    isLiveActive = false;
+    liveTurnState = 'IDLE';
+
+    if (geminiVisualizerRaf) {
+        cancelAnimationFrame(geminiVisualizerRaf);
+        geminiVisualizerRaf = null;
+    }
+
+    const btn = document.getElementById('liveMainBtn');
+    if (btn) btn.textContent = 'Начать говорить';
+    const statusText = document.getElementById('liveStatusText');
+    if (statusText) statusText.textContent = 'Разговор завершен. Нажмите на фото, чтобы продолжить.';
+    const overlay = document.getElementById('liveListeningOverlay');
+    if (overlay) overlay.classList.add('opacity-0');
+    const halo = document.getElementById('liveAvatarHalo');
+    if (halo) halo.style.transform = 'scale(1)';
+    const pauseIndicator = document.getElementById('livePauseIndicator');
+    if (pauseIndicator) pauseIndicator.classList.add('hidden');
+    document.querySelectorAll('.voice-bar').forEach(b => b.style.height = '4px');
 }
 
 // Инициализация визуализации для Live Voice (без блокировки микрофона на iPhone)
@@ -1437,6 +1702,16 @@ function sendLiveQuickMessage() {
     const text = input.value.trim();
     if (!text) return;
     input.value = '';
+
+    if (currentVoiceEngine === 'gemini_live' && window.GeminiLiveCoach && window.GeminiLiveCoach.isConnected()) {
+        const tr = document.getElementById('liveTranscript');
+        if (tr) tr.textContent = `Вы: «${text}»`;
+        const st = document.getElementById('liveStatusText');
+        if (st) st.textContent = '🤔 Обдумываю ответ...';
+        window.GeminiLiveCoach.sendText(text);
+        return;
+    }
+
     commitLiveSpeech(text);
 }
 
@@ -2242,24 +2517,38 @@ function startLiveGermanCoach(lessonId) {
     // Переключаем на Live Voice
     switchTab('live');
     updateLiveCoachModeUI();
+    updateVoiceEngineUI();
 
     // Включаем озвучку ответов коуча, если была выключена
     if (!liveSoundEnabled) {
         toggleLiveSound();
     }
 
-    // Запускаем режим Live, если ещё не активен
-    if (!isLiveActive) {
-        startLiveVoice();
-    }
-
     const allLessons = window.allGermanCourseData?.lessons || [];
     const lesson = allLessons.find(l => (l.day == lessonId || l.id == lessonId)) || allLessons[0];
     const situation = lesson?.dialogue_simulator?.situation || lesson?.title || 'Практика немецкого языка';
 
-    // Вступительная реплика для начала тренировки
-    const prompt = `Hallo! Ich lerne Deutsch und möchte die Situation üben: "${situation}". Bitte stellen Sie mir die erste Frage auf Deutsch mit Übersetzung auf Russisch!`;
-    handleLiveUserSpeech(prompt);
+    if (currentVoiceEngine === 'gemini_live' && window.GeminiLiveCoach) {
+        const customPrompt = `Du bist ein geduldiger, freundlicher und motivierender Deutschlehrer für Alina.
+Ihr übt heute die Alltagssituation: "${situation}" (Tag ${currentLiveGermanLessonId}).
+REGELN FÜR DAS GESPRÄCH:
+1. Sprich lebendig, langsam, klar und mit einfacher Alltagssprache auf Deutsch (1-2 kurze Sätze).
+2. Stelle Alina eine Einstiegsfrage zu dieser Situation.
+3. Wenn sie Fehler macht, korrigiere sie ganz sanft (Gentle Recasting).
+4. Wenn nötig, erkläre schwierige Wörter kurz auf Russisch.
+Beginne das Gespräch jetzt sofort auf Deutsch und stell deine erste Frage!`;
+
+        startLiveVoice(customPrompt);
+    } else {
+        // Запускаем режим Live, если ещё не активен
+        if (!isLiveActive) {
+            startLiveVoice();
+        }
+
+        // Вступительная реплика для начала тренировки
+        const prompt = `Hallo! Ich lerne Deutsch und möchte die Situation üben: "${situation}". Bitte stellen Sie mir die erste Frage auf Deutsch mit Übersetzung auf Russisch!`;
+        handleLiveUserSpeech(prompt);
+    }
 }
 
 function switchToCoachLiveMode() {
@@ -2279,10 +2568,11 @@ function updateLiveCoachModeUI() {
     const title = document.getElementById('liveTitleText');
     const sub = document.getElementById('liveSubtitleText');
     const switchBtn = document.getElementById('liveSwitchToCoachBtn');
+    const prefix = (currentVoiceEngine === 'gemini_live') ? '⚡ Gemini Live • ' : '🐢 Резерв • ';
 
     if (liveCoachMode === 'german_dialogue' && currentLiveDialogueId) {
-        const diag = allGermanDialogues.find(d => d.id === currentLiveDialogueId) || activeDialogue;
-        if (badge) badge.textContent = `🇩🇪 Ролевой диалог • ${diag ? diag.level : 'B1'}`;
+        const diag = (typeof allGermanDialogues !== 'undefined' ? allGermanDialogues.find(d => d.id === currentLiveDialogueId) : null) || activeDialogue;
+        if (badge) badge.textContent = `${prefix}Ролевой диалог (${diag ? diag.level : 'B1'})`;
         if (title) title.textContent = diag ? `${diag.partner_avatar || '🗣'} ${diag.partner_role}` : 'Ролевой диалог';
         if (sub) sub.textContent = diag ? `${diag.title_de}: ${diag.description_ru}` : 'Реалистичный диалог в Германии';
         if (switchBtn) switchBtn.classList.remove('hidden');
@@ -2291,16 +2581,21 @@ function updateLiveCoachModeUI() {
         const lesson = allLessons.find(l => (l.day == currentLiveGermanLessonId || l.id == currentLiveGermanLessonId)) || allLessons[0];
         const lessonTitle = lesson ? lesson.title : `Урок ${currentLiveGermanLessonId}`;
 
-        if (badge) badge.textContent = `🇩🇪 Немецкий речевой коуч • День ${currentLiveGermanLessonId}`;
+        if (badge) badge.textContent = `${prefix}Немецкий коуч (День ${currentLiveGermanLessonId})`;
         if (title) title.textContent = `Разговорная практика: ${lessonTitle}`;
-        if (sub) sub.textContent = `Коуч говорит на немецком с переводом, ждёт ваших ответов (пауза 4.5 сек) и бережно исправляет ошибки.`;
+        if (sub) sub.textContent = (currentVoiceEngine === 'gemini_live')
+            ? 'Gemini Live общается с вами на немецком в реальном времени и мягко помогает говорить без страха.'
+            : 'Коуч говорит на немецком с переводом, ждёт ваших ответов (пауза 4.5 сек) и бережно исправляет ошибки.';
         if (switchBtn) switchBtn.classList.remove('hidden');
     } else {
-        if (badge) badge.textContent = 'Google Live Voice • Алина & Коуч';
+        if (badge) badge.textContent = `${prefix}Алина & Коуч`;
         if (title) title.textContent = 'Живой разговор';
-        if (sub) sub.textContent = 'Коуч слушает ваш голос в реальном времени и отвечает емко, глубоко и бережно';
+        if (sub) sub.textContent = (currentVoiceEngine === 'gemini_live')
+            ? 'Gemini Live слушает ваш голос в реальном времени и отвечает мгновенно, емко и бережно'
+            : 'Коуч слушает ваш голос в реальном времени и отвечает емко, глубоко и бережно';
         if (switchBtn) switchBtn.classList.add('hidden');
     }
+    updateVoiceEngineUI();
 }
 
 function renderGermanPlatform() {
@@ -4896,17 +5191,35 @@ function startDialogueLiveCoach() {
 
     switchTab('live');
     updateLiveCoachModeUI();
+    updateVoiceEngineUI();
 
     if (!liveSoundEnabled) {
         toggleLiveSound();
     }
-    if (!isLiveActive) {
-        startLiveVoice();
-    }
 
     const partnerRole = activeDialogue.partner_role || 'Собеседник';
-    const introPrompt = `Hallo! Wir machen jetzt ein Rollenspiel: "${activeDialogue.title_de}". Du spielst "${partnerRole}". Bitte sprich deine erste Replik auf Deutsch mit kurzer russischer Übersetzung!`;
-    handleLiveUserSpeech(introPrompt);
+    const scenarioTitle = activeDialogue.title_de || 'Alltagssituation';
+    const level = activeDialogue.level || 'B1';
+
+    if (currentVoiceEngine === 'gemini_live' && window.GeminiLiveCoach) {
+        const customPrompt = `Du bist ein geduldiger, freundlicher und lebendiger deutschsprachiger Rollenspielpartner für Alina. 
+Wir spielen folgende Alltagssituation in Deutschland: "${scenarioTitle}". 
+Deine Rolle: "${partnerRole}". Niveau: ${level}.
+WICHTIG FÜR DIE KONVERSATION:
+1. Sprich kurze, lebendige und klare Alltagssätze auf Deutsch (1-2 kurze Sätze).
+2. Warte immer auf Alinas Antwort.
+3. Wenn sie Fehler macht, korrigiere sie ganz sanft (Gentle Recasting) und ermutige sie.
+4. Wenn ein Wort zu schwierig ist, gib kurz die russische Übersetzung in Klammern an.
+Beginne das Gespräch jetzt sofort auf Deutsch, begrüße Alina in deiner Rolle als ${partnerRole} und sag deinen ersten Eröffnungssatz!`;
+
+        startLiveVoice(customPrompt);
+    } else {
+        if (!isLiveActive) {
+            startLiveVoice();
+        }
+        const introPrompt = `Hallo! Wir machen jetzt ein Rollenspiel: "${activeDialogue.title_de}". Du spielst "${partnerRole}". Bitte sprich deine erste Replik auf Deutsch mit kurzer russischer Übersetzung!`;
+        handleLiveUserSpeech(introPrompt);
+    }
 }
 
 // Регистрация Service Worker для PWA (установка на телефон / iPhone)

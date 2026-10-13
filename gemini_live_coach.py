@@ -27,6 +27,11 @@ from typing import Optional, List
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 import websockets
 
+try:
+    from database import db_manager
+except Exception:
+    db_manager = None
+
 router = APIRouter(prefix="/api/voice", tags=["Gemini Live Voice"])
 
 GEMINI_LIVE_MODEL = "models/gemini-3.8-live"
@@ -166,7 +171,22 @@ async def gemini_live_websocket(client_ws: WebSocket):
                     break
 
                 # Отправка первичного Setup Payload с системными инструкциями
-                system_instruction = SYSTEM_PROMPTS.get(mode, SYSTEM_PROMPTS["coach"])
+                custom_prompt = data.get("custom_prompt")
+                if custom_prompt:
+                    system_instruction = custom_prompt
+                else:
+                    dossier_ctx = ""
+                    if mode == "coach" and db_manager:
+                        try:
+                            dossier = db_manager.get_dossier()
+                            name = dossier.get("name", "Алина")
+                            husband = dossier.get("husband", "Роман")
+                            notes = dossier.get("notes", "")
+                            dossier_ctx = f" Контекст клиентки: Имя: {name}. Муж: {husband}. Особенности: {notes}."
+                        except Exception as de:
+                            print(f"🎧 [Coach Live] Dossier load note: {de}")
+                    system_instruction = SYSTEM_PROMPTS.get(mode, SYSTEM_PROMPTS["coach"]) + dossier_ctx
+
                 setup_payload = {
                     "setup": {
                         "model": GEMINI_LIVE_MODEL,

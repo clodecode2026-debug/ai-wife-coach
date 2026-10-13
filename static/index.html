@@ -278,7 +278,7 @@
             <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(236,72,153,0.18),transparent_70%)] pointer-events-none"></div>
             
             <div class="text-center z-10 pt-1 shrink-0">
-                <span id="liveModeBadge" class="px-2.5 py-0.5 bg-rose-500/20 text-rose-300 rounded-full text-[11px] font-semibold border border-rose-500/30">Google Live Voice • Алина & Коуч</span>
+                <span id="liveModeBadge" class="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full text-[11px] font-semibold border border-emerald-500/30">⚡ Gemini Live • Алина & Коуч</span>
                 <h2 id="liveTitleText" class="text-base sm:text-xl font-bold mt-1 bg-gradient-to-r from-rose-300 via-pink-300 to-amber-200 bg-clip-text text-transparent">Живой разговор</h2>
                 <p id="liveSubtitleText" class="text-[11px] text-slate-300 mt-0.5 max-w-xs sm:max-w-md mx-auto line-clamp-2">Коуч слушает ваш голос в реальном времени и отвечает емко, глубоко и бережно</p>
                 <div id="liveSwitchToCoachBtn" class="hidden mt-1.5">
@@ -345,8 +345,12 @@
                     </button>
                 </div>
 
-                <!-- Переключатели Звук и Темп -->
-                <div class="flex items-center justify-center gap-2">
+                <!-- Переключатели Движок, Звук и Темп -->
+                <div class="flex items-center justify-center gap-1.5 flex-wrap">
+                    <button onclick="toggleVoiceEngine()" id="liveEngineToggleBtn" class="text-[11px] px-2.5 py-1 rounded-lg bg-emerald-500/30 border border-emerald-400 text-emerald-200 flex items-center gap-1 transition shadow-xs cursor-pointer hover:bg-emerald-500/40" title="Нажмите, чтобы переключить между Gemini Live и Резервным режимом">
+                        <span id="liveEngineIcon">⚡</span>
+                        <span id="liveEngineText">Gemini Live</span>
+                    </button>
                     <button onclick="toggleLiveSound()" id="liveSoundToggleBtn" class="text-[11px] px-2.5 py-1 rounded-lg bg-rose-500/30 border border-rose-400 text-rose-100 flex items-center gap-1 transition shadow-xs">
                         <span id="liveSoundIcon">🔊</span>
                         <span id="liveSoundText">Звук: Включен</span>

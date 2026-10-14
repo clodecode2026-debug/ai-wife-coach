@@ -1094,14 +1094,14 @@ function updateLiveSlowUI() {
     const text = document.getElementById('liveSlowText');
     const btn = document.getElementById('liveSlowToggleBtn');
     if (text) {
-        text.textContent = liveSlowVoiceEnabled ? 'Темп: 0.8x 🐢' : 'Темп: 1.0x';
+        text.textContent = liveSlowVoiceEnabled ? 'Темп: 0.85x 🐢' : 'Темп: 1.0x';
     }
     if (btn) {
         if (liveSlowVoiceEnabled) {
-            btn.classList.add('bg-amber-500/30', 'border-amber-400');
+            btn.classList.add('bg-amber-500/30', 'border-amber-400', 'text-amber-200');
             btn.classList.remove('bg-white/10', 'border-white/20');
         } else {
-            btn.classList.remove('bg-amber-500/30', 'border-amber-400');
+            btn.classList.remove('bg-amber-500/30', 'border-amber-400', 'text-amber-200');
             btn.classList.add('bg-white/10', 'border-white/20');
         }
     }
@@ -1109,14 +1109,22 @@ function updateLiveSlowUI() {
 
 function toggleSlowVoiceMode() {
     liveSlowVoiceEnabled = !liveSlowVoiceEnabled;
-    localStorage.setItem('ai_coach_live_slow', liveSlowVoiceEnabled);
+    localStorage.setItem('ai_coach_live_slow', liveSlowVoiceEnabled ? 'true' : 'false');
+    if (window.GeminiLiveCoach) {
+        window.GeminiLiveCoach.setSlowMode(liveSlowVoiceEnabled);
+    }
     if (currentLiveAudio) {
         const effectiveRate = (liveCoachMode === 'german' || liveCoachMode === 'german_dialogue') 
             ? (currentGermanSpeechRate || 0.75) 
-            : (liveSlowVoiceEnabled ? 0.8 : 1.0);
+            : (liveSlowVoiceEnabled ? 0.85 : 1.0);
         currentLiveAudio.playbackRate = effectiveRate;
     }
     updateLiveSlowUI();
+    if (typeof showToast === 'function') {
+        showToast(liveSlowVoiceEnabled 
+            ? '🐢 Замедленный темп (0.85x) включен: коуч говорит спокойно, с паузами и четкой дикцией' 
+            : '⚡ Обычный темп (1.0x) включен');
+    }
 }
 
 function toggleLiveSound() {
@@ -1365,9 +1373,12 @@ async function startGeminiLiveVoice(customPrompt = null) {
     geminiVisualizerRaf = requestAnimationFrame(loopGeminiVisualizer);
 
     const targetMode = (liveCoachMode === 'german' || liveCoachMode === 'german_dialogue') ? 'german' : 'coach';
+    const silenceWait = (targetMode === 'german') ? 3.5 : 1.5;
 
     const started = await window.GeminiLiveCoach.start({
         mode: targetMode,
+        silenceWaitSec: silenceWait,
+        slowMode: !!liveSlowVoiceEnabled,
         customPrompt: customPrompt,
         voice: currentLiveVoice,
         callbacks: {
@@ -2597,6 +2608,9 @@ function startLiveGermanCoach(lessonId) {
     currentLiveGermanLessonId = lessonId || 1;
     liveCoachMode = 'german';
     LIVE_SILENCE_DELAY_MS = 4500; // 4.5 секунды тишины: время на размышление без спешки!
+    if (window.GeminiLiveCoach) {
+        window.GeminiLiveCoach.setSilenceWait(3.5);
+    }
 
     // Закрываем модалки и полноэкранный Duolingo, если были открыты
     const lingoContainer = document.getElementById('lingoAppContainer');
@@ -2647,6 +2661,9 @@ function switchToCoachLiveMode() {
     liveCoachMode = 'coach';
     currentLiveDialogueId = null;
     LIVE_SILENCE_DELAY_MS = 2500;
+    if (window.GeminiLiveCoach) {
+        window.GeminiLiveCoach.setSilenceWait(1.5);
+    }
     updateLiveCoachModeUI();
     const transcript = document.getElementById('liveTranscript');
     if (transcript) transcript.textContent = 'Здравствуй, дорогая Алина! Я снова рядом в роли твоего психолога и личного коуча. О чём ты думаешь?';
@@ -5280,6 +5297,9 @@ function startDialogueLiveCoach() {
     currentLiveDialogueId = activeDialogue.id;
     liveCoachMode = 'german_dialogue';
     LIVE_SILENCE_DELAY_MS = 4500;
+    if (window.GeminiLiveCoach) {
+        window.GeminiLiveCoach.setSilenceWait(3.5);
+    }
 
     switchTab('live');
     updateLiveCoachModeUI();

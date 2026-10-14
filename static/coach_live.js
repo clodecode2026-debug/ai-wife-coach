@@ -96,6 +96,25 @@
       outline: none;
       cursor: pointer;
     }
+    .coach-slow-btn {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+    .coach-slow-btn.active {
+      background: rgba(245, 158, 11, 0.35);
+      border-color: #f59e0b;
+      color: #fef3c7;
+    }
     .coach-mode-select option, .coach-voice-select option {
       background: #1e1b4b;
       color: #ffffff;
@@ -202,14 +221,15 @@
   document.body.appendChild(triggerBtn);
 
   const initialSavedVoice = localStorage.getItem('ai_coach_voice_name') || 'Aoede';
+  let initialSlowActive = (localStorage.getItem('ai_coach_live_slow') === 'true');
 
   const modal = document.createElement('div');
   modal.id = 'coach-live-modal';
   modal.innerHTML = `
     <div class="coach-live-header">
       <select id="coach-mode-select" class="coach-mode-select">
-        <option value="coach" selected>🧘 Личный коуч</option>
-        <option value="german">🇩🇪 Немецкий (A1-B2)</option>
+        <option value="coach" selected>🧘 Коуч (пауза 1.5с)</option>
+        <option value="german">🇩🇪 Немецкий (пауза 3.5с)</option>
       </select>
       <select id="coach-voice-select" class="coach-voice-select" title="Выбор голоса">
         <option value="Aoede" ${initialSavedVoice === 'Aoede' ? 'selected' : ''}>👩 Aoede (Тёплый)</option>
@@ -218,6 +238,7 @@
         <option value="Fenrir" ${initialSavedVoice === 'Fenrir' ? 'selected' : ''}>🧔 Fenrir (Мужской)</option>
         <option value="Charon" ${initialSavedVoice === 'Charon' ? 'selected' : ''}>🎓 Charon (Мудрый)</option>
       </select>
+      <button id="coach-slow-btn" class="coach-slow-btn ${initialSlowActive ? 'active' : ''}" title="Замедленный темп речи коуча (0.85x)">🐢 ${initialSlowActive ? '0.85x' : '1.0x'}</button>
       <button id="coach-close-modal" class="coach-close-btn" title="Закрыть">✕</button>
     </div>
 
@@ -238,45 +259,53 @@
   document.body.appendChild(modal);
 
   // --------------------------------------------------------------------------
-  // AUDIO RESAMPLER WORKLET (Ресемплер микрофона в 16кГц PCM)
+  // AUDIO RESAMPLER WORKLET (Ресемплер микрофона в 16кГц PCM с непрерывной фазой)
   // --------------------------------------------------------------------------
   const AudioRecordingWorkletCode = `
     class AudioRecorderWorklet extends AudioWorkletProcessor {
       constructor() {
         super();
         this.bufferSize = 2048;
-        this.inputSampleRate = 48000;
         this.targetSampleRate = 16000;
-        this.resampleRatio = 1;
-        this.resampleBuffer = [];
+        this.inBuffer = [];
+        this.phase = 0.0;
+        this.outBuffer = [];
       }
 
       process(inputs) {
         const input = inputs[0];
         if (!input || !input[0] || input[0].length === 0) return true;
         const channelData = input[0];
+        const inRate = (typeof sampleRate !== 'undefined') ? sampleRate : 48000;
 
-        if (typeof sampleRate !== 'undefined' && this.inputSampleRate !== sampleRate) {
-          this.inputSampleRate = sampleRate;
-          this.resampleRatio = this.inputSampleRate / this.targetSampleRate;
+        if (inRate === this.targetSampleRate) {
+          for (let i = 0; i < channelData.length; i++) {
+            this.outBuffer.push(channelData[i]);
+          }
+        } else {
+          const ratio = inRate / this.targetSampleRate;
+          for (let i = 0; i < channelData.length; i++) {
+            this.inBuffer.push(channelData[i]);
+          }
+
+          // Непрерывная фазовая интерполяция без разрывов на стыках 128-сэмпловых блоков
+          while (this.phase + 1 < this.inBuffer.length) {
+            const idx = Math.floor(this.phase);
+            const frac = this.phase - idx;
+            const sample = this.inBuffer[idx] * (1 - frac) + this.inBuffer[idx + 1] * frac;
+            this.outBuffer.push(sample);
+            this.phase += ratio;
+          }
+
+          const consumed = Math.floor(this.phase);
+          if (consumed > 0) {
+            this.inBuffer.splice(0, consumed);
+            this.phase -= consumed;
+          }
         }
 
-        const newLen = Math.floor(channelData.length / this.resampleRatio);
-        const resampled = new Float32Array(newLen);
-        for (let i = 0; i < newLen; i++) {
-          const srcIdx = i * this.resampleRatio;
-          const idx = Math.floor(srcIdx);
-          const frac = srcIdx - idx;
-          const nextIdx = Math.min(idx + 1, channelData.length - 1);
-          resampled[i] = channelData[idx] * (1 - frac) + channelData[nextIdx] * frac;
-        }
-
-        for (let i = 0; i < resampled.length; i++) {
-          this.resampleBuffer.push(resampled[i]);
-        }
-
-        while (this.resampleBuffer.length >= this.bufferSize) {
-          const chunk = this.resampleBuffer.splice(0, this.bufferSize);
+        while (this.outBuffer.length >= this.bufferSize) {
+          const chunk = this.outBuffer.splice(0, this.bufferSize);
           const int16Array = new Int16Array(chunk.length);
           let sumAmp = 0;
           for (let i = 0; i < chunk.length; i++) {
@@ -307,6 +336,8 @@
       this.isPlaying = false;
       this.scheduledTime = 0;
       this.inputSampleRate = 24000;
+      this.playbackRate = 1.0;
+      this.lastPlayEndTime = 0;
       this.gainNode = this.context.createGain();
       this.analyser = this.context.createAnalyser();
       this.analyser.fftSize = 128;
@@ -314,6 +345,15 @@
       this.analyser.connect(this.context.destination);
       this.activeSources = [];
       this.scheduleTimer = null;
+    }
+
+    setPlaybackRate(rate) {
+      this.playbackRate = Math.max(0.65, Math.min(1.5, Number(rate) || 1.0));
+      for (const s of this.activeSources) {
+        try {
+          s.playbackRate.setValueAtTime(this.playbackRate, this.context.currentTime);
+        } catch(e) {}
+      }
     }
 
     addPCM16(bytes) {
@@ -337,12 +377,15 @@
       if (!this.isPlaying) return;
 
       const scheduleAhead = 0.45;
+      const effectiveRate = this.playbackRate || 1.0;
+
       while (this.audioQueue.length > 0 && this.scheduledTime < this.context.currentTime + scheduleAhead) {
         const data = this.audioQueue.shift();
         const buffer = this.context.createBuffer(1, data.length, this.inputSampleRate);
         buffer.getChannelData(0).set(data);
         const source = this.context.createBufferSource();
         source.buffer = buffer;
+        source.playbackRate.value = effectiveRate;
         source.connect(this.gainNode);
         source.start(this.scheduledTime);
         this.activeSources.push(source);
@@ -352,10 +395,12 @@
           if (idx !== -1) this.activeSources.splice(idx, 1);
           if (this.activeSources.length === 0 && this.audioQueue.length === 0) {
             this.isPlaying = false;
+            this.lastPlayEndTime = Date.now();
           }
         };
 
-        this.scheduledTime += buffer.duration;
+        // Корректный расчет длительности буфера с учетом темпа воспроизведения
+        this.scheduledTime += (buffer.duration / effectiveRate);
       }
 
       if (this.scheduleTimer) {
@@ -378,6 +423,7 @@
       this.audioQueue = [];
       this.isPlaying = false;
       this.scheduledTime = 0;
+      this.lastPlayEndTime = Date.now();
 
       // Остановка всех играющих фрагментов, чтобы исключить наложение голосов при прерывании
       for (const s of this.activeSources) {
@@ -421,20 +467,30 @@
   let activeCallbacks = {};
   let lastUserEnergy = 0;
 
-  // Разблокировка аудио для iPhone / Safari
+  // Разблокировка аудио для iPhone / Safari / Android
   async function unlockAudio() {
     if (!audioCtx) {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      audioCtx = new AudioContextClass();
+      try {
+        // Предпочитаем нативную частоту 16кГц для идеального качества без алиасинга
+        audioCtx = new AudioContextClass({ sampleRate: 16000 });
+      } catch (e) {
+        audioCtx = new AudioContextClass();
+      }
     }
     if (audioCtx.state === 'suspended') {
       await audioCtx.resume();
     }
   }
 
+  let isSlowModeActive = (localStorage.getItem('ai_coach_live_slow') === 'true');
+
   // Запуск сессии Gemini Live (с гарантией единственного подключения)
   async function startGeminiSession(options = {}) {
     const savedVoice = localStorage.getItem('ai_coach_voice_name') || 'Aoede';
+    const isSlow = (typeof options.slowMode === 'boolean') ? options.slowMode : isSlowModeActive;
+    isSlowModeActive = isSlow;
+
     const {
       mode = 'coach',
       customPrompt = null,
@@ -442,6 +498,9 @@
       useModal = false,
       callbacks = {}
     } = options;
+
+    const defaultSilence = (mode === 'german') ? 3.5 : 1.5;
+    const silenceWait = (typeof options.silenceWaitSec === 'number') ? options.silenceWaitSec : defaultSilence;
 
     // КРИТИЧЕСКИ ВАЖНО: полностью завершаем предыдущую сессию перед новым стартом!
     stopGeminiSession();
@@ -461,6 +520,11 @@
         if (statusLbl) statusLbl.textContent = 'ПОДКЛЮЧЕНИЕ К GEMINI LIVE...';
         const voiceSel = document.getElementById('coach-voice-select');
         if (voiceSel) voiceSel.value = voice;
+        const slowBtn = document.getElementById('coach-slow-btn');
+        if (slowBtn) {
+          slowBtn.classList.toggle('active', isSlow);
+          slowBtn.textContent = isSlow ? '🐢 0.85x' : '⚡ 1.0x';
+        }
       }
 
       await unlockAudio();
@@ -494,6 +558,7 @@
       silentGain.connect(audioCtx.destination);
 
       streamer = new AudioStreamer(audioCtx);
+      streamer.setPlaybackRate(isSlow ? 0.85 : 1.0);
 
       // WebSocket подключение к Gemini Live
       const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -504,7 +569,9 @@
         const startPayload = {
           type: "start",
           mode: mode,
-          voice: voice
+          voice: voice,
+          silence_wait_sec: silenceWait,
+          slow_mode: isSlow
         };
         if (customPrompt) {
           startPayload.custom_prompt = customPrompt;
@@ -580,11 +647,27 @@
       workletNode.port.onmessage = (ev) => {
         if (ev.data.event === "chunk") {
           lastUserEnergy = ev.data.energy || 0;
-          if (activeCallbacks.onAudioEnergy && streamer && !streamer.isPlaying) {
+          const isAIPlaying = streamer && streamer.isPlaying;
+          const timeSincePlayEnded = streamer ? (Date.now() - (streamer.lastPlayEndTime || 0)) : 9999;
+
+          if (activeCallbacks.onAudioEnergy && !isAIPlaying) {
             activeCallbacks.onAudioEnergy(lastUserEnergy);
           }
+
           if (ws && ws.readyState === WebSocket.OPEN && isConnected) {
             if (isMicMuted) return;
+
+            // ЗАЩИТА ОТ ЭХА ДИНАМИКОВ И ПРЕРЫВАНИЯ СВЯЗИ:
+            // Если говорит коуч или прошло < 350мс с момента окончания звука,
+            // не транслируем микрофон (если пользователь не говорит громко > 0.45),
+            // чтобы звук из динамика телефона не перебивал сессию!
+            if (isAIPlaying && lastUserEnergy < 0.45) {
+              return;
+            }
+            if (timeSincePlayEnded < 350 && lastUserEnergy < 0.3) {
+              return;
+            }
+
             const u8 = new Uint8Array(ev.data.data.int16arrayBuffer);
             let binary = '';
             for (let i = 0; i < u8.byteLength; i++) binary += String.fromCharCode(u8[i]);
@@ -771,6 +854,24 @@
     });
   }
 
+  const modalSlowBtn = document.getElementById('coach-slow-btn');
+  if (modalSlowBtn) {
+    modalSlowBtn.addEventListener('click', () => {
+      window.GeminiLiveCoach.setSlowMode(!isSlowModeActive);
+    });
+  }
+
+  const modalModeSel = document.getElementById('coach-mode-select');
+  if (modalModeSel) {
+    modalModeSel.addEventListener('change', (e) => {
+      const newMode = e.target.value;
+      if (isConnected) {
+        const silenceSec = (newMode === 'german') ? 3.5 : 1.5;
+        window.GeminiLiveCoach.setSilenceWait(silenceSec);
+      }
+    });
+  }
+
   document.getElementById('coach-close-modal').addEventListener('click', stopGeminiSession);
   document.getElementById('coach-hangup-btn').addEventListener('click', stopGeminiSession);
   document.getElementById('coach-mic-toggle').addEventListener('click', toggleMicMute);
@@ -792,6 +893,37 @@
       return lastUserEnergy;
     },
     getVoice: () => currentVoice,
+    setSlowMode: (enabled) => {
+      isSlowModeActive = !!enabled;
+      localStorage.setItem('ai_coach_live_slow', isSlowModeActive ? 'true' : 'false');
+      if (streamer) streamer.setPlaybackRate(isSlowModeActive ? 0.85 : 1.0);
+      const slowBtn = document.getElementById('coach-slow-btn');
+      if (slowBtn) {
+        slowBtn.classList.toggle('active', isSlowModeActive);
+        slowBtn.textContent = isSlowModeActive ? '🐢 0.85x' : '⚡ 1.0x';
+      }
+      if (ws && ws.readyState === WebSocket.OPEN && isConnected) {
+        ws.send(JSON.stringify({
+          type: "update_config",
+          slow_mode: isSlowModeActive
+        }));
+      }
+    },
+    isSlowMode: () => isSlowModeActive,
+    setSilenceWait: (sec) => {
+      const val = Number(sec);
+      if (!isNaN(val) && ws && ws.readyState === WebSocket.OPEN && isConnected) {
+        ws.send(JSON.stringify({
+          type: "update_config",
+          silence_wait_sec: val
+        }));
+      }
+    },
+    commitSpeech: () => {
+      if (ws && ws.readyState === WebSocket.OPEN && isConnected) {
+        ws.send(JSON.stringify({ type: "commit_speech" }));
+      }
+    },
     openModal: (mode = 'coach') => {
       const voice = localStorage.getItem('ai_coach_voice_name') || 'Aoede';
       startGeminiSession({ mode, voice, useModal: true });

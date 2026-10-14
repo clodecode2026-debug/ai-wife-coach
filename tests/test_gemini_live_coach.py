@@ -1,7 +1,14 @@
 import pytest
 from starlette.testclient import TestClient
 from main import app
-from gemini_live_coach import get_gemini_api_keys, SYSTEM_PROMPTS, DEFAULT_VOICES, SUPPORTED_VOICES
+from gemini_live_coach import (
+    get_gemini_api_keys,
+    SYSTEM_PROMPTS,
+    DEFAULT_VOICES,
+    SUPPORTED_VOICES,
+    DEFAULT_SILENCE_WAIT,
+    GERMAN_SLOW_PROMPT_ADDITION
+)
 
 def test_gemini_live_config():
     keys = get_gemini_api_keys()
@@ -12,10 +19,34 @@ def test_gemini_live_config():
     assert "Aoede" in SUPPORTED_VOICES
     assert "Kore" in SUPPORTED_VOICES
     assert "Fenrir" in SUPPORTED_VOICES
+    
+    # Проверка таймингов ожидания тишины (VAD)
+    assert DEFAULT_SILENCE_WAIT["coach"] == 1.5, "Coach silence wait must be 1.5 seconds"
+    assert DEFAULT_SILENCE_WAIT["german"] == 3.5, "German silence wait must be 3.5 seconds"
+    assert "VERLANGSAMTEN" in GERMAN_SLOW_PROMPT_ADDITION
 
 def test_gemini_live_websocket_endpoint():
     client = TestClient(app)
     with client.websocket_connect("/api/voice/live") as ws:
         # Check initial state or send init payload
         ws.send_json({"type": "init", "mode": "coach", "voice": "Aoede"})
+        ws.close()
+
+def test_gemini_live_websocket_start_and_update():
+    client = TestClient(app)
+    with client.websocket_connect("/api/voice/live") as ws:
+        # 1. Проверяем старт режима коуча с дефолтной тишиной 1.5с
+        ws.send_json({"type": "start", "mode": "coach", "voice": "Aoede"})
+        resp = ws.receive_json()
+        assert resp["type"] == "ready"
+        assert resp["mode"] == "coach"
+        assert resp["silence_wait_sec"] == 1.5
+        assert resp["slow_mode"] is False
+
+        # 2. Проверяем обновление параметров на лету
+        ws.send_json({"type": "update_config", "silence_wait_sec": 3.5, "slow_mode": True})
+        update_resp = ws.receive_json()
+        assert update_resp["type"] == "config_updated"
+        assert update_resp["silence_wait_sec"] == 3.5
+        assert update_resp["slow_mode"] is True
         ws.close()

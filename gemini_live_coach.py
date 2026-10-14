@@ -39,10 +39,10 @@ GEMINI_LIVE_MODEL = "models/gemini-3.8-live"
 
 # Дефолтные задержки тишины (VAD) перед ответом коуча:
 # - Коуч/психолог: 1.5 секунды (естественная терапевтическая пауза)
-# - Немецкий репетитор: 3.5 секунды (достаточно времени подумать и подобрать слова A1-B2)
+# - Немецкий репетитор: 2.0 секунды (комфортная пауза для формулирования мысли без задержек)
 DEFAULT_SILENCE_WAIT = {
     "coach": 1.5,
-    "german": 3.5
+    "german": 2.0
 }
 
 GERMAN_SLOW_PROMPT_ADDITION = (
@@ -78,13 +78,14 @@ SYSTEM_PROMPTS = {
         "Отвечай кратко, емко (1-3 живых предложения), оставляя пространство для ответа."
     ),
     "german": (
-        "Du bist ein geduldiger, freundlicher und motivierender Deutschlehrer und Gesprächspartner für Alina. "
-        "Dein Ziel ist es, ihr zu helfen, Deutsch im Alltag fließend und ohne Angst zu sprechen (Niveau A1-B2). "
+        "Du bist ein geduldiger, freundlicher und motivierender Deutschlehrer und Gesprächspartner für Alina und ihren Mann Roman. "
+        "Dein Ziel ist es, ihnen zu helfen, Deutsch im Alltag fließend und ohne Angst zu sprechen (Niveau A1-B2). "
         "Sprich lebendig, langsam, klar und mit einfacher Alltagssprache auf Deutsch. "
-        "Wenn der Nutzer spricht oder Testfragen stellt ('Hörst du mich?', 'Wie geht es dir?'), antworte sofort klar und direkt. "
-        "Wenn sie Fehler macht, korrigiere sie ganz sanft und wiederhole den richtigen Satz. "
-        "Wenn sie etwas nicht versteht oder auf Russisch fragt, erkläre es kurz auf Russisch und bring das Gespräch zurück ins Deutsche. "
-        "Halte deine Antworten kurz (1-2 Sätze), damit sie viel Gelegenheit zum Sprechen hat."
+        "WICHTIGSTE REGELN ZUM VERSTEHEN: "
+        "1. Du verstehst sowohl Deutsch als auch Russisch perfekt! Wenn der Nutzer auf Russisch spricht oder prüft (z.B. 'Ты меня слышишь?', 'Как дела?'), antworte sofort freundlich und bestätige auf Deutsch und kurz auf Russisch: 'Ja, ich höre dich sehr gut! Да, я отлично тебя слышу!', und führe das Gespräch sanft auf Deutsch weiter. "
+        "2. Wenn sie kurze Antworten geben ('Ja', 'Nein', 'Gut', 'Hallo'), reagiere sofort und ermutige sie. "
+        "3. Wenn sie Fehler machen, korrigiere ganz sanft (Gentle Recasting) und wiederhole den richtigen Satz. "
+        "4. Halte deine Antworten kurz (1-2 Sätze), damit sie viel Gelegenheit zum Sprechen haben."
     )
 }
 
@@ -110,14 +111,15 @@ async def gemini_live_websocket(client_ws: WebSocket):
     is_active = True
 
     # Voice Activity Detection (VAD) настройки
-    SILENCE_THRESHOLD = 300       # Чувствительный порог амплитуды (не срезает тихие звуки и согласные)
-    MIN_SPEECH_BYTES = 12800      # Мин. длина осмысленной фразы (0.4 сек = 6400 сэмплов)
+    noise_floor = 250.0           # Базовый уровень фонового шума (адаптируется)
+    MIN_SPEECH_BYTES = 7000       # Мин. длина осмысленной фразы (~0.22 сек)
+    MAX_CONTINUOUS_SPEECH_CHUNKS = 80 # ~10 сек макс непрерывной речи до авто-отправки
 
     mode = "coach"
     voice_name = "Aoede"
     slow_mode = False
 
-    # Тайминг тишины перед ответом: 1.5с для коуча, 3.5с для немецкого
+    # Тайминг тишины перед ответом: 1.5с для коуча, 2.0с для немецкого
     silence_wait_sec = DEFAULT_SILENCE_WAIT["coach"]
     silence_chunks_trigger = max(5, int(silence_wait_sec / 0.128))
 
@@ -126,6 +128,7 @@ async def gemini_live_websocket(client_ws: WebSocket):
     is_speaking = False
     consecutive_speech_chunks = 0
     silence_chunks = 0
+    speech_chunks_count = 0
     is_model_speaking = False
 
     async def forward_from_gemini():
@@ -193,6 +196,50 @@ async def gemini_live_websocket(client_ws: WebSocket):
         finally:
             is_active = False
 
+    async def send_turn_to_gemini():
+        nonlocal is_speaking, silence_chunks, consecutive_speech_chunks, speech_chunks_count
+        is_speaking = False
+        consecutive_speech_chunks = 0
+        speech_chunks_count = 0
+
+        chunk_bytes = 4096
+        excess_silence_chunks = max(0, silence_chunks - 2)
+        excess_bytes = excess_silence_chunks * chunk_bytes
+        silence_chunks = 0
+
+        if len(speech_buffer) >= MIN_SPEECH_BYTES and gemini_ws:
+            if excess_bytes > 0 and len(speech_buffer) > excess_bytes + MIN_SPEECH_BYTES:
+                audio_to_send = bytes(speech_buffer[:-excess_bytes])
+            else:
+                audio_to_send = bytes(speech_buffer)
+            b64_turn = base64.b64encode(audio_to_send).decode("utf-8")
+            turn_msg = {
+                "clientContent": {
+                    "turns": [
+                        {
+                            "role": "user",
+                            "parts": [
+                                {
+                                    "inlineData": {
+                                        "mimeType": "audio/pcm;rate=16000",
+                                        "data": b64_turn
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "turnComplete": True
+                }
+            }
+            print(f"🎧 [Coach Live] Отправка turn_msg в Gemini: {len(audio_to_send)} байт PCM...")
+            try:
+                await gemini_ws.send(json.dumps(turn_msg))
+                print(f"🎧 [Coach Live] Успешно отправлен turn_msg!")
+                await client_ws.send_json({"type": "speech_committed"})
+            except Exception as se:
+                print(f"❌ [Coach Live] Ошибка отправки turn_msg: {se}")
+        speech_buffer.clear()
+
     try:
         while True:
             client_msg = await client_ws.receive_text()
@@ -206,7 +253,7 @@ async def gemini_live_websocket(client_ws: WebSocket):
                 voice_name = requested_voice if requested_voice in SUPPORTED_VOICES else DEFAULT_VOICES.get(mode, "Aoede")
                 slow_mode = bool(data.get("slow_mode", False))
 
-                # Настройка паузы ожидания тишины: 1.5с (коуч) или 3.5с (немецкий)
+                # Настройка паузы ожидания тишины: 1.5с (коуч) или 2.0с (немецкий)
                 custom_silence = data.get("silence_wait_sec")
                 if custom_silence is not None:
                     silence_wait_sec = float(custom_silence)
@@ -230,21 +277,23 @@ async def gemini_live_websocket(client_ws: WebSocket):
                     break
 
                 # Отправка первичного Setup Payload с системными инструкциями
+                base_instruction = SYSTEM_PROMPTS.get(mode, SYSTEM_PROMPTS["coach"])
+                dossier_ctx = ""
+                if mode == "coach" and db_manager:
+                    try:
+                        dossier = db_manager.get_dossier()
+                        name = dossier.get("name", "Алина")
+                        husband = dossier.get("husband", "Роман")
+                        notes = dossier.get("notes", "")
+                        dossier_ctx = f" Контекст клиентки: Имя: {name}. Муж: {husband}. Особенности: {notes}."
+                    except Exception as de:
+                        print(f"🎧 [Coach Live] Dossier load note: {de}")
+
                 custom_prompt = data.get("custom_prompt")
                 if custom_prompt:
-                    system_instruction = custom_prompt
+                    system_instruction = f"{base_instruction}{dossier_ctx}\n\nСИТУАЦИЯ И СЦЕНАРИЙ ТРЕНИРОВКИ:\n{custom_prompt}"
                 else:
-                    dossier_ctx = ""
-                    if mode == "coach" and db_manager:
-                        try:
-                            dossier = db_manager.get_dossier()
-                            name = dossier.get("name", "Алина")
-                            husband = dossier.get("husband", "Роман")
-                            notes = dossier.get("notes", "")
-                            dossier_ctx = f" Контекст клиентки: Имя: {name}. Муж: {husband}. Особенности: {notes}."
-                        except Exception as de:
-                            print(f"🎧 [Coach Live] Dossier load note: {de}")
-                    system_instruction = SYSTEM_PROMPTS.get(mode, SYSTEM_PROMPTS["coach"]) + dossier_ctx
+                    system_instruction = base_instruction + dossier_ctx
 
                 # Если немецкий режим — внедряем замедленный темп речи при запросе
                 if mode == "german":
@@ -301,67 +350,79 @@ async def gemini_live_websocket(client_ws: WebSocket):
                     "slow_mode": slow_mode
                 })
 
-            # 3. Ручное подтверждение реплики (кнопка 'Отправить' / 'Сказать сейчас')
-            elif msg_type == "commit_speech" and gemini_ws:
-                if is_speaking and len(speech_buffer) >= MIN_SPEECH_BYTES:
-                    is_speaking = False
-                    consecutive_speech_chunks = 0
-                    chunk_bytes = 4096
-                    excess_silence_chunks = max(0, silence_chunks - 2)
-                    excess_bytes = excess_silence_chunks * chunk_bytes
-                    silence_chunks = 0
-                    if excess_bytes > 0 and len(speech_buffer) > excess_bytes + MIN_SPEECH_BYTES:
-                        audio_to_send = bytes(speech_buffer[:-excess_bytes])
-                    else:
-                        audio_to_send = bytes(speech_buffer)
-                    b64_turn = base64.b64encode(audio_to_send).decode("utf-8")
-                    turn_msg = {
-                        "clientContent": {
-                            "turns": [
-                                {
-                                    "role": "user",
-                                    "parts": [
-                                        {
-                                            "inlineData": {
-                                                "mimeType": "audio/pcm;rate=16000",
-                                                "data": b64_turn
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            "turnComplete": True
-                        }
-                    }
-                    await gemini_ws.send(json.dumps(turn_msg))
+            # 3. Синхронизация состояния воспроизведения динамика (100% защита от эха на смартфонах)
+            elif msg_type == "playback_state":
+                client_playing = bool(data.get("playing", False))
+                is_model_speaking = client_playing
+                if not client_playing:
+                    # Динамик смартфона замолчал: очищаем буферы от остаточного эха комнаты
                     speech_buffer.clear()
+                    pre_roll_chunks.clear()
+                    is_speaking = False
+                    silence_chunks = 0
+                    consecutive_speech_chunks = 0
+                    speech_chunks_count = 0
 
-            # 4. Потоковое аудио с микрофона (16kHz PCM chunks)
+            # 4. Мгновенное перебивание (пользователь коснулся экрана / нажал кнопку)
+            elif msg_type == "interrupt":
+                is_model_speaking = False
+                is_speaking = False
+                silence_chunks = 0
+                consecutive_speech_chunks = 0
+                speech_chunks_count = 0
+                speech_buffer.clear()
+                pre_roll_chunks.clear()
+                await client_ws.send_json({"type": "interrupted"})
+
+            # 5. Ручное подтверждение реплики (кнопка 'Отправить' / 'Сказать сейчас')
+            elif msg_type == "commit_speech" and gemini_ws:
+                if len(speech_buffer) >= MIN_SPEECH_BYTES:
+                    print(f"🎧 [Coach Live] Ручное подтверждение реплики ({len(speech_buffer)} байт)")
+                    await send_turn_to_gemini()
+                else:
+                    print(f"🎧 [Coach Live] commit_speech: буфер слишком мал ({len(speech_buffer)} байт)")
+
+            # 6. Потоковое аудио с микрофона (16kHz PCM chunks)
             elif msg_type == "audio" and gemini_ws:
+                if is_model_speaking:
+                    continue
+
                 pcm_b64 = data.get("data")
                 if pcm_b64:
                     raw = base64.b64decode(pcm_b64)
                     samples = struct.unpack(f"{len(raw)//2}h", raw) if len(raw) >= 2 else []
                     max_amp = max(abs(s) for s in samples) if samples else 0
 
-                    # Защита от акустического эха динамиков:
-                    # Если коуч сейчас говорит из динамиков, не даем тихому эху перебивать коуча
-                    if is_model_speaking and max_amp < 8500:
-                        continue
+                    # Адаптивный трекинг фонового шума помещения
+                    if not is_speaking:
+                        noise_floor = 0.95 * noise_floor + 0.05 * min(max_amp, 1200)
 
-                    # Голосовая активность (VAD)
-                    if max_amp > SILENCE_THRESHOLD:
+                    # Динамический порог голоса (минимум 480, либо в 2.0 раза выше уровня фонового шума)
+                    voice_threshold = max(480, noise_floor * 2.0)
+                    is_voice = (max_amp > voice_threshold)
+
+                    if is_voice:
                         consecutive_speech_chunks += 1
-                        if not is_speaking and consecutive_speech_chunks >= 2:
+                        # Старт фразы: либо одиночный громкий звук (>1.3x порога), либо 2 чанка подряд
+                        if not is_speaking and (max_amp > (voice_threshold * 1.3) or consecutive_speech_chunks >= 2):
                             is_speaking = True
-                            # Восстанавливаем ~500мс пред-буфера, чтобы не потерять начало фразы
+                            speech_chunks_count = 0
                             for pre_chunk in pre_roll_chunks:
                                 speech_buffer.extend(pre_chunk)
                             pre_roll_chunks.clear()
+                            try:
+                                await client_ws.send_json({"type": "vad_state", "state": "user_speaking"})
+                            except Exception:
+                                pass
 
                         if is_speaking:
                             silence_chunks = 0
                             speech_buffer.extend(raw)
+                            speech_chunks_count += 1
+
+                            # Защита от бесконечного накопления (макс ~10 секунд непрерывной речи)
+                            if speech_chunks_count >= MAX_CONTINUOUS_SPEECH_CHUNKS:
+                                await send_turn_to_gemini()
 
                     else:
                         consecutive_speech_chunks = 0
@@ -369,49 +430,22 @@ async def gemini_live_websocket(client_ws: WebSocket):
                             speech_buffer.extend(raw)
                             silence_chunks += 1
 
-                            # Достигнут порог тишины (1.5с для коуча, 3.5с для немецкого) ➔ завершаем фразу!
+                            # Уведомление о начале паузы (~380мс), чтобы интерфейс показал индикатор ожидания
+                            if silence_chunks == 3:
+                                try:
+                                    await client_ws.send_json({
+                                        "type": "vad_state",
+                                        "state": "user_pause",
+                                        "silence_sec": 0.4,
+                                        "target_sec": silence_wait_sec
+                                    })
+                                except Exception:
+                                    pass
+
+                            # Достигнут порог тишины (1.5с для коуча, 2.0с для немецкого) ➔ отправляем реплику!
                             if silence_chunks >= silence_chunks_trigger:
-                                is_speaking = False
-                                # Обрезаем избыточную хвостовую тишину ожидания:
-                                # Оставляем ~250мс естественного затухания, а остальные секунды тишины отсекаем,
-                                # чтобы Gemini не воспринимал долгое молчание как обрыв связи
-                                chunk_bytes = len(raw) if raw else 4096
-                                excess_silence_chunks = max(0, silence_chunks - 2)
-                                excess_bytes = excess_silence_chunks * chunk_bytes
-                                silence_chunks = 0
-                                if len(speech_buffer) >= MIN_SPEECH_BYTES:
-                                    if excess_bytes > 0 and len(speech_buffer) > excess_bytes + MIN_SPEECH_BYTES:
-                                        audio_to_send = bytes(speech_buffer[:-excess_bytes])
-                                    else:
-                                        audio_to_send = bytes(speech_buffer)
-                                    b64_turn = base64.b64encode(audio_to_send).decode("utf-8")
-                                    turn_msg = {
-                                        "clientContent": {
-                                            "turns": [
-                                                {
-                                                    "role": "user",
-                                                    "parts": [
-                                                        {
-                                                            "inlineData": {
-                                                                "mimeType": "audio/pcm;rate=16000",
-                                                                "data": b64_turn
-                                                            }
-                                                        }
-                                                    ]
-                                                }
-                                            ],
-                                            "turnComplete": True
-                                        }
-                                    }
-                                    print(f"🎧 [Coach Live] Отправка turn_msg в Gemini: {len(audio_to_send)} байт PCM...")
-                                    try:
-                                        await gemini_ws.send(json.dumps(turn_msg))
-                                        print(f"🎧 [Coach Live] Успешно отправлен turn_msg!")
-                                    except Exception as se:
-                                        print(f"❌ [Coach Live] Ошибка отправки turn_msg: {se}")
-                                speech_buffer.clear()
+                                await send_turn_to_gemini()
                         else:
-                            # Пока фраза не началась — накапливаем кольцевой пред-буфер
                             pre_roll_chunks.append(raw)
 
             # 5. Текстовое сообщение (если пользователь хочет написать вслух)

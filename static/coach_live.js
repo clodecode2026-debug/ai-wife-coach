@@ -229,7 +229,7 @@
     <div class="coach-live-header">
       <select id="coach-mode-select" class="coach-mode-select">
         <option value="coach" selected>🧘 Коуч (пауза 1.5с)</option>
-        <option value="german">🇩🇪 Немецкий (пауза 3.5с)</option>
+        <option value="german">🇩🇪 Немецкий (пауза 2.0с)</option>
       </select>
       <select id="coach-voice-select" class="coach-voice-select" title="Выбор голоса">
         <option value="Aoede" ${initialSavedVoice === 'Aoede' ? 'selected' : ''}>👩 Aoede (Тёплый)</option>
@@ -345,6 +345,7 @@
       this.analyser.connect(this.context.destination);
       this.activeSources = [];
       this.scheduleTimer = null;
+      this.onPlaybackStateChange = null;
     }
 
     setPlaybackRate(rate) {
@@ -369,7 +370,10 @@
         this.scheduledTime = this.context.currentTime + 0.05;
       }
 
-      this.isPlaying = true;
+      if (!this.isPlaying) {
+        this.isPlaying = true;
+        if (this.onPlaybackStateChange) this.onPlaybackStateChange(true);
+      }
       this.schedule();
     }
 
@@ -394,8 +398,12 @@
           const idx = this.activeSources.indexOf(source);
           if (idx !== -1) this.activeSources.splice(idx, 1);
           if (this.activeSources.length === 0 && this.audioQueue.length === 0) {
+            const wasPlaying = this.isPlaying;
             this.isPlaying = false;
             this.lastPlayEndTime = Date.now();
+            if (wasPlaying && this.onPlaybackStateChange) {
+              this.onPlaybackStateChange(false);
+            }
           }
         };
 
@@ -411,7 +419,11 @@
       if (this.audioQueue.length > 0 || this.scheduledTime > this.context.currentTime) {
         this.scheduleTimer = setTimeout(() => this.schedule(), 35);
       } else if (this.activeSources.length === 0) {
+        const wasPlaying = this.isPlaying;
         this.isPlaying = false;
+        if (wasPlaying && this.onPlaybackStateChange) {
+          this.onPlaybackStateChange(false);
+        }
       }
     }
 
@@ -421,9 +433,13 @@
         this.scheduleTimer = null;
       }
       this.audioQueue = [];
+      const wasPlaying = this.isPlaying;
       this.isPlaying = false;
       this.scheduledTime = 0;
       this.lastPlayEndTime = Date.now();
+      if (wasPlaying && this.onPlaybackStateChange) {
+        this.onPlaybackStateChange(false);
+      }
 
       // Остановка всех играющих фрагментов, чтобы исключить наложение голосов при прерывании
       for (const s of this.activeSources) {
@@ -499,7 +515,7 @@
       callbacks = {}
     } = options;
 
-    const defaultSilence = (mode === 'german') ? 3.5 : 1.5;
+    const defaultSilence = (mode === 'german') ? 2.0 : 1.5;
     const silenceWait = (typeof options.silenceWaitSec === 'number') ? options.silenceWaitSec : defaultSilence;
 
     // КРИТИЧЕСКИ ВАЖНО: полностью завершаем предыдущую сессию перед новым стартом!
@@ -559,6 +575,14 @@
 
       streamer = new AudioStreamer(audioCtx);
       streamer.setPlaybackRate(isSlow ? 0.85 : 1.0);
+      streamer.onPlaybackStateChange = (playing) => {
+        if (ws && ws.readyState === WebSocket.OPEN && isConnected) {
+          ws.send(JSON.stringify({
+            type: "playback_state",
+            playing: playing
+          }));
+        }
+      };
 
       // WebSocket подключение к Gemini Live
       const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -597,6 +621,22 @@
               appendModalTranscript('Коуч', readyMsg);
             }
 
+            // АВТО-ПРИВЕТСТВИЕ ДЛЯ РЕПЕТИТОРА ПО НЕМЕЦКОМУ:
+            // Чтобы коуч не молчал при открытии диалога, инициируем живое приветствие и открывающий вопрос
+            if (mode === 'german') {
+              setTimeout(() => {
+                if (ws && ws.readyState === WebSocket.OPEN && isConnected) {
+                  const triggerText = customPrompt 
+                    ? "Hallo! Bitte begrüße mich kurz auf Deutsch und eröffne das Gespräch mit deiner ersten Frage."
+                    : "Hallo! Bitte begrüße mich jetzt kurz auf Deutsch und frage mich, wie es mir geht.";
+                  ws.send(JSON.stringify({
+                    type: "text",
+                    text: triggerText
+                  }));
+                }
+              }, 150);
+            }
+
           } else if (msg.type === "audio") {
             if (activeCallbacks.onStatus) activeCallbacks.onStatus('ГОВОРИТ КОУЧ...', 'SPEAKING');
             if (isModalActive) {
@@ -633,6 +673,16 @@
               if (statusLbl) statusLbl.textContent = 'СЛУШАЮ (ГОВОРИТЕ)';
             }
 
+          } else if (msg.type === "vad_state") {
+            if (activeCallbacks.onVadState) {
+              activeCallbacks.onVadState(msg);
+            }
+
+          } else if (msg.type === "speech_committed") {
+            if (activeCallbacks.onSpeechCommitted) {
+              activeCallbacks.onSpeechCommitted();
+            }
+
           } else if (msg.type === "error") {
             const errText = msg.message || 'Ошибка подключения к Gemini Live';
             console.error('Gemini Live error:', errText);
@@ -658,13 +708,9 @@
             if (isMicMuted) return;
 
             // ЗАЩИТА ОТ ЭХА ДИНАМИКОВ И ПРЕРЫВАНИЯ СВЯЗИ:
-            // Если говорит коуч или прошло < 350мс с момента окончания звука,
-            // не транслируем микрофон (если пользователь не говорит громко > 0.45),
-            // чтобы звук из динамика телефона не перебивал сессию!
-            if (isAIPlaying && lastUserEnergy < 0.45) {
-              return;
-            }
-            if (timeSincePlayEnded < 350 && lastUserEnergy < 0.3) {
+            // Если говорит коуч (или прошло < 120мс после окончания звука),
+            // микрофон полностью заглушен для защиты от эха динамиков и ложных прерываний на смартфонах
+            if (isAIPlaying || timeSincePlayEnded < 120) {
               return;
             }
 
@@ -866,8 +912,11 @@
     modalModeSel.addEventListener('change', (e) => {
       const newMode = e.target.value;
       if (isConnected) {
-        const silenceSec = (newMode === 'german') ? 3.5 : 1.5;
-        window.GeminiLiveCoach.setSilenceWait(silenceSec);
+        startGeminiSession({
+          mode: newMode,
+          voice: currentVoice,
+          useModal: isModalActive
+        });
       }
     });
   }
@@ -922,6 +971,12 @@
     commitSpeech: () => {
       if (ws && ws.readyState === WebSocket.OPEN && isConnected) {
         ws.send(JSON.stringify({ type: "commit_speech" }));
+      }
+    },
+    interrupt: () => {
+      if (streamer) streamer.stop();
+      if (ws && ws.readyState === WebSocket.OPEN && isConnected) {
+        ws.send(JSON.stringify({ type: "interrupt" }));
       }
     },
     openModal: (mode = 'coach') => {

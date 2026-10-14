@@ -1271,6 +1271,14 @@ async function toggleLiveVoiceState() {
     if (!isLiveActive && !isGeminiConnected) {
         startLiveVoice();
     } else {
+        // Если коуч говорит в Gemini Live режиме, а пользователь нажал на фото — мгновенно перебиваем и слушаем пользователя!
+        if (currentVoiceEngine === 'gemini_live' && window.GeminiLiveCoach && window.GeminiLiveCoach.isAudioPlaying()) {
+            window.GeminiLiveCoach.interrupt();
+            liveTurnState = 'LISTENING';
+            const statusText = document.getElementById('liveStatusText');
+            if (statusText) statusText.textContent = '🎙️ Слушаю вас... Говорите!';
+            return;
+        }
         // Если коуч сейчас говорит в классическом режиме, а пользователь нажал на фото — даем возможность перебить
         if (currentVoiceEngine === 'classic' && liveTurnState === 'SPEAKING' && currentLiveAudio) {
             try { currentLiveAudio.pause(); } catch(e){}
@@ -1373,7 +1381,7 @@ async function startGeminiLiveVoice(customPrompt = null) {
     geminiVisualizerRaf = requestAnimationFrame(loopGeminiVisualizer);
 
     const targetMode = (liveCoachMode === 'german' || liveCoachMode === 'german_dialogue') ? 'german' : 'coach';
-    const silenceWait = (targetMode === 'german') ? 3.5 : 1.5;
+    const silenceWait = (targetMode === 'german') ? 2.0 : 1.5;
 
     const started = await window.GeminiLiveCoach.start({
         mode: targetMode,
@@ -1417,6 +1425,34 @@ async function startGeminiLiveVoice(customPrompt = null) {
                         ? '🎙️ Ваша очередь говорить по-немецки...'
                         : '🎙️ Ваша очередь говорить, Алина...';
                 }
+            },
+            onVadState: (vState) => {
+                const pauseIndicator = document.getElementById('livePauseIndicator');
+                const pauseText = document.getElementById('livePauseText');
+                const st = document.getElementById('liveStatusText');
+
+                if (vState.state === 'user_speaking') {
+                    if (st) {
+                        st.textContent = (targetMode === 'german')
+                            ? '🎙️ Слышу вас... (говорите по-немецки)'
+                            : '🎙️ Слышу вас, Алина... (говорите)';
+                    }
+                    if (pauseIndicator) pauseIndicator.classList.remove('hidden');
+                    if (pauseText) pauseText.textContent = '🗣️ Вы говорите...';
+                } else if (vState.state === 'user_pause') {
+                    const sec = vState.silence_sec || 0.4;
+                    const target = vState.target_sec || silenceWait;
+                    if (pauseIndicator) pauseIndicator.classList.remove('hidden');
+                    if (pauseText) {
+                        pauseText.textContent = `⏳ Пауза (${sec}с / ${target}с)... Можно продолжить или нажать «Отправить»`;
+                    }
+                }
+            },
+            onSpeechCommitted: () => {
+                const pauseIndicator = document.getElementById('livePauseIndicator');
+                if (pauseIndicator) pauseIndicator.classList.add('hidden');
+                const st = document.getElementById('liveStatusText');
+                if (st) st.textContent = '🤔 Коуч обдумывает ответ...';
             },
             onError: (errMsg) => {
                 console.warn('Gemini Live error:', errMsg);
@@ -1812,6 +1848,16 @@ function sendLiveQuickMessage() {
 }
 
 function commitLiveSpeechImmediately() {
+    if (currentVoiceEngine === 'gemini_live' && window.GeminiLiveCoach) {
+        window.GeminiLiveCoach.commitSpeech();
+        const tr = document.getElementById('liveTranscript');
+        if (tr) tr.textContent = 'Отправляю вашу речь коучу...';
+        const st = document.getElementById('liveStatusText');
+        if (st) st.textContent = '🤔 Отправляю коучу...';
+        const pauseIndicator = document.getElementById('livePauseIndicator');
+        if (pauseIndicator) pauseIndicator.classList.add('hidden');
+        return;
+    }
     primeAudioForIOS(document.getElementById('liveGlobalAudioPlayer'));
     if (speechSilenceTimer) {
         clearTimeout(speechSilenceTimer);
@@ -2607,9 +2653,9 @@ function talkToCoachForLesson(lessonId) {
 function startLiveGermanCoach(lessonId) {
     currentLiveGermanLessonId = lessonId || 1;
     liveCoachMode = 'german';
-    LIVE_SILENCE_DELAY_MS = 4500; // 4.5 секунды тишины: время на размышление без спешки!
+    LIVE_SILENCE_DELAY_MS = 2500;
     if (window.GeminiLiveCoach) {
-        window.GeminiLiveCoach.setSilenceWait(3.5);
+        window.GeminiLiveCoach.setSilenceWait(2.0);
     }
 
     // Закрываем модалки и полноэкранный Duolingo, если были открыты
@@ -2635,14 +2681,14 @@ function startLiveGermanCoach(lessonId) {
     const situation = lesson?.dialogue_simulator?.situation || lesson?.title || 'Практика немецкого языка';
 
     if (currentVoiceEngine === 'gemini_live' && window.GeminiLiveCoach) {
-        const customPrompt = `Du bist ein geduldiger, freundlicher und motivierender Deutschlehrer für Alina.
+        const customPrompt = `Du bist ein geduldiger, freundlicher und motivierender Deutschlehrer für Alina und ihren Mann Roman.
 Ihr übt heute die Alltagssituation: "${situation}" (Tag ${currentLiveGermanLessonId}).
 REGELN FÜR DAS GESPRÄCH:
 1. Sprich lebendig, langsam, klar und mit einfacher Alltagssprache auf Deutsch (1-2 kurze Sätze).
-2. Stelle Alina eine Einstiegsfrage zu dieser Situation.
-3. Wenn sie Fehler macht, korrigiere sie ganz sanft (Gentle Recasting).
-4. Wenn nötig, erkläre schwierige Wörter kurz auf Russisch.
-Beginne das Gespräch jetzt sofort auf Deutsch und stell deine erste Frage!`;
+2. Du verstehst sowohl Deutsch als auch Russisch perfekt! Wenn Alina oder Roman auf Russisch sprechen oder die Verbindung testen ("Ты меня слышишь?"), antworte sofort freundlich auf Deutsch und kurz auf Russisch ("Ja, ich höre dich sehr gut! Да, отлично тебя слышу!") und führe das Gespräch sanft auf Deutsch weiter.
+3. Stelle Alina eine Einstiegsfrage zu dieser Situation.
+4. Wenn sie Fehler macht, korrigiere sie ganz sanft (Gentle Recasting).
+5. Wenn nötig, erkläre schwierige Wörter kurz auf Russisch.`;
 
         startLiveVoice(customPrompt);
     } else {
@@ -5296,9 +5342,9 @@ function startDialogueLiveCoach() {
     if (!activeDialogue) return;
     currentLiveDialogueId = activeDialogue.id;
     liveCoachMode = 'german_dialogue';
-    LIVE_SILENCE_DELAY_MS = 4500;
+    LIVE_SILENCE_DELAY_MS = 2500;
     if (window.GeminiLiveCoach) {
-        window.GeminiLiveCoach.setSilenceWait(3.5);
+        window.GeminiLiveCoach.setSilenceWait(2.0);
     }
 
     switchTab('live');
@@ -5314,14 +5360,15 @@ function startDialogueLiveCoach() {
     const level = activeDialogue.level || 'B1';
 
     if (currentVoiceEngine === 'gemini_live' && window.GeminiLiveCoach) {
-        const customPrompt = `Du bist ein geduldiger, freundlicher und lebendiger deutschsprachiger Rollenspielpartner für Alina. 
+        const customPrompt = `Du bist ein geduldiger, freundlicher und lebendiger deutschsprachiger Rollenspielpartner für Alina und ihren Mann Roman. 
 Wir spielen folgende Alltagssituation in Deutschland: "${scenarioTitle}". 
 Deine Rolle: "${partnerRole}". Niveau: ${level}.
 WICHTIG FÜR DIE KONVERSATION:
-1. Sprich kurze, lebendige und klare Alltagssätze auf Deutsch (1-2 kurze Sätze).
-2. Warte immer auf Alinas Antwort.
-3. Wenn sie Fehler macht, korrigiere sie ganz sanft (Gentle Recasting) und ermutige sie.
-4. Wenn ein Wort zu schwierig ist, gib kurz die russische Übersetzung in Klammern an.
+1. Sprich kurze, lebendige, langsame und klare Alltagssätze auf Deutsch (1-2 kurze Sätze).
+2. Du verstehst sowohl Deutsch als auch Russisch perfekt! Wenn Alina oder Roman auf Russisch sprechen oder die Verbindung testen ("Ты меня слышишь?", "Hörst du mich?"), antworte sofort bestätigend auf Deutsch und kurz auf Russisch ("Ja, ich höre dich sehr gut! Да, отлично слышу!") und führe das Rollenspiel als ${partnerRole} weiter.
+3. Warte immer auf Alinas Antwort.
+4. Wenn sie Fehler macht, korrigiere sie ganz sanft (Gentle Recasting) und ermutige sie.
+5. Wenn ein Wort zu schwierig ist, gib kurz die russische Übersetzung in Klammern an.
 Beginne das Gespräch jetzt sofort auf Deutsch, begrüße Alina in deiner Rolle als ${partnerRole} und sag deinen ersten Eröffnungssatz!`;
 
         startLiveVoice(customPrompt);
